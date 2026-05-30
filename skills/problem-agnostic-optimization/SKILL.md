@@ -54,7 +54,7 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 
 1. Build the contract: inputs, outputs, shapes, dtypes, layouts, seeds, tolerances, source limits, target hardware, budget, scoring formula, hidden/public differences, and edit surface.
 
-2. Build the bottleneck model: split aggregate scores by case, classify the target family, compute resource floors or statistical floors when possible, identify the primary bottleneck, and state what likely will not help.
+2. Build the bottleneck model: split aggregate scores by case, classify the target family, compute resource floors or statistical floors when possible, profile or inspect traces/counters when the runtime is not explained, identify the primary bottleneck, and state what likely will not help.
 
 3. Create one candidate: choose a hypothesis-rich filename, predict the expected metric/counter change, and make the smallest falsifiable edit. Prefer candidates that change a proven bottleneck floor, shorten an audited tail, or unlock a different primitive; avoid tweaks that merely move work into another saturated resource.
 
