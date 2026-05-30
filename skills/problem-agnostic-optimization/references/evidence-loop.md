@@ -41,6 +41,7 @@ Use counters and profiles for diagnosis:
 - Counters explain why wall time moved.
 - Counters do not override wall time.
 - If counters improve and time worsens, the wrong resource was optimized or a new pressure was introduced.
+- Distinguish a real graph improvement from a placement improvement: slot counts, bytes, launches, or branch counts changing means a different operation graph; identical counts with better time is scheduler, packing, or tail behavior.
 
 ## Candidate Ledger
 
@@ -106,12 +107,15 @@ Optimization work should be narrow even when the search is aggressive:
 
 Convert each failure into a search rule:
 
+- `work deleted, target still impossible by floors`: the deletion is too small or hits the wrong resource; compose only with a mechanism that attacks the remaining floor.
 - `lower floor, slower runtime`: dependency chain, scratch lifetime, barrier, aliasing, or tail got worse.
 - `one resource saved, another overloaded`: resource rebalance was not conservative.
+- `same counts, time changes`: schedule/tail sensitivity exists; tune only if the target gap is plausibly within the variance or packing gap.
 - `single-shape win, geomean loss`: keep as a route candidate, not a global promotion.
 - `benchmark win, ranked loss`: stability, hidden distribution, warmup, or state contract differs.
 - `schedule-only plateau`: move to work deletion, fusion, specialization, representation change, or primitive change.
 - `repeated near-ties`: run a local-optimum audit before the next same-family candidate.
+- `counterexample found for an algebraic shortcut`: close the shortcut family unless a stronger precondition is proven by the contract.
 
 ## Variance Handling
 
