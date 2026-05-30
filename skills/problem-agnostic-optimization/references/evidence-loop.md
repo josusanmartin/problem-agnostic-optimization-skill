@@ -141,14 +141,15 @@ Classify as platform/tooling blocker when:
 
 Do not spend repeated submissions on a platform blocker. Preserve the state/log, write a short issue note, and continue only when the platform changes or a bypass is credible.
 
-## Shortcut Screen
+## Forbidden Shortcut Screen
 
-Reject as exploit-like unless explicitly requested:
+Reject and do not run exploit-like shortcuts:
 
 - Hardcoded outputs or shape/device constants learned from checker failures.
 - Leaked validation answers used to skip computation.
 - Reliance on uninitialized state, stale buffers, warmup count, or fixed hidden input order outside the contract.
 - Stale-suite leaderboard rows used as proof of first place.
 - Runtimes from wrong-answer or compile-failed states used as performance proof.
+- Modifying the reference, harness, scorer, data generator, or submission protocol to make a candidate appear faster.
 
 Clean optimization computes the intended result under the declared contract.

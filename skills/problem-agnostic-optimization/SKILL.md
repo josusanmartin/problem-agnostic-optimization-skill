@@ -14,7 +14,7 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 - If no target is given, look for public leaderboards, papers, repos, docs, or production references and set the goal at the best known result or slightly better.
 - If no public reference exists, compute a theoretical lower bound or resource floor and set an ambitious goal at that floor or the nearest measurable threshold.
 - Record objective source, target metric, hardware/system, and budget.
-- Select mode early: `production`, `clean leaderboard`, or `exploit research`. Default to `production` for real products and `clean leaderboard` for challenges.
+- Select mode early: `production` or `clean leaderboard`. Default to `production` for real products and `clean leaderboard` for challenges.
 - Preserve the current best artifact before editing. Every candidate needs a parent, mechanism, rollback path, and result.
 - Define the allowed edit surface. Reference, evaluation, harness, data, and scoring files are immutable unless the task explicitly asks to change them.
 - Use the authoritative score as the promotion gate. Local benchmarks and counters explain results but do not replace the real scoreboard or production metric.
@@ -23,8 +23,8 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 - Test one hypothesis at a time. Keep diffs surgical; every changed line should trace to the candidate hypothesis.
 - Continue candidate loops when the user says to keep iterating. Stop only for target achieved, budget exhausted, external blocker, or plateau audit.
 - Prefer the simplest winning change. If two candidates tie, keep the one with less complexity, less statefulness, and a smaller diff.
-- Classify candidate mechanisms before trusting them: work deletion, resource transfer, dependency/tail reshaping, scheduler/variance, representation change, contract specialization, approximation, or exploit.
-- Label approximation, benchmark-contract specialization, variance, and exploit-like shortcuts explicitly. Promote only clean work unless the user explicitly asks for exploit research.
+- Classify candidate mechanisms before trusting them: work deletion, resource transfer, dependency/tail reshaping, scheduler/variance, representation change, contract specialization, approximation, or forbidden shortcut.
+- Never use exploit-like shortcuts. Do not implement, test, preserve, submit, or promote candidates that rely on wrong answers, leaked answers, stale state, hidden-harness bugs, invalid contracts, or grader weaknesses.
 
 ## First 5 Minutes
 
@@ -83,7 +83,6 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 
 - `production`: correctness, maintainability, observability, and stable p95/p99 beat benchmark-only tricks.
 - `clean leaderboard`: benchmark-contract specialization is allowed only when the public contract proves it; never use wrong-answer speed, stale state, leaked answers, or hidden-harness bugs as clean wins.
-- `exploit research`: only when explicitly requested; isolate from clean artifacts and label all results as exploit-like.
 
 ## Reference Map
 

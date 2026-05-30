@@ -170,7 +170,7 @@ Speedup class:
 - [ ] benchmark-contract specialization
 - [ ] approximation inside tolerance
 - [ ] variance
-- [ ] exploit/shortcut
+- [ ] forbidden shortcut (reject)
 
 Promotion rationale:
 Risk:
