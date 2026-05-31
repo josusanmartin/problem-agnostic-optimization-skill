@@ -51,6 +51,33 @@ contract -> baseline -> bottleneck model -> candidate -> validate/measure -> dec
 Only the authoritative metric promotes; profiles, counters, local benchmarks, and static models explain.
 Internally, the skill tracks the contract, current best, bottleneck model, and candidate ledger.
 
+### Draft A Goal For Later
+
+If you want Codex to prepare the `/goal` block without starting an optimization run, say that explicitly:
+
+```text
+Draft a /goal block for later. Do not start or activate the goal yet.
+
+The task is <task>. The authoritative metric is <metric>. Baseline is <baseline or unknown>.
+Editable files are <files>. Immutable files are <files>. Budget/stopping rule is <budget>.
+Validation is <validation>.
+```
+
+The expected response is a filled copy-paste block, not an active goal:
+
+```text
+/goal
+Objective:
+Authoritative metric:
+Baseline:
+Editable files:
+Immutable files:
+Budget / stopping rule:
+Validation:
+Progress chart: on
+Fresh-run isolation: on
+```
+
 ### Field Guide
 
 - `Objective`: the measurable target. Example: "get p95 under 1 ms", "reach first place", "beat public best by 1%", or "maximize validation score under 1000 simulations".

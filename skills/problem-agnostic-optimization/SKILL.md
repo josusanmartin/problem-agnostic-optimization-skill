@@ -29,6 +29,8 @@ Only the authoritative metric promotes. Everything else explains.
 
 Record objective, mode, authoritative metric, baseline, edit surface, budget, validation, and evidence availability.
 
+If the user asks to prepare, draft, write, fill, or format a goal "for later", return a copy-paste `/goal` block and stop. Do not create, activate, start, or persist an active goal unless the user explicitly asks to start the optimization run now.
+
 If no target is given, find a public best, prior local best, paper result, production SLO, or theoretical/resource floor. If none is available, set an ambitious measurable floor and label the uncertainty.
 
 Use minimal notes for small one-shot tasks. For long, noisy, remote, budget-limited, or autonomous runs, create `work/best.md`, `work/log.md`, `work/plan.md`, `work/events.jsonl`, and `work/state.json`; read `references/harness.md`.
