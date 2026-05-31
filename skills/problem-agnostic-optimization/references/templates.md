@@ -264,6 +264,23 @@ cand_0002	0.996	reject	4500	1400	tile too small
 - Next candidate:
 ```
 
+### `work/dashboard.html`
+
+Generate this from `work/events.jsonl` for local, remote, or handoff review:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+  -o work/dashboard.html \
+  --direction lower \
+  --x-axis tokens
+```
+
+For live remote review, run the dashboard server on the remote host with `--host 127.0.0.1 --port 8765`, then tunnel from your local machine:
+
+```bash
+ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
+```
+
 ### `work/audit.md`
 
 Use this for auditor-mode reports from a second Codex session. Append a dated section for each audit.

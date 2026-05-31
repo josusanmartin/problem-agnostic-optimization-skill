@@ -7,6 +7,7 @@ import sys
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CHART_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "progress_chart.py"
+RUN_DASHBOARD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "progress_dashboard.py"
 RECORD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "record_event.py"
 
 
@@ -126,3 +127,42 @@ def test_record_event_appends_jsonl_and_renders_chart(tmp_path: Path) -> None:
     svg = chart.read_text(encoding="utf-8")
     assert "recorded win" in svg
     assert "Cumulative tokens" in svg
+
+
+def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:
+    events = tmp_path / "events.jsonl"
+    events.write_text(
+        '{"candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1000,"active_seconds":10,"wall_seconds":20,"label":"baseline"}\n'
+        '{"candidate":"cand_0001","decision":"promote","score":0.99,"tokens_total":2400,"active_seconds":70,"wall_seconds":120,"label":"dashboard win"}\n'
+        '{"candidate":"cand_0002","decision":"reject","score":0.995,"tokens_total":3100,"active_seconds":120,"wall_seconds":180,"label":"dashboard reject"}\n',
+        encoding="utf-8",
+    )
+    output = tmp_path / "dashboard.html"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(RUN_DASHBOARD_SCRIPT),
+            str(events),
+            "-o",
+            str(output),
+            "--title",
+            "Run Dashboard",
+            "--ylabel",
+            "Runtime",
+            "--direction",
+            "lower",
+            "--x-axis",
+            "tokens",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    html = output.read_text(encoding="utf-8")
+    assert "<!doctype html>" in html
+    assert "Run Dashboard" in html
+    assert "dashboard win" in html
+    assert "Cumulative tokens" in html
+    assert "ssh -L" in html

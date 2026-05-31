@@ -183,6 +183,39 @@ python skills/problem-agnostic-optimization/scripts/record_event.py --candidate 
 
 The chart shows all candidates, the running promoted best, and cumulative token usage on a right-side axis. Supported x-axis modes are `candidate`, `tokens`, `active`, and `wall`.
 
+## Progress Dashboard
+
+For a fuller review surface, generate a dependency-free dashboard from `work/events.jsonl`. This creates a static HTML file, so it works even when Codex is running on a remote server:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+  -o work/dashboard.html \
+  --direction lower \
+  --x-axis tokens
+```
+
+Open `work/dashboard.html` in a browser, download it from the remote host, or attach it to a handoff. The static dashboard includes the chart, current best, latest event, token/time burn, bug/blocker count, and recent candidate table.
+
+For live refresh on a local machine:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+  --serve \
+  --host 127.0.0.1 \
+  --port 8765 \
+  --direction lower
+```
+
+Open `http://127.0.0.1:8765`.
+
+For live refresh on a remote server, keep the dashboard bound to `127.0.0.1` on the remote host and open an SSH tunnel from your local machine:
+
+```bash
+ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
+```
+
+Then open `http://127.0.0.1:8765` locally. If tunneling is inconvenient, use the static `work/dashboard.html` path instead.
+
 Mock chart generated with the same script:
 
 ```bash
@@ -241,6 +274,7 @@ CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/SKILL.md"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/agents/openai.yaml"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/progress_chart.py"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/progress_dashboard.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/record_event.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/references/auditor.md"
 ```
@@ -254,6 +288,7 @@ $CODEX_HOME/skills/problem-agnostic-optimization/
     openai.yaml
   scripts/
     progress_chart.py
+    progress_dashboard.py
     record_event.py
   references/
     cpu-architecture.md

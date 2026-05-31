@@ -14,6 +14,7 @@ For small projects, create only:
 work/
   audit.md
   best.md
+  dashboard.html             # static dashboard for local or remote review
   events.jsonl               # canonical progress ledger for long runs
   log.md
   plan.md
@@ -36,6 +37,7 @@ project/
   work/
     audit.md
     best.md
+    dashboard.html
     events.jsonl
     log.md
     plan.md
@@ -66,6 +68,7 @@ For substantial optimization runs, maintain a live progress surface by default. 
 
 ```text
 work/events.jsonl   # one JSON object per baseline, candidate, failure, blocker, or handoff
+work/dashboard.html  # static dashboard for review and handoff
 work/progress.tsv   # one row per measured candidate for small/manual runs or exports
 work/progress.svg   # chart regenerated after each result unless Progress chart: off
 work/review.md      # short human review snapshot unless Progress chart: off
@@ -100,6 +103,31 @@ python skills/problem-agnostic-optimization/scripts/record_event.py \
 
 Use `--direction higher` for scores where larger is better. Use `--x-axis candidate`, `tokens`, `active`, or `wall` to review progress by candidate order, token burn, tracked active time, or wall time. The chart plots all candidates, the running promoted best, and cumulative token usage on the right axis.
 
+Render the static dashboard:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+  -o work/dashboard.html \
+  --ylabel "Authoritative metric" \
+  --direction lower \
+  --x-axis tokens
+```
+
+The static dashboard is the safest remote-server path: regenerate `work/dashboard.html`, then open, download, or attach that file. For live local review, run:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+  --serve \
+  --host 127.0.0.1 \
+  --port 8765
+```
+
+On a remote server, keep the server bound to `127.0.0.1` and open a tunnel from the local machine:
+
+```bash
+ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
+```
+
 `work/events.jsonl` should append one object after every completed result. Leave unavailable values null or omit them; do not encode failure as a fake zero score.
 
 ```json
@@ -122,7 +150,7 @@ To disable chart rendering, record `Progress chart: off` in the `/goal` contract
 After every measured candidate:
 
 - Append `work/events.jsonl`; if using TSV, append or regenerate `work/progress.tsv`.
-- Regenerate `work/progress.svg` unless charting is disabled.
+- Regenerate `work/progress.svg` and `work/dashboard.html` unless charting is disabled.
 - Update `work/review.md` unless charting is disabled. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
 - Treat high token burn without authoritative improvement, rising bug/crash rate, or many same-family rejects as evidence for reassessment.
 
@@ -326,6 +354,7 @@ Small machine-readable state:
     "logging_enabled": true,
     "chart_enabled": true,
     "events": "work/events.jsonl",
+    "dashboard": "work/dashboard.html",
     "table": "work/progress.tsv",
     "chart": "work/progress.svg",
     "review": "work/review.md",
@@ -544,7 +573,7 @@ At the start:
 - Read `work/plan.md`.
 - Read `work/state.json`.
 - Read the tail of `work/events.jsonl` if `progress.logging_enabled` is not `false`.
-- Open `work/progress.svg` and `work/review.md` if `progress.chart_enabled` is not `false`.
+- Open `work/dashboard.html`, `work/progress.svg`, and `work/review.md` if `progress.chart_enabled` is not `false`.
 - Check pending jobs if using a remote system.
 
 Before editing:
@@ -563,7 +592,7 @@ After running:
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/state.json`.
-- If `progress.chart_enabled` is not `false`, regenerate `work/progress.svg` and refresh `work/review.md`.
+- If `progress.chart_enabled` is not `false`, regenerate `work/progress.svg`, regenerate `work/dashboard.html`, and refresh `work/review.md`.
 - Update `work/best.md` only if promotion rules pass.
 - Update `work/plan.md` with next branch status.
 
