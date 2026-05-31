@@ -130,6 +130,14 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progr
 
 The chart shows all candidates, the running promoted best, and cumulative token usage on a right-side axis.
 
+Mock chart generated with the same script:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_chart.py assets/mock-progress.tsv -o assets/mock-progress.svg --title "Mock Optimization Progress" --ylabel "Validation loss (lower is better)" --direction lower
+```
+
+![Mock optimization progress chart](assets/mock-progress.svg)
+
 ## Install
 
 Clone the repository and copy the skill directory into your Codex skills folder:
@@ -176,6 +184,7 @@ The validator parses `SKILL.md` frontmatter and `agents/openai.yaml`, checks req
 
 ```text
 skills/problem-agnostic-optimization/   # Codex skill payload
+assets/                                 # README images and sample progress data
 scripts/validate.sh                     # local validation helper
 scripts/validate_skill.py               # structured validator implementation
 tests/                                  # validator regression tests
