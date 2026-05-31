@@ -147,16 +147,20 @@ $HOME/.codex/skills/problem-agnostic-optimization/
 From the repository root:
 
 ```bash
+python3 -m pip install -r requirements-dev.txt
 ./scripts/validate.sh
+python3 -m pytest -q
 ```
 
-If Codex's `skill-creator` validator is installed locally, the script uses it. It also checks the skill files for non-ASCII characters.
+The validator parses `SKILL.md` frontmatter and `agents/openai.yaml`, checks required files, and rejects non-ASCII skill content.
 
 ## Repository Layout
 
 ```text
 skills/problem-agnostic-optimization/   # Codex skill payload
 scripts/validate.sh                     # local validation helper
+scripts/validate_skill.py               # structured validator implementation
+tests/                                  # validator regression tests
 README.md                               # repo documentation
 LICENSE                                 # MIT license
 ```
