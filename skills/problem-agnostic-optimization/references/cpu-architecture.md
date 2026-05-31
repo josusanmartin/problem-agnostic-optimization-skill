@@ -95,6 +95,19 @@ Typical traps:
 - Prefer instruction forms that relieve the constrained port, critical path, or vector width on the measured CPU.
 - Inspect assembly when a tiny loop matters.
 
+## Primitive Choice Can Beat Width
+
+Do not assume the widest or most semantic instruction is fastest. Some targets implement gathers, scatters, masked operations, cross-lane shuffles, atomics, conversions, crypto/math helpers, or library calls through microcode or low-throughput paths. A scalarized or decomposed version can retire many more instructions and still win by moving work off the saturated resource.
+
+Use this probe when a compact vector/library/ISA primitive plateaus, especially with high frontend slots, low IPC, microcoded-assist symptoms, or a large target gap despite low instruction count:
+
+- Check target-specific latency/throughput tables, uops databases, profiler samples, or a focused microbenchmark for the suspect primitive.
+- Build the smallest A/B candidate that preserves the algorithm and replaces only that primitive family.
+- Predict the resource transfer: saved frontend/uop/port/microcode pressure versus added scalar ALU, loads, stores, register pressure, or code size.
+- Accept that instruction count may rise if wall time and the saturated-resource counters fall.
+- Retune unroll, alignment, register constants, and tails after the primitive changes; old cadence choices may no longer apply.
+- Keep per-microarchitecture variants when the decomposition wins on one core class and loses on another.
+
 ## Branch, Parse, And Format Patterns
 
 - Replace branchy parsers with table-driven, vectorized, or delimiter-scan approaches when input format dominates.
@@ -112,6 +125,7 @@ Counters explain the result; wall time or official score decides promotion.
 - High context switches or scheduler time: thread count, blocking, load generator, or OS interaction may dominate.
 - Better IPC with worse time: the program may be doing more work or losing locality.
 - Fewer instructions with worse time: critical path, port pressure, memory behavior, or synchronization got worse.
+- Lower instruction count with high frontend bound can indicate a toxic complex primitive. Test decomposition even if the replacement raises instruction count.
 
 Useful tools when available:
 

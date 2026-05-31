@@ -58,7 +58,7 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 
 2. Build the bottleneck model: split aggregate scores by case, classify the target family, compare profiles/counters/traces when available, compute resource floors or statistical floors when possible, identify the primary bottleneck, and state what likely will not help. If strong profiling is unavailable, use controlled ablations, static throughput models, per-case timings, and resource floors as lower-confidence evidence.
 
-3. Create one candidate: choose a hypothesis-rich filename, predict the expected metric/counter/profile change, and make the smallest falsifiable edit. Prefer candidates that change a proven bottleneck floor, shorten an audited tail, or unlock a different primitive; avoid tweaks that merely move work into another saturated resource.
+3. Create one candidate: choose a hypothesis-rich filename, predict the expected metric/counter/profile change, and make the smallest falsifiable edit. Prefer candidates that change a proven bottleneck floor, shorten an audited tail, or unlock a different primitive; avoid tweaks that merely move work into another saturated resource. If the current best has low work counts but remains stuck on a hidden or target-specific bottleneck, test an equivalent higher-count primitive decomposition or scalarization instead of only making the compact graph denser.
 
 4. Validate and measure: correctness first unless the platform only exposes correctness through submit; then measure with the authoritative metric.
 
