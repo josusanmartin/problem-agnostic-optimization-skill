@@ -203,6 +203,35 @@ cand_0002	0.000	0.0	crash	OOM on larger tile
 cand_0003	38.200	0.0	discard	graph wrapper regressed
 ```
 
+### Progress TSV
+
+Use this for `work/progress.tsv`; regenerate `work/progress.svg` after appending rows.
+
+```text
+candidate	score	decision	tokens_total	tokens_delta	label
+cand_0000	1.000	baseline	1200	1200	baseline
+cand_0001	0.992	promote	3100	1900	fused route
+cand_0002	0.996	reject	4500	1400	tile too small
+```
+
+### `work/review.md`
+
+```markdown
+# Progress Review
+
+- Current best:
+- Best score:
+- Last promotion:
+- Candidates since promotion:
+- Tokens since promotion:
+- Token burn per promoted improvement:
+- Stagnation count:
+- Bug/crash/blocked rate:
+- Open blockers:
+- Reassessment trigger:
+- Next candidate:
+```
+
 ### Speedup Classification
 
 ```markdown

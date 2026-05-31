@@ -32,6 +32,8 @@ project/
     best.md
     log.md
     plan.md
+    progress.tsv
+    progress.svg
     state.json
     candidates/
       cand_0001.md
@@ -50,6 +52,43 @@ project/
 ```
 
 Adapt names to the repository. The important part is that best state, history, active plan, and machine-readable state survive chat compaction and process crashes.
+
+## Progress Monitor
+
+For long or autonomous runs, maintain a live progress surface:
+
+```text
+work/progress.tsv   # one row per measured candidate
+work/progress.svg   # chart regenerated after each result
+work/review.md      # short human review snapshot
+```
+
+Render the chart with the bundled script:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv \
+  -o work/progress.svg \
+  --ylabel "Authoritative metric" \
+  --direction lower
+```
+
+Use `--direction higher` for scores where larger is better. The chart plots all candidates, the running promoted best, and cumulative token usage on the right axis.
+
+`work/progress.tsv` should be tab-separated:
+
+```text
+candidate	score	decision	tokens_total	tokens_delta	label
+cand_0000	1.000	baseline	1200	1200	baseline
+cand_0001	0.992	promote	3100	1900	fused route
+cand_0002	0.996	reject	4500	1400	tile too small
+```
+
+After every measured candidate:
+
+- Append `work/progress.tsv`.
+- Regenerate `work/progress.svg`.
+- Update `work/review.md` with current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
+- Treat high token burn without authoritative improvement, rising bug/crash rate, or many same-family rejects as evidence for reassessment.
 
 ## Edit Surface
 
@@ -206,6 +245,14 @@ Small machine-readable state:
   "exhausted_branches": [],
   "rate_limits": {},
   "pending_jobs": [],
+  "progress": {
+    "table": "work/progress.tsv",
+    "chart": "work/progress.svg",
+    "review": "work/review.md",
+    "tokens_total": 0,
+    "tokens_since_promotion": 0,
+    "token_budget": null
+  },
   "last_updated": null
 }
 ```
@@ -408,6 +455,7 @@ At the start:
 - Read the tail of `work/log.md`.
 - Read `work/plan.md`.
 - Read `work/state.json`.
+- Open `work/progress.svg` and `work/review.md` if they exist.
 - Check pending jobs if using a remote system.
 
 Before editing:
@@ -425,6 +473,7 @@ After running:
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/state.json`.
+- Append `work/progress.tsv`, regenerate `work/progress.svg`, and refresh `work/review.md`.
 - Update `work/best.md` only if promotion rules pass.
 - Update `work/plan.md` with next branch status.
 

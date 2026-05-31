@@ -23,6 +23,10 @@ REQUIRED_REFERENCES = [
     "templates.md",
 ]
 
+REQUIRED_SKILL_SCRIPTS = [
+    "progress_chart.py",
+]
+
 
 class ValidationError(Exception):
     pass
@@ -111,6 +115,7 @@ def required_files(skill_dir: Path) -> list[Path]:
         skill_dir / "agents" / "openai.yaml",
     ]
     files.extend(skill_dir / "references" / name for name in REQUIRED_REFERENCES)
+    files.extend(skill_dir / "scripts" / name for name in REQUIRED_SKILL_SCRIPTS)
     return files
 
 

@@ -78,3 +78,11 @@ def test_missing_reference_fails(tmp_path: Path) -> None:
 
     with pytest.raises(validate_skill.ValidationError, match="missing required file: references/gpu-architecture.md"):
         validate_skill.validate_skill(skill_dir)
+
+
+def test_missing_skill_script_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    (skill_dir / "scripts" / "progress_chart.py").unlink()
+
+    with pytest.raises(validate_skill.ValidationError, match="missing required file: scripts/progress_chart.py"):
+        validate_skill.validate_skill(skill_dir)

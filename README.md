@@ -114,6 +114,16 @@ Stopping rule: public score improves, holdout rejects candidate, budget exhauste
 Notes: compare parent and candidate on matched scenarios when possible.
 ```
 
+## Progress Monitoring
+
+For long runs, the harness can maintain `work/progress.tsv` and render `work/progress.svg`:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower
+```
+
+The chart shows all candidates, the running promoted best, and cumulative token usage on a right-side axis.
+
 ## Install
 
 Clone the repository and copy the skill directory into your Codex skills folder:
@@ -131,6 +141,8 @@ $HOME/.codex/skills/problem-agnostic-optimization/
   SKILL.md
   agents/
     openai.yaml
+  scripts/
+    progress_chart.py
   references/
     cpu-architecture.md
     evidence-loop.md
