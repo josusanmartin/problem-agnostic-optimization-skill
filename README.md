@@ -9,7 +9,7 @@ The skill works best when the task starts with a clear `/goal`. Optimization is 
 1. Install the skill using the commands in [Install](#install).
 2. Start a new Codex session so the skill metadata is loaded.
 3. For a real optimization run, paste a filled `/goal` block and ask Codex to use `problem-agnostic-optimization`.
-4. For a draft only, ask Codex to draft the `/goal` block for later and explicitly say not to start or activate it.
+4. For a draft only, ask Codex to draft the full copy-paste prompt for later, including `Use problem-agnostic-optimization.`, and explicitly say not to start or activate it.
 5. For long runs, open a second Codex session in auditor mode to review `work/` progress without editing the active candidate.
 
 Draft a goal without starting:
@@ -81,9 +81,11 @@ Editable files are <files>. Immutable files are <files>. Budget/stopping rule is
 Validation is <validation>.
 ```
 
-The expected response is a filled copy-paste block, not an active goal:
+The expected response is a filled copy-paste prompt, not an active goal. It must include the skill invocation line:
 
 ```text
+Use problem-agnostic-optimization.
+
 /goal
 Objective:
 Authoritative metric:
