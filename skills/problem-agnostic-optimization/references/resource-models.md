@@ -82,6 +82,28 @@ For near-frontier systems, write the expected floor delta before coding. A usefu
 
 If either is false, the candidate is a pressure transfer, not a likely breakthrough.
 
+## Primitive Inversion Audit
+
+When local tuning repeatedly improves counts but not time, audit whether the chosen primitive family is itself the bottleneck. A "better" operation graph can be worse on a specific target if it uses a microcoded, narrow, serialized, or frontend-heavy primitive.
+
+Run this audit before another sweep of unrolls, masks, or alignments:
+
+- Suspect primitive:
+- Evidence: counter, profile, throughput table, microbenchmark, or repeated plateau.
+- Compact graph resource floor:
+- Decomposed graph resource floor:
+- Resource moved from:
+- Resource moved to:
+- Why the destination has slack:
+- Expected wall-time/counter signal:
+- Kill criterion:
+
+Valid outcomes:
+
+- A higher-instruction decomposition wins because it removes the hidden bottleneck.
+- The decomposition loses but explains that the compact primitive is not the limiting floor.
+- The decomposition wins on only one target; preserve target-specific variants instead of forcing one global path.
+
 ## Negative Proof Audits
 
 Some high-leverage ideas are best tested by proof or counterexample before implementation:
