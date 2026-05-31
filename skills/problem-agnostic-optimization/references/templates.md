@@ -57,6 +57,7 @@ Use the default templates for normal optimization runs. Use the extended templat
 - Kill criterion:
 - Artifact:
 - Correctness:
+- Validation command:
 - Measurement command:
 - Result:
 - Decision: PROMOTE | KEEP VARIANT | REJECT | BUG | BLOCKED

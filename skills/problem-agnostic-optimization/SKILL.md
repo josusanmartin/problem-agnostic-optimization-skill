@@ -32,6 +32,7 @@ Record before changing code:
 - Mode: `production` or `clean leaderboard`.
 - Authoritative metric and command, submit path, dashboard, or scorer.
 - Baseline artifact, score, command, hardware/system, and result ID.
+- Reproduce or establish the baseline before the first candidate; if unknown, mark it `unknown, reproduce first`.
 - Editable files and immutable reference, harness, scoring, data, and contract files.
 - Budget and stopping rule.
 - Validation method.
@@ -94,6 +95,8 @@ Decide:
 - `REJECT`: correct but worse, noisier, too complex, or aimed at the wrong bottleneck.
 - `BUG`: correctness failed; performance is not meaningful.
 - `BLOCKED`: the platform or tooling failed before evaluating the candidate cleanly.
+
+Near ties favor the simpler, smaller, less stateful artifact.
 
 Log the result and learning. After a promotion or surprising regression, update the bottleneck model before choosing the next candidate.
 
