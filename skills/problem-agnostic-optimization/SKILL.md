@@ -14,7 +14,7 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 - If no target is given, look for public leaderboards, papers, repos, docs, or production references and set the goal at the best known result or slightly better.
 - If no public reference exists, compute a theoretical lower bound or resource floor and set an ambitious goal at that floor or the nearest measurable threshold.
 - Record objective source, target metric, hardware/system, and budget.
-- Select mode early: `production`, `clean leaderboard`, or `exploit research`. Default to `production` for real products and `clean leaderboard` for challenges.
+- Select mode early: `production` or `clean leaderboard`. Default to `production` for real products and `clean leaderboard` for challenges.
 - Preserve the current best artifact before editing. Every candidate needs a parent, mechanism, rollback path, and result.
 - Define the allowed edit surface. Reference, evaluation, harness, data, and scoring files are immutable unless the task explicitly asks to change them.
 - Use the authoritative score as the promotion gate. Local benchmarks and counters explain results but do not replace the real scoreboard or production metric.
@@ -23,7 +23,8 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 - Test one hypothesis at a time. Keep diffs surgical; every changed line should trace to the candidate hypothesis.
 - Continue candidate loops when the user says to keep iterating. Stop only for target achieved, budget exhausted, external blocker, or plateau audit.
 - Prefer the simplest winning change. If two candidates tie, keep the one with less complexity, less statefulness, and a smaller diff.
-- Label approximation, benchmark-contract specialization, variance, and exploit-like shortcuts explicitly. Promote only clean work unless the user explicitly asks for exploit research.
+- Classify candidate mechanisms before trusting them: work deletion, resource transfer, dependency/tail reshaping, scheduler/variance, representation change, contract specialization, approximation, or forbidden shortcut.
+- Never use exploit-like shortcuts. Do not implement, test, preserve, submit, or promote candidates that rely on wrong answers, leaked answers, stale state, hidden-harness bugs, invalid contracts, or grader weaknesses.
 
 ## First 5 Minutes
 
@@ -53,9 +54,9 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 
 1. Build the contract: inputs, outputs, shapes, dtypes, layouts, seeds, tolerances, source limits, target hardware, budget, scoring formula, hidden/public differences, and edit surface.
 
-2. Build the bottleneck model: split aggregate scores by case, classify the target family, compute resource floors or statistical floors when possible, identify the primary bottleneck, and state what likely will not help.
+2. Build the bottleneck model: split aggregate scores by case, classify the target family, compute resource floors or statistical floors when possible, profile or inspect traces/counters when the runtime is not explained, identify the primary bottleneck, and state what likely will not help.
 
-3. Create one candidate: choose a hypothesis-rich filename, predict the expected metric/counter change, and make the smallest falsifiable edit.
+3. Create one candidate: choose a hypothesis-rich filename, predict the expected metric/counter change, and make the smallest falsifiable edit. Prefer candidates that change a proven bottleneck floor, shorten an audited tail, or unlock a different primitive; avoid tweaks that merely move work into another saturated resource.
 
 4. Validate and measure: correctness first unless the platform only exposes correctness through submit; then measure with the authoritative metric.
 
@@ -72,6 +73,8 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 
 - If the score gap is greater than about 2x, assume algorithm, representation, route, or contract-specialization issue before micro-tuning.
 - If count or floor improves but runtime worsens, inspect dependencies, tail, scratch lifetime, barriers, aliasing, and resource pressure before discarding or composing.
+- If a route repeatedly produces ties, separate "same graph, different schedule" from "lower-count graph that cannot schedule"; use the former for scheduler/variance only when the target gap is within reach, and use the latter to look for dependency or representation changes.
+- Use negative audits to close seductive shortcuts: prove or find counterexamples for algebraic omissions, unobserved-state skips, branch/predicate substitutions, and contract specializations before investing in full implementations.
 - If previous attempts in a family were about 2x slower or repeatedly tied/regressed, mark that family `CLOSED` until a new premise appears.
 - Trigger a local-optimum audit after repeated parity/tie/regression, a lower-bound proof that the current family cannot hit target, or repeated failures of the same knob family.
 - The audit must name the current hill, why it is exhausted, at least three different hills, and the cheapest off-hill probe. Spend the next candidate off-hill by default.
@@ -80,7 +83,6 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 
 - `production`: correctness, maintainability, observability, and stable p95/p99 beat benchmark-only tricks.
 - `clean leaderboard`: benchmark-contract specialization is allowed only when the public contract proves it; never use wrong-answer speed, stale state, leaked answers, or hidden-harness bugs as clean wins.
-- `exploit research`: only when explicitly requested; isolate from clean artifacts and label all results as exploit-like.
 
 ## Reference Map
 

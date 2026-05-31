@@ -41,6 +41,31 @@ Use counters and profiles for diagnosis:
 - Counters explain why wall time moved.
 - Counters do not override wall time.
 - If counters improve and time worsens, the wrong resource was optimized or a new pressure was introduced.
+- Distinguish a real graph improvement from a placement improvement: slot counts, bytes, launches, or branch counts changing means a different operation graph; identical counts with better time is scheduler, packing, or tail behavior.
+
+## Profiling Workflow
+
+Profile when:
+
+- The baseline bottleneck is unknown.
+- Runtime disagrees with static floors, operation counts, or expected counter movement.
+- A lower-floor candidate runs slower.
+- A tail, memory, allocation, synchronization, compile/codegen, launch, lock, or scheduler issue is suspected.
+- A promoted win changes the bottleneck map.
+
+Profile with integrity:
+
+- Use the same artifact, inputs, seeds, build mode, hardware, warmup, and budget as the comparable benchmark.
+- Prefer low-overhead counters first; use traces, flamegraphs, or timelines when the question is call path, tail, launch, lock, allocation, or stall source.
+- Record profiler command, tool version when relevant, run ID or output path, and the specific interpretation.
+- Treat profiler overhead, missing symbols, sampling bias, JIT/warmup, and client-side bottlenecks as possible artifacts.
+- Do not promote from profiler data alone; the authoritative metric still decides.
+
+Turn profiles into candidate hypotheses:
+
+- Name the suspected bottleneck and evidence.
+- Predict which counter, frame, kernel, block, engine, or tail should move.
+- If the profile does not identify an actionable limiter, stop profiling and change the model or question.
 
 ## Candidate Ledger
 
@@ -54,6 +79,7 @@ Every meaningful candidate gets:
 - Mechanism:
 - Expected signal:
 - Resource floor delta:
+- Profile/trace evidence:
 - Tail/dependency risk:
 - Artifact:
 - Correctness:
@@ -106,12 +132,15 @@ Optimization work should be narrow even when the search is aggressive:
 
 Convert each failure into a search rule:
 
+- `work deleted, target still impossible by floors`: the deletion is too small or hits the wrong resource; compose only with a mechanism that attacks the remaining floor.
 - `lower floor, slower runtime`: dependency chain, scratch lifetime, barrier, aliasing, or tail got worse.
 - `one resource saved, another overloaded`: resource rebalance was not conservative.
+- `same counts, time changes`: schedule/tail sensitivity exists; tune only if the target gap is plausibly within the variance or packing gap.
 - `single-shape win, geomean loss`: keep as a route candidate, not a global promotion.
 - `benchmark win, ranked loss`: stability, hidden distribution, warmup, or state contract differs.
 - `schedule-only plateau`: move to work deletion, fusion, specialization, representation change, or primitive change.
 - `repeated near-ties`: run a local-optimum audit before the next same-family candidate.
+- `counterexample found for an algebraic shortcut`: close the shortcut family unless a stronger precondition is proven by the contract.
 
 ## Variance Handling
 
@@ -137,14 +166,15 @@ Classify as platform/tooling blocker when:
 
 Do not spend repeated submissions on a platform blocker. Preserve the state/log, write a short issue note, and continue only when the platform changes or a bypass is credible.
 
-## Shortcut Screen
+## Forbidden Shortcut Screen
 
-Reject as exploit-like unless explicitly requested:
+Reject and do not run exploit-like shortcuts:
 
 - Hardcoded outputs or shape/device constants learned from checker failures.
 - Leaked validation answers used to skip computation.
 - Reliance on uninitialized state, stale buffers, warmup count, or fixed hidden input order outside the contract.
 - Stale-suite leaderboard rows used as proof of first place.
 - Runtimes from wrong-answer or compile-failed states used as performance proof.
+- Modifying the reference, harness, scorer, data generator, or submission protocol to make a candidate appear faster.
 
 Clean optimization computes the intended result under the declared contract.

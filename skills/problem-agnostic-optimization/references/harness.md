@@ -3,7 +3,7 @@
 Use this reference when an optimization run may span multiple turns, many candidates, noisy measurements, remote jobs, or rate limits. The harness is a persistent contract:
 
 ```text
-Preserve the best, test one hypothesis at a time, log every result, and promote only stable non-exploit wins.
+Preserve the best, test one hypothesis at a time, log every result, and reject exploit-like shortcuts outright.
 ```
 
 ## Minimal Harness
@@ -109,7 +109,7 @@ Append-only experiment ledger. Every candidate, including failures, gets:
 
 - candidate:
 - parent:
-- mode: SEED | EXPLORE | EXPLOIT | RECOVER | VERIFY | CLOSE
+- mode: SEED | EXPLORE | TUNE | RECOVER | VERIFY | CLOSE
 - branch:
 - hypothesis:
 - change summary:
@@ -178,7 +178,7 @@ Use explicit modes:
 
 - `SEED`: import a known baseline into the harness.
 - `EXPLORE`: test a new mechanism; a clear signal is useful even without a win.
-- `EXPLOIT`: tune a proven mechanism; should improve target or bottleneck shape.
+- `TUNE`: tune a proven mechanism; should improve target or bottleneck shape.
 - `RECOVER`: fix a fast branch that failed correctness, ranked stability, or hidden mode.
 - `VERIFY`: rerun, cross-check, or fan out a candidate.
 - `CLOSE`: mark a branch exhausted with evidence.
@@ -291,7 +291,7 @@ Store raw outputs, plus a small normalized result:
   "file": "candidates/cand_0008.py",
   "parent": "cand_0007",
   "branch": "m16-specialized-reduce",
-  "mode": "EXPLOIT",
+  "mode": "TUNE",
   "timestamp": "2026-05-29T00:00:00Z",
   "commands": {
     "validate": "...",
