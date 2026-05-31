@@ -6,6 +6,24 @@ Use this reference when an optimization run may span multiple turns, many candid
 Preserve the best, test one hypothesis at a time, log every result, and reject exploit-like shortcuts outright.
 ```
 
+## Fast Bootstrap
+
+For any substantial `/goal` run, deploy the harness before baseline or candidate work. Use the bundled initializer when it is available:
+
+```bash
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py" \
+  --objective "<objective>" \
+  --metric "<authoritative metric>" \
+  --baseline "<baseline or unknown, reproduce first>" \
+  --budget "<budget / stopping rule>" \
+  --validation "<validation command or protocol>"
+```
+
+Run this from the target repository root so it creates the local `work/` directory for that optimization run. Add `--progress-chart off` only when the contract says `Progress chart: off`. Add `--fresh-run-isolation off` only when the user has allowed prior-run transfer.
+
+If the initializer is unavailable, create the same files manually before candidate work. Do not wait until after the first result to create the ledger.
+
 ## Minimal Harness
 
 For small projects, create only:

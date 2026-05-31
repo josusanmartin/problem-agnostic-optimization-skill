@@ -33,7 +33,34 @@ If the user asks to prepare, draft, write, fill, or format a goal "for later", r
 
 If no target is given, find a public best, prior local best, paper result, production SLO, or theoretical/resource floor. If none is available, set an ambitious measurable floor and label the uncertainty.
 
-Use minimal notes for small one-shot tasks. For long, noisy, remote, budget-limited, or autonomous runs, create `work/best.md`, `work/log.md`, `work/plan.md`, `work/events.jsonl`, and `work/state.json`; read `references/harness.md`.
+Use minimal notes only for tiny one-shot tasks that do not use `/goal` and do not need persistence.
+
+## Harness Trigger
+
+Harness deployment is default-on for every substantial `/goal` run, leaderboard/challenge run, production optimization, open-ended run, remote/noisy/rate-limited run, auditor-reviewed run, or run with `Progress chart: on`.
+
+Before baseline or candidate work, read `references/harness.md` and initialize the harness. Fast path: run the bundled `scripts/init_harness.py` if available; otherwise create the same files manually:
+
+```text
+work/audit.md
+work/best.md
+work/dashboard.html
+work/events.jsonl
+work/log.md
+work/plan.md
+work/progress.tsv
+work/progress.svg
+work/review.md
+work/state.json
+```
+
+Only skip harness deployment when the task is explicitly tiny or the user disables persistence. If you skip it, record the skip reason in your response or notes.
+
+## Progress
+
+For substantial runs, progress artifacts are default-on unless the `/goal` says `Progress chart: off`.
+
+Before the first candidate, initialize `work/events.jsonl` and the `progress` fields in `work/state.json`. After every measured candidate, append one event to `work/events.jsonl`, regenerate `work/progress.svg` and `work/dashboard.html`, and refresh `work/review.md`. If the chart/dashboard scripts are unavailable or a result cannot be charted yet, write the blocker into `work/log.md` or `work/review.md`; do not silently skip progress artifacts.
 
 ## Gap
 
