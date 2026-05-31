@@ -33,7 +33,28 @@ If the user asks to prepare, draft, write, fill, or format a goal "for later", r
 
 If no target is given, find a public best, prior local best, paper result, production SLO, or theoretical/resource floor. If none is available, set an ambitious measurable floor and label the uncertainty.
 
-Use minimal notes for small one-shot tasks. For long, noisy, remote, budget-limited, or autonomous runs, create `work/best.md`, `work/log.md`, `work/plan.md`, `work/events.jsonl`, `work/progress.svg`, `work/dashboard.html`, `work/review.md`, and `work/state.json`; read `references/harness.md`.
+Use minimal notes only for tiny one-shot tasks that do not use `/goal` and do not need persistence.
+
+## Harness Trigger
+
+Harness deployment is default-on for every substantial `/goal` run, leaderboard/challenge run, production optimization, open-ended run, remote/noisy/rate-limited run, auditor-reviewed run, or run with `Progress chart: on`.
+
+Before baseline or candidate work, read `references/harness.md` and initialize the harness. Fast path: run the bundled `scripts/init_harness.py` if available; otherwise create the same files manually:
+
+```text
+work/audit.md
+work/best.md
+work/dashboard.html
+work/events.jsonl
+work/log.md
+work/plan.md
+work/progress.tsv
+work/progress.svg
+work/review.md
+work/state.json
+```
+
+Only skip harness deployment when the task is explicitly tiny or the user disables persistence. If you skip it, record the skip reason in your response or notes.
 
 ## Progress
 

@@ -25,6 +25,7 @@ REQUIRED_REFERENCES = [
 ]
 
 REQUIRED_SKILL_SCRIPTS = [
+    "init_harness.py",
     "progress_chart.py",
     "progress_dashboard.py",
     "record_event.py",

@@ -9,8 +9,9 @@ The skill works best when the task starts with a clear `/goal`. Optimization is 
 1. Install the skill using the commands in [Install](#install).
 2. Start a new Codex session so the skill metadata is loaded.
 3. For a real optimization run, paste a filled `/goal` block and ask Codex to use `problem-agnostic-optimization`.
-4. For a draft only, ask Codex to draft the full copy-paste prompt for later, including `Use problem-agnostic-optimization.`, and explicitly say not to start or activate it.
-5. For long runs, open a second Codex session in auditor mode to review `work/` progress without editing the active candidate.
+4. The optimizer should deploy the `work/` harness immediately before baseline or candidate work. Missing harness files on a substantial run are a bug.
+5. For a draft only, ask Codex to draft the full copy-paste prompt for later, including `Use problem-agnostic-optimization.`, and explicitly say not to start or activate it.
+6. For long runs, open a second Codex session in auditor mode to review `work/` progress without editing the active candidate.
 
 Draft a goal without starting:
 
@@ -177,6 +178,20 @@ Notes: compare parent and candidate on matched scenarios when possible.
 
 For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/events.jsonl` before the first candidate, append one event after every measured candidate, and regenerate `work/progress.svg`, `work/dashboard.html`, and `work/review.md` after each event. Long-running harnesses should treat `work/events.jsonl` as the canonical event ledger and render `work/progress.svg` from either `work/events.jsonl` or `work/progress.tsv`. Use TSV for small/manual runs or as a derived export.
 
+Fast harness bootstrap from an installed skill:
+
+```bash
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py" \
+  --objective "<objective>" \
+  --metric "<authoritative metric>" \
+  --baseline "<baseline or unknown, reproduce first>" \
+  --budget "<budget / stopping rule>" \
+  --validation "<validation command or protocol>"
+```
+
+This creates `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, `work/progress.tsv`, `work/progress.svg`, `work/dashboard.html`, `work/review.md`, and `work/audit.md` before candidate work. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
+
 ```bash
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/events.jsonl -o work/progress.svg --direction lower --x-axis tokens
@@ -277,6 +292,7 @@ Check the installed files:
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/SKILL.md"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/agents/openai.yaml"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/progress_chart.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/progress_dashboard.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/record_event.py"
@@ -291,6 +307,7 @@ $CODEX_HOME/skills/problem-agnostic-optimization/
   agents/
     openai.yaml
   scripts/
+    init_harness.py
     progress_chart.py
     progress_dashboard.py
     record_event.py
