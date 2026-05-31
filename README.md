@@ -12,31 +12,14 @@ The skill works best when the task starts with a clear `/goal`. Optimization is 
 4. For a draft only, ask Codex to draft the `/goal` block for later and explicitly say not to start or activate it.
 5. For long runs, open a second Codex session in auditor mode to review `work/` progress without editing the active candidate.
 
-Start a real run:
-
-```text
-Use problem-agnostic-optimization.
-
-/goal
-Objective: Find a correct sub-1000-cycle solution for the no-index Angthoic challenge.
-Authoritative metric: cycles from the official challenge benchmark.
-Baseline: unknown, reproduce first.
-Editable files: solution/candidate files only.
-Immutable files: challenge statement, checker, benchmark harness, scoring code, reference data.
-Budget / stopping rule: no budget limit; stop when a correct <1000-cycle solution is verified.
-Validation: official correctness check plus authoritative cycle measurement.
-Progress chart: on
-Fresh-run isolation: on
-```
-
 Draft a goal without starting:
 
 ```text
 Use problem-agnostic-optimization.
 
 Draft a /goal block for later. Do not start or activate the goal yet.
-The task is to solve the no-index Angthoic challenge with a sub-1000-cycle solution.
-The metric is cycles. Baseline is unknown. No budget limit.
+The task is to solve the Anthropic's Original Performance Take-Home Challenge with a sub-1000-cycle solution (no index).
+The metric is cycles. Check if you can find a baseline in the repo. No budget limit. Check the repo to obtain the rest of information.
 ```
 
 ## Use It With `/goal`
