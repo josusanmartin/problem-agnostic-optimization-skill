@@ -72,9 +72,19 @@ def test_invalid_utf8_fails_without_traceback(tmp_path: Path) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
-def test_missing_reference_fails(tmp_path: Path) -> None:
+@pytest.mark.parametrize("reference_name", ["auditor.md", "gpu-architecture.md"])
+def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
     skill_dir = copy_skill(tmp_path)
-    (skill_dir / "references" / "gpu-architecture.md").unlink()
+    (skill_dir / "references" / reference_name).unlink()
 
-    with pytest.raises(validate_skill.ValidationError, match="missing required file: references/gpu-architecture.md"):
+    with pytest.raises(validate_skill.ValidationError, match=f"missing required file: references/{reference_name}"):
+        validate_skill.validate_skill(skill_dir)
+
+
+@pytest.mark.parametrize("script_name", ["progress_chart.py", "record_event.py"])
+def test_missing_skill_script_fails(tmp_path: Path, script_name: str) -> None:
+    skill_dir = copy_skill(tmp_path)
+    (skill_dir / "scripts" / script_name).unlink()
+
+    with pytest.raises(validate_skill.ValidationError, match=f"missing required file: scripts/{script_name}"):
         validate_skill.validate_skill(skill_dir)

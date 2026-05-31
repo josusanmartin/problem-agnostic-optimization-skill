@@ -19,6 +19,8 @@ Editable files:
 Immutable files:
 Budget / stopping rule:
 Validation:
+Progress chart: on
+Fresh-run isolation: on
 ```
 
 Use the extended form when the run is noisy, remote, budget-limited, hardware-specific, or stochastic:
@@ -35,6 +37,8 @@ Immutable files:
 Budget:
 Validation:
 Stopping rule:
+Progress chart: on
+Fresh-run isolation: on
 Notes:
 ```
 
@@ -59,6 +63,8 @@ Internally, the skill tracks the contract, current best, bottleneck model, and c
 - `Budget` / `Budget / stopping rule`: submissions, GPU minutes, wall time, simulation count, API spend, max candidates, or target exit condition.
 - `Validation`: correctness checks, seed protocol, shape sweep, test command, profiler/counter expectations, or production guardrails.
 - `Stopping rule`: target reached, budget exhausted, blocker, plateau audit, or handoff after N candidates.
+- `Progress chart`: defaults to `on` for substantial optimization runs. Set `Progress chart: off` to skip `work/progress.tsv`, `work/progress.svg`, and `work/review.md`.
+- `Fresh-run isolation`: defaults to `on`. In a new assigned workspace, do not inspect sibling workspaces or prior run artifacts unless the user sets `Fresh-run isolation: off`.
 - `Notes`: known failed attempts, public clues, constraints, tolerances, hidden-test risk, and anything that would make an optimization invalid.
 
 ## Prompt Templates
@@ -77,6 +83,8 @@ Immutable files: problem statement, checker, benchmark, reference, scoring code.
 Budget: <N submissions or time limit>.
 Validation: run correctness first when available; compare per-shape/per-case results; record variance.
 Stopping rule: stop when first place is verified, budget is exhausted, or plateau audit says change hill.
+Progress chart: on.
+Fresh-run isolation: on.
 Notes: no exploits, no wrong-answer speed, no harness edits.
 ```
 
@@ -94,6 +102,8 @@ Immutable files: public API, correctness tests, datasets, benchmark contract.
 Budget: <wall time, candidate count, risk window>.
 Validation: tests, load test, profiling artifacts, p95/p99, error rate, rollback safety.
 Stopping rule: target reached with stable validation, or handoff with bottleneck map.
+Progress chart: on.
+Fresh-run isolation: on.
 Notes: maintainability and correctness beat benchmark-only tricks.
 ```
 
@@ -111,8 +121,57 @@ Immutable files: simulator, scorer, seed generator, reference policies, submissi
 Budget: <simulations, submissions, wall time>.
 Validation: smoke/train/validation/holdout/adversarial scenario sets; report mean, SEM, p05/p95, invalid rate, win rate vs parent.
 Stopping rule: public score improves, holdout rejects candidate, budget exhausted, or overfit audit triggers.
+Progress chart: on.
+Fresh-run isolation: on.
 Notes: compare parent and candidate on matched scenarios when possible.
 ```
+
+## Progress Monitoring
+
+For substantial optimization runs, progress monitoring is on by default. Long-running harnesses should treat `work/events.jsonl` as the canonical event ledger and render `work/progress.svg` from either `work/events.jsonl` or `work/progress.tsv`. Use TSV for small/manual runs or as a derived export.
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/events.jsonl -o work/progress.svg --direction lower --x-axis tokens
+python skills/problem-agnostic-optimization/scripts/record_event.py --candidate cand_0001 --decision promote --score 0.992 --tokens-total 3100 --chart work/progress.svg
+```
+
+The chart shows all candidates, the running promoted best, and cumulative token usage on a right-side axis. Supported x-axis modes are `candidate`, `tokens`, `active`, and `wall`.
+
+Mock chart generated with the same script:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_chart.py assets/mock-progress.tsv -o assets/mock-progress.svg --title "Mock Optimization Progress" --ylabel "Validation loss (lower is better)" --direction lower
+```
+
+![Mock optimization progress chart](assets/mock-progress.svg)
+
+## Audit Mode
+
+For long optimization runs, start a second Codex session in auditor mode to review progress without disrupting the optimizer. The auditor reads the run artifacts and writes only `work/audit.md` by default.
+
+```text
+Use problem-agnostic-optimization in auditor mode.
+
+Read the current run artifacts and write/update only work/audit.md.
+Do not edit candidate code, harness files, work/best.md, work/log.md, work/plan.md, work/state.json, work/events.jsonl, or work/progress.tsv.
+Do not launch new candidates, submissions, benchmarks, or long-running jobs unless I explicitly ask.
+
+Audit whether the active optimization run is making valid progress under the recorded contract.
+Check authoritative-metric promotion, correctness evidence, token/time burn, stagnation, blocker state, and whether the next planned candidate follows from the evidence.
+```
+
+Auditor mode uses `skills/problem-agnostic-optimization/references/auditor.md`. It should return one verdict: `ON TRACK`, `NEEDS REASSESSMENT`, `BLOCKED`, `INVALIDATED`, or `NEEDS USER DECISION`.
+
+## Run Isolation
+
+Fresh-run isolation is on by default. In a newly assigned workspace, Codex should use only the current workspace, the user-provided context, and the official target artifacts. It should not mine sibling workspaces, old candidate logs, prior submissions, or cached solutions unless `/goal` says `Fresh-run isolation: off` or the user explicitly asks for prior-run transfer.
+
+This protects benchmark integrity while still allowing deliberate reuse when the task is a continuation or retrospective.
+
+## Vendored Skill Snapshots
+
+Repos that bundle a copy of this skill should record the upstream repository URL and commit SHA next to the snapshot. That makes downstream dashboards and optimization labs reproducible when the skill evolves.
 
 ## Install
 
@@ -131,8 +190,12 @@ $HOME/.codex/skills/problem-agnostic-optimization/
   SKILL.md
   agents/
     openai.yaml
+  scripts/
+    progress_chart.py
+    record_event.py
   references/
     cpu-architecture.md
+    auditor.md
     evidence-loop.md
     gpu-architecture.md
     harness.md
@@ -158,6 +221,7 @@ The validator parses `SKILL.md` frontmatter and `agents/openai.yaml`, checks req
 
 ```text
 skills/problem-agnostic-optimization/   # Codex skill payload
+assets/                                 # README images and sample progress data
 scripts/validate.sh                     # local validation helper
 scripts/validate_skill.py               # structured validator implementation
 tests/                                  # validator regression tests

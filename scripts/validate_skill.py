@@ -13,6 +13,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised by users without dep
 
 
 REQUIRED_REFERENCES = [
+    "auditor.md",
     "cpu-architecture.md",
     "evidence-loop.md",
     "gpu-architecture.md",
@@ -21,6 +22,11 @@ REQUIRED_REFERENCES = [
     "resource-models.md",
     "stochastic-policy-search.md",
     "templates.md",
+]
+
+REQUIRED_SKILL_SCRIPTS = [
+    "progress_chart.py",
+    "record_event.py",
 ]
 
 
@@ -111,6 +117,7 @@ def required_files(skill_dir: Path) -> list[Path]:
         skill_dir / "agents" / "openai.yaml",
     ]
     files.extend(skill_dir / "references" / name for name in REQUIRED_REFERENCES)
+    files.extend(skill_dir / "scripts" / name for name in REQUIRED_SKILL_SCRIPTS)
     return files
 
 

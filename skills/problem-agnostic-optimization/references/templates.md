@@ -16,6 +16,8 @@ Use the default templates for normal optimization runs. Use the extended templat
 - Target or floor:
 - Validation:
 - Budget / stopping rule:
+- Progress chart: on | off
+- Fresh-run isolation: on | off
 - Editable files:
 - Immutable files:
 - Evidence available:
@@ -201,6 +203,97 @@ cand_0000	37.900	0.0	keep	baseline
 cand_0001	36.700	0.0	keep	exact-shape route
 cand_0002	0.000	0.0	crash	OOM on larger tile
 cand_0003	38.200	0.0	discard	graph wrapper regressed
+```
+
+### Progress Event JSONL
+
+Use this for `work/events.jsonl`, the canonical progress ledger for long-running or dashboarded optimization. Append one JSON object after each baseline, measurement, failure, blocker, or handoff.
+
+```json
+{"candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1200,"active_seconds":30,"wall_seconds":60,"label":"baseline"}
+{"candidate":"cand_0001","decision":"promote","score":0.992,"tokens_total":3100,"active_seconds":420,"wall_seconds":900,"label":"fused route"}
+{"candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
+```
+
+Optional fields:
+
+```text
+timestamp
+parent
+branch
+mode
+correctness
+validation_command
+measurement_command
+score_unit
+tokens_delta
+active_seconds
+wall_seconds
+blocker
+raw_result_path
+```
+
+### Progress TSV
+
+Use this for small/manual `work/progress.tsv` runs or as a derived export from `work/events.jsonl`. Progress charting is on by default for substantial optimization runs. Regenerate `work/progress.svg` after appending rows unless `/goal` says `Progress chart: off`.
+
+```text
+candidate	score	decision	tokens_total	tokens_delta	label
+cand_0000	1.000	baseline	1200	1200	baseline
+cand_0001	0.992	promote	3100	1900	fused route
+cand_0002	0.996	reject	4500	1400	tile too small
+```
+
+### `work/review.md`
+
+```markdown
+# Progress Review
+
+- Current best:
+- Best score:
+- Last promotion:
+- Candidates since promotion:
+- Tokens since promotion:
+- Token burn per promoted improvement:
+- Active time:
+- Wall elapsed:
+- Stagnation count:
+- Bug/crash/blocked rate:
+- Open blockers:
+- Reassessment trigger:
+- Next candidate:
+```
+
+### `work/audit.md`
+
+Use this for auditor-mode reports from a second Codex session. Append a dated section for each audit.
+
+```markdown
+# Optimization Audit
+
+- Verdict: ON TRACK | NEEDS REASSESSMENT | BLOCKED | INVALIDATED | NEEDS USER DECISION
+- Audited at:
+- Scope:
+- Current best:
+- Latest event:
+- Progress since last audit:
+- Token/time burn:
+- Contract issues:
+- Promotion/integrity issues:
+- Search-health issues:
+- Blockers:
+- Recommended next action:
+
+## Evidence
+
+| Check | Status | Evidence |
+|---|---|---|
+| Contract explicit | pass/fail/unknown | |
+| Baseline reproduced | pass/fail/unknown | |
+| Best state consistent | pass/fail/unknown | |
+| Promotions authoritative | pass/fail/unknown | |
+| Ledger/chart fresh | pass/fail/unknown | |
+| Next action justified | pass/fail/unknown | |
 ```
 
 ### Speedup Classification

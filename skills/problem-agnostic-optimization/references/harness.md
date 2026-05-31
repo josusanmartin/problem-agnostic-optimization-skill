@@ -12,9 +12,14 @@ For small projects, create only:
 
 ```text
 work/
+  audit.md
   best.md
+  events.jsonl               # canonical progress ledger for long runs
   log.md
   plan.md
+  progress.tsv              # small-run table or derived export
+  progress.svg
+  review.md
   state.json
 ```
 
@@ -29,9 +34,13 @@ project/
     cand_0001.*
     cand_0002.*
   work/
+    audit.md
     best.md
+    events.jsonl
     log.md
     plan.md
+    progress.tsv
+    progress.svg
     state.json
     candidates/
       cand_0001.md
@@ -51,6 +60,72 @@ project/
 
 Adapt names to the repository. The important part is that best state, history, active plan, and machine-readable state survive chat compaction and process crashes.
 
+## Progress Monitor
+
+For substantial optimization runs, maintain a live progress surface by default. The canonical long-run record is `work/events.jsonl`; `work/progress.tsv` is a small-run format or derived export.
+
+```text
+work/events.jsonl   # one JSON object per baseline, candidate, failure, blocker, or handoff
+work/progress.tsv   # one row per measured candidate for small/manual runs or exports
+work/progress.svg   # chart regenerated after each result unless Progress chart: off
+work/review.md      # short human review snapshot unless Progress chart: off
+```
+
+Render the chart from either ledger:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv \
+  -o work/progress.svg \
+  --ylabel "Authoritative metric" \
+  --direction lower
+
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/events.jsonl \
+  -o work/progress.svg \
+  --ylabel "Authoritative metric" \
+  --direction lower \
+  --x-axis tokens
+```
+
+Append an event and refresh the chart in one step:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/record_event.py \
+  --candidate cand_0001 \
+  --decision promote \
+  --score 0.992 \
+  --tokens-total 3100 \
+  --chart work/progress.svg \
+  --direction lower
+```
+
+Use `--direction higher` for scores where larger is better. Use `--x-axis candidate`, `tokens`, `active`, or `wall` to review progress by candidate order, token burn, tracked active time, or wall time. The chart plots all candidates, the running promoted best, and cumulative token usage on the right axis.
+
+`work/events.jsonl` should append one object after every completed result. Leave unavailable values null or omit them; do not encode failure as a fake zero score.
+
+```json
+{"candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1200,"active_seconds":30,"wall_seconds":60,"label":"baseline"}
+{"candidate":"cand_0001","decision":"promote","score":0.992,"tokens_total":3100,"active_seconds":420,"wall_seconds":900,"label":"fused route"}
+{"candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
+```
+
+`work/progress.tsv` should be tab-separated:
+
+```text
+candidate	score	decision	tokens_total	tokens_delta	label
+cand_0000	1.000	baseline	1200	1200	baseline
+cand_0001	0.992	promote	3100	1900	fused route
+cand_0002	0.996	reject	4500	1400	tile too small
+```
+
+To disable chart rendering, record `Progress chart: off` in the `/goal` contract and set `progress.chart_enabled` to `false` in `work/state.json`. Continue appending `work/events.jsonl` unless the user explicitly disables progress logging too.
+
+After every measured candidate:
+
+- Append `work/events.jsonl`; if using TSV, append or regenerate `work/progress.tsv`.
+- Regenerate `work/progress.svg` unless charting is disabled.
+- Update `work/review.md` unless charting is disabled. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
+- Treat high token burn without authoritative improvement, rising bug/crash rate, or many same-family rejects as evidence for reassessment.
+
 ## Edit Surface
 
 Before the first candidate, write the mutable and immutable file sets into `work/best.md` or `work/state.json`.
@@ -60,6 +135,30 @@ Before the first candidate, write the mutable and immutable file sets into `work
 - Touch only files required by the candidate hypothesis. Do not refactor adjacent code, normalize formatting, or clean unrelated dead code during optimization.
 - If the evaluator or harness appears wrong, log a platform or harness issue and ask before modifying it. A faster result from changing the grader is not an optimization result.
 - When two candidates tie within noise, prefer the smaller and simpler diff.
+
+## Fresh-Run Isolation
+
+Fresh-run isolation defaults to `on`. In a new assigned workspace, use only the current workspace, user-provided context, and official target artifacts. Do not mine sibling workspaces, old candidate logs, prior submissions, cached solutions, or dashboard snapshots unless `/goal` says `Fresh-run isolation: off` or the user explicitly asks for prior-run transfer.
+
+When isolation is `on`:
+
+- Reading the current workspace, current git history, official problem statement, and user-provided links is allowed.
+- Reading sibling workspaces, archived `work/` directories, old submissions, or private prior notes is not allowed unless they are listed as allowed sources.
+- If prior work appears relevant, ask or log a transfer note instead of silently importing it.
+
+Record the setting in `work/state.json` as `isolation.fresh_run`.
+
+## Audit Surface
+
+For long runs, a second Codex session may audit progress without becoming a second optimizer. Use `references/auditor.md` for the audit protocol.
+
+Default auditor contract:
+
+- Read current run artifacts and official target context.
+- Write or append only `work/audit.md`.
+- Do not edit candidate code, harness files, `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, or `work/progress.tsv`.
+- Do not launch new candidates, submissions, benchmarks, or long-running jobs unless explicitly asked.
+- Report one verdict: `ON TRACK`, `NEEDS REASSESSMENT`, `BLOCKED`, `INVALIDATED`, or `NEEDS USER DECISION`.
 
 ## Profiling Plan
 
@@ -168,6 +267,19 @@ Mutable active strategy:
 - Frozen/closed branches with reasons.
 - Escalation rule for local-optimum audit or structural reset.
 
+### `work/audit.md`
+
+Auditor-mode report from a second Codex session. The optimizer should read it as feedback, not as a candidate ledger.
+
+- Current audit verdict.
+- Contract and promotion-integrity findings.
+- Progress since last audit.
+- Token/time burn and stagnation risk.
+- Blockers or invalidation risks.
+- Recommended next action.
+
+Append dated sections instead of overwriting useful prior audit history.
+
 ### `work/state.json`
 
 Small machine-readable state:
@@ -198,6 +310,10 @@ Small machine-readable state:
   },
   "editable_files": [],
   "immutable_files": [],
+  "isolation": {
+    "fresh_run": true,
+    "allowed_prior_sources": []
+  },
   "round": 0,
   "iterations": 0,
   "stagnation_count": 0,
@@ -206,6 +322,25 @@ Small machine-readable state:
   "exhausted_branches": [],
   "rate_limits": {},
   "pending_jobs": [],
+  "progress": {
+    "logging_enabled": true,
+    "chart_enabled": true,
+    "events": "work/events.jsonl",
+    "table": "work/progress.tsv",
+    "chart": "work/progress.svg",
+    "review": "work/review.md",
+    "x_axis": "candidate",
+    "tokens_total": 0,
+    "tokens_since_promotion": 0,
+    "token_budget": null
+  },
+  "audit": {
+    "enabled": true,
+    "report": "work/audit.md",
+    "write_surface": ["work/audit.md"],
+    "last_audited_at": null,
+    "last_verdict": null
+  },
   "last_updated": null
 }
 ```
@@ -408,6 +543,8 @@ At the start:
 - Read the tail of `work/log.md`.
 - Read `work/plan.md`.
 - Read `work/state.json`.
+- Read the tail of `work/events.jsonl` if `progress.logging_enabled` is not `false`.
+- Open `work/progress.svg` and `work/review.md` if `progress.chart_enabled` is not `false`.
 - Check pending jobs if using a remote system.
 
 Before editing:
@@ -422,9 +559,11 @@ Before editing:
 After running:
 
 - Append `work/log.md`.
+- Append `work/events.jsonl` if `progress.logging_enabled` is not `false`.
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/state.json`.
+- If `progress.chart_enabled` is not `false`, regenerate `work/progress.svg` and refresh `work/review.md`.
 - Update `work/best.md` only if promotion rules pass.
 - Update `work/plan.md` with next branch status.
 
