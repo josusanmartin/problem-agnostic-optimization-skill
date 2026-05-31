@@ -80,9 +80,10 @@ def test_missing_reference_fails(tmp_path: Path) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
-def test_missing_skill_script_fails(tmp_path: Path) -> None:
+@pytest.mark.parametrize("script_name", ["progress_chart.py", "record_event.py"])
+def test_missing_skill_script_fails(tmp_path: Path, script_name: str) -> None:
     skill_dir = copy_skill(tmp_path)
-    (skill_dir / "scripts" / "progress_chart.py").unlink()
+    (skill_dir / "scripts" / script_name).unlink()
 
-    with pytest.raises(validate_skill.ValidationError, match="missing required file: scripts/progress_chart.py"):
+    with pytest.raises(validate_skill.ValidationError, match=f"missing required file: scripts/{script_name}"):
         validate_skill.validate_skill(skill_dir)

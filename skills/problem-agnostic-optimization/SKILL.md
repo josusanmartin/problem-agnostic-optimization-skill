@@ -31,7 +31,7 @@ Record objective, mode, authoritative metric, baseline, edit surface, budget, va
 
 If no target is given, find a public best, prior local best, paper result, production SLO, or theoretical/resource floor. If none is available, set an ambitious measurable floor and label the uncertainty.
 
-Use minimal notes for small one-shot tasks. For long, noisy, remote, budget-limited, or autonomous runs, create `work/best.md`, `work/log.md`, `work/plan.md`, and `work/state.json`; read `references/harness.md`.
+Use minimal notes for small one-shot tasks. For long, noisy, remote, budget-limited, or autonomous runs, create `work/best.md`, `work/log.md`, `work/plan.md`, `work/events.jsonl`, and `work/state.json`; read `references/harness.md`.
 
 ## Gap
 
