@@ -146,6 +146,23 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py assets/moc
 
 ![Mock optimization progress chart](assets/mock-progress.svg)
 
+## Audit Mode
+
+For long optimization runs, start a second Codex session in auditor mode to review progress without disrupting the optimizer. The auditor reads the run artifacts and writes only `work/audit.md` by default.
+
+```text
+Use problem-agnostic-optimization in auditor mode.
+
+Read the current run artifacts and write/update only work/audit.md.
+Do not edit candidate code, harness files, work/best.md, work/log.md, work/plan.md, work/state.json, work/events.jsonl, or work/progress.tsv.
+Do not launch new candidates, submissions, benchmarks, or long-running jobs unless I explicitly ask.
+
+Audit whether the active optimization run is making valid progress under the recorded contract.
+Check authoritative-metric promotion, correctness evidence, token/time burn, stagnation, blocker state, and whether the next planned candidate follows from the evidence.
+```
+
+Auditor mode uses `skills/problem-agnostic-optimization/references/auditor.md`. It should return one verdict: `ON TRACK`, `NEEDS REASSESSMENT`, `BLOCKED`, `INVALIDATED`, or `NEEDS USER DECISION`.
+
 ## Run Isolation
 
 Fresh-run isolation is on by default. In a newly assigned workspace, Codex should use only the current workspace, the user-provided context, and the official target artifacts. It should not mine sibling workspaces, old candidate logs, prior submissions, or cached solutions unless `/goal` says `Fresh-run isolation: off` or the user explicitly asks for prior-run transfer.
@@ -178,6 +195,7 @@ $HOME/.codex/skills/problem-agnostic-optimization/
     record_event.py
   references/
     cpu-architecture.md
+    auditor.md
     evidence-loop.md
     gpu-architecture.md
     harness.md

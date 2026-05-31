@@ -13,6 +13,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised by users without dep
 
 
 REQUIRED_REFERENCES = [
+    "auditor.md",
     "cpu-architecture.md",
     "evidence-loop.md",
     "gpu-architecture.md",

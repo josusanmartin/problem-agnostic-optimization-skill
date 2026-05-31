@@ -264,6 +264,38 @@ cand_0002	0.996	reject	4500	1400	tile too small
 - Next candidate:
 ```
 
+### `work/audit.md`
+
+Use this for auditor-mode reports from a second Codex session. Append a dated section for each audit.
+
+```markdown
+# Optimization Audit
+
+- Verdict: ON TRACK | NEEDS REASSESSMENT | BLOCKED | INVALIDATED | NEEDS USER DECISION
+- Audited at:
+- Scope:
+- Current best:
+- Latest event:
+- Progress since last audit:
+- Token/time burn:
+- Contract issues:
+- Promotion/integrity issues:
+- Search-health issues:
+- Blockers:
+- Recommended next action:
+
+## Evidence
+
+| Check | Status | Evidence |
+|---|---|---|
+| Contract explicit | pass/fail/unknown | |
+| Baseline reproduced | pass/fail/unknown | |
+| Best state consistent | pass/fail/unknown | |
+| Promotions authoritative | pass/fail/unknown | |
+| Ledger/chart fresh | pass/fail/unknown | |
+| Next action justified | pass/fail/unknown | |
+```
+
 ### Speedup Classification
 
 ```markdown

@@ -12,6 +12,7 @@ For small projects, create only:
 
 ```text
 work/
+  audit.md
   best.md
   events.jsonl               # canonical progress ledger for long runs
   log.md
@@ -33,6 +34,7 @@ project/
     cand_0001.*
     cand_0002.*
   work/
+    audit.md
     best.md
     events.jsonl
     log.md
@@ -146,6 +148,18 @@ When isolation is `on`:
 
 Record the setting in `work/state.json` as `isolation.fresh_run`.
 
+## Audit Surface
+
+For long runs, a second Codex session may audit progress without becoming a second optimizer. Use `references/auditor.md` for the audit protocol.
+
+Default auditor contract:
+
+- Read current run artifacts and official target context.
+- Write or append only `work/audit.md`.
+- Do not edit candidate code, harness files, `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, or `work/progress.tsv`.
+- Do not launch new candidates, submissions, benchmarks, or long-running jobs unless explicitly asked.
+- Report one verdict: `ON TRACK`, `NEEDS REASSESSMENT`, `BLOCKED`, `INVALIDATED`, or `NEEDS USER DECISION`.
+
 ## Profiling Plan
 
 Write the profiling plan into `work/best.md` or `work/state.json` before deep tuning:
@@ -253,6 +267,19 @@ Mutable active strategy:
 - Frozen/closed branches with reasons.
 - Escalation rule for local-optimum audit or structural reset.
 
+### `work/audit.md`
+
+Auditor-mode report from a second Codex session. The optimizer should read it as feedback, not as a candidate ledger.
+
+- Current audit verdict.
+- Contract and promotion-integrity findings.
+- Progress since last audit.
+- Token/time burn and stagnation risk.
+- Blockers or invalidation risks.
+- Recommended next action.
+
+Append dated sections instead of overwriting useful prior audit history.
+
 ### `work/state.json`
 
 Small machine-readable state:
@@ -306,6 +333,13 @@ Small machine-readable state:
     "tokens_total": 0,
     "tokens_since_promotion": 0,
     "token_budget": null
+  },
+  "audit": {
+    "enabled": true,
+    "report": "work/audit.md",
+    "write_surface": ["work/audit.md"],
+    "last_audited_at": null,
+    "last_verdict": null
   },
   "last_updated": null
 }

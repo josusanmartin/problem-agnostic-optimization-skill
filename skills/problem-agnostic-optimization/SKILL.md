@@ -100,6 +100,7 @@ When uncertain, keep the candidate separate and report the risk.
 | Need | Read |
 |---|---|
 | Long/noisy/remote run | `references/harness.md` |
+| Audit an active run from a second session | `references/auditor.md` |
 | Floors, tails, primitive inversion, local optima | `references/resource-models.md` |
 | Measurement, profiling, variance, blockers | `references/evidence-loop.md` |
 | Simulator/policy/hidden seeds | `references/stochastic-policy-search.md` |
