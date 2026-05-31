@@ -45,6 +45,7 @@ contract -> baseline -> bottleneck model -> candidate -> validate/measure -> dec
 ```
 
 Only the authoritative metric promotes; profiles, counters, local benchmarks, and static models explain.
+Internally, the skill tracks the contract, current best, bottleneck model, and candidate ledger.
 
 ### Field Guide
 
@@ -59,17 +60,6 @@ Only the authoritative metric promotes; profiles, counters, local benchmarks, an
 - `Validation`: correctness checks, seed protocol, shape sweep, test command, profiler/counter expectations, or production guardrails.
 - `Stopping rule`: target reached, budget exhausted, blocker, plateau audit, or handoff after N candidates.
 - `Notes`: known failed attempts, public clues, constraints, tolerances, hidden-test risk, and anything that would make an optimization invalid.
-
-## Operating Model
-
-The skill keeps four artifacts current:
-
-1. `Contract`: what counts as correct, what metric promotes, what files are editable, and what system, shape, seed, or scorer is authoritative.
-2. `Best`: the current best artifact, score, command, result ID, and promotion rationale.
-3. `Bottleneck model`: the current explanation of the gap, including resource floors, profile confidence, tails, case splits, and statistical uncertainty.
-4. `Candidate ledger`: one hypothesis, one diff, expected signal, result, decision, and learning.
-
-Candidate decisions are `PROMOTE`, `KEEP VARIANT`, `REJECT`, `BUG`, or `BLOCKED`. After repeated same-family ties or regressions, the skill should stop tuning and change representation, primitive, route, or specialization level.
 
 ## Prompt Templates
 
