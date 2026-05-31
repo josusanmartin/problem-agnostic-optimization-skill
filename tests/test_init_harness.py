@@ -52,7 +52,9 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["score_unit"] == "cycles"
     assert state["progress"]["chart_enabled"] is True
     assert state["progress"]["events"].endswith("work/events.jsonl")
+    assert state["progress"]["usage_source"] == "runtime goal usage if available"
     assert "sub 1000 cycles" in (work / "best.md").read_text(encoding="utf-8")
+    assert "Token source:" in (work / "review.md").read_text(encoding="utf-8")
     dashboard = (work / "dashboard.html").read_text(encoding="utf-8").lower()
     assert "waiting for the first measurement" in dashboard
 

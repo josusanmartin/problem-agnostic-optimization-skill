@@ -77,6 +77,8 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "tokens_total": 0,
             "tokens_since_promotion": 0,
             "token_budget": None,
+            "usage_source": "runtime goal usage if available",
+            "usage_gap": None,
         },
         "audit": {
             "enabled": True,
@@ -156,6 +158,8 @@ def review_md(args: argparse.Namespace) -> str:
 - Last promotion:
 - Candidates since promotion: 0
 - Tokens since promotion: 0
+- Token source: runtime goal usage if available
+- Token gap:
 - Active time:
 - Wall elapsed:
 - Stagnation count: 0

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 import subprocess
 import sys
@@ -127,6 +128,38 @@ def test_record_event_appends_jsonl_and_renders_chart(tmp_path: Path) -> None:
     svg = chart.read_text(encoding="utf-8")
     assert "recorded win" in svg
     assert "Cumulative tokens" in svg
+
+
+def test_record_event_keeps_nullable_token_and_time_fields(tmp_path: Path) -> None:
+    events = tmp_path / "events.jsonl"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(RECORD_SCRIPT),
+            "--events",
+            str(events),
+            "--candidate",
+            "cand_0001",
+            "--decision",
+            "reject",
+            "--score",
+            "0.99",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    record = json.loads(events.read_text(encoding="utf-8"))
+    assert "tokens_total" in record
+    assert "tokens_delta" in record
+    assert "active_seconds" in record
+    assert "wall_seconds" in record
+    assert record["tokens_total"] is None
+    assert record["tokens_delta"] is None
+    assert record["active_seconds"] is None
+    assert record["wall_seconds"] is None
 
 
 def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:

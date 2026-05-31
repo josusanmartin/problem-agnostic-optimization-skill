@@ -209,10 +209,12 @@ cand_0003	38.200	0.0	discard	graph wrapper regressed
 
 Use this for `work/events.jsonl`, the canonical progress ledger for long-running or dashboarded optimization. Append one JSON object after each baseline, measurement, failure, blocker, or handoff.
 
+Required fields: `candidate`, `decision`, `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. Token/time fields may be `null` when unavailable, but do not omit them from new events. In Codex, capture `tokensUsed` and `timeUsedSeconds` from `get_goal` when available.
+
 ```json
-{"candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1200,"active_seconds":30,"wall_seconds":60,"label":"baseline"}
-{"candidate":"cand_0001","decision":"promote","score":0.992,"tokens_total":3100,"active_seconds":420,"wall_seconds":900,"label":"fused route"}
-{"candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
+{"candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1200,"tokens_delta":1200,"active_seconds":30,"wall_seconds":60,"label":"baseline"}
+{"candidate":"cand_0001","decision":"promote","score":0.992,"tokens_total":3100,"tokens_delta":1900,"active_seconds":420,"wall_seconds":900,"label":"fused route"}
+{"candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"tokens_delta":1400,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
 ```
 
 Optional fields:
@@ -226,9 +228,6 @@ correctness
 validation_command
 measurement_command
 score_unit
-tokens_delta
-active_seconds
-wall_seconds
 blocker
 raw_result_path
 ```
@@ -255,6 +254,8 @@ cand_0002	0.996	reject	4500	1400	tile too small
 - Candidates since promotion:
 - Tokens since promotion:
 - Token burn per promoted improvement:
+- Token source:
+- Token gap:
 - Active time:
 - Wall elapsed:
 - Stagnation count:

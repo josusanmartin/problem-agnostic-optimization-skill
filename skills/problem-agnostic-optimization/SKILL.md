@@ -62,6 +62,8 @@ For substantial runs, progress artifacts are default-on unless the `/goal` says 
 
 Before the first candidate, initialize `work/events.jsonl` and the `progress` fields in `work/state.json`. After every measured candidate, append one event to `work/events.jsonl`, regenerate `work/progress.svg` and `work/dashboard.html`, and refresh `work/review.md`. If the chart/dashboard scripts are unavailable or a result cannot be charted yet, write the blocker into `work/log.md` or `work/review.md`; do not silently skip progress artifacts.
 
+Each progress event must include token/time fields: `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. When the runtime exposes usage, capture the current cumulative values before writing the event; in Codex, use `get_goal` when available and map `tokensUsed` to `tokens_total` and `timeUsedSeconds` to `active_seconds`. Compute `tokens_delta` from the previous event when possible. If usage is unavailable, write these fields as `null` and note the gap in `work/review.md`; do not omit the fields or invent historical per-candidate tokens.
+
 ## Gap
 
 Classify the gap before choosing a candidate:

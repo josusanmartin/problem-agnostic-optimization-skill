@@ -178,6 +178,8 @@ Notes: compare parent and candidate on matched scenarios when possible.
 
 For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/events.jsonl` before the first candidate, append one event after every measured candidate, and regenerate `work/progress.svg`, `work/dashboard.html`, and `work/review.md` after each event. Long-running harnesses should treat `work/events.jsonl` as the canonical event ledger and render `work/progress.svg` from either `work/events.jsonl` or `work/progress.tsv`. Use TSV for small/manual runs or as a derived export.
 
+Every event should include token/time fields even when the value is not available yet: `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. In Codex, the optimizer should call `get_goal` when available and persist `tokensUsed` as `tokens_total` and `timeUsedSeconds` as `active_seconds`. If an existing run lacks token fields, backfill only the current cumulative value going forward and mark earlier per-candidate token usage as unknown; do not invent historical usage.
+
 Fast harness bootstrap from an installed skill:
 
 ```bash
@@ -195,7 +197,7 @@ This creates `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `
 ```bash
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/events.jsonl -o work/progress.svg --direction lower --x-axis tokens
-python skills/problem-agnostic-optimization/scripts/record_event.py --candidate cand_0001 --decision promote --score 0.992 --tokens-total 3100 --chart work/progress.svg
+python skills/problem-agnostic-optimization/scripts/record_event.py --candidate cand_0001 --decision promote --score 0.992 --tokens-total 3100 --tokens-delta 1900 --active-seconds 420 --wall-seconds 900 --chart work/progress.svg
 ```
 
 The chart shows all candidates, the running promoted best, and cumulative token usage on a right-side axis. Supported x-axis modes are `candidate`, `tokens`, `active`, and `wall`.
