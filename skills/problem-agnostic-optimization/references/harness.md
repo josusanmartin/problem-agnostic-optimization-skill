@@ -35,6 +35,9 @@ project/
     state.json
     candidates/
       cand_0001.md
+    profiles/
+      baseline.profile.txt
+      cand_0001.profile.txt
     results/
       cand_0001.json
     raw_logs/
@@ -57,6 +60,31 @@ Before the first candidate, write the mutable and immutable file sets into `work
 - Touch only files required by the candidate hypothesis. Do not refactor adjacent code, normalize formatting, or clean unrelated dead code during optimization.
 - If the evaluator or harness appears wrong, log a platform or harness issue and ask before modifying it. A faster result from changing the grader is not an optimization result.
 - When two candidates tie within noise, prefer the smaller and simpler diff.
+
+## Profiling Plan
+
+Write the profiling plan into `work/best.md` or `work/state.json` before deep tuning:
+
+- Authoritative metric and command.
+- Available profiling surfaces: target profiler, hardware counters, traces, flamegraphs, per-case timings, logs, public profiles, static analyzers, or none.
+- Profiling strength: `strong`, `medium`, `weak`, or `none`.
+- Profile command, permissions, target hardware, and output paths.
+- What each profile can and cannot prove.
+- Fallback evidence when profiling is absent or not target-faithful.
+
+Use profiles to choose experiments:
+
+- Profile or counter-sample the baseline/current best when the cost is reasonable.
+- Compare parent and candidate with the same workload and command.
+- Save raw profile output under `work/profiles/` or an equivalent durable path.
+- Summarize only the decision-relevant deltas in `work/log.md`.
+- Re-profile after promotions and surprising regressions; the bottleneck map may change.
+
+If strong profiling is unavailable:
+
+- Mark `profiling_strength` as `weak` or `none`.
+- Replace it with resource floors, per-case timings, controlled ablations, static models, and repeated authoritative measurements.
+- Treat the bottleneck model as a hypothesis. Escalate to structural probes sooner when weak evidence keeps mispredicting results.
 
 ## Git-Backed Experiment Loop
 
@@ -93,6 +121,7 @@ Stable promoted state only:
 - Fixed budget and allowed edit surface.
 - Seed protocol and statistical promotion gate for stochastic targets.
 - Validation commands and result IDs.
+- Profile commands, availability, confidence, and artifact paths.
 - Why the best wins.
 - Confirmed bottlenecks.
 - Exhausted branches that must not be retried without a new premise.
@@ -116,8 +145,10 @@ Append-only experiment ledger. Every candidate, including failures, gets:
 - expected signal:
 - validation command:
 - benchmark/submit command:
+- profile command:
 - result:
 - correctness:
+- profile/counter delta:
 - stability:
 - improved best:
 - decision: PROMOTE | REJECT | RERUN | RECOVER | CLOSE
@@ -156,6 +187,15 @@ Small machine-readable state:
   "seed_protocol": {},
   "scenario_sets": {},
   "statistical_gate": null,
+  "profiling": {
+    "strength": null,
+    "available_surfaces": [],
+    "unavailable_surfaces": [],
+    "commands": {},
+    "artifact_paths": [],
+    "confidence": null,
+    "fallback_evidence": []
+  },
   "editable_files": [],
   "immutable_files": [],
   "round": 0,
@@ -296,6 +336,7 @@ Store raw outputs, plus a small normalized result:
   "commands": {
     "validate": "...",
     "benchmark": "...",
+    "profile": "...",
     "submit": "..."
   },
   "correctness": "pass",
@@ -303,6 +344,13 @@ Store raw outputs, plus a small normalized result:
     "score": null,
     "unit": null,
     "per_shape": {}
+  },
+  "profiling": {
+    "strength": null,
+    "artifacts": [],
+    "key_deltas": {},
+    "interpretation": "",
+    "fallback_evidence": []
   },
   "ranked": {
     "score": null,
@@ -368,12 +416,14 @@ Before editing:
 - State mode.
 - State one hypothesis.
 - State expected signal.
+- State profiling basis and fallback if no useful profiler is available.
 - State validation and measurement command.
 
 After running:
 
 - Append `work/log.md`.
 - Save raw and normalized outputs.
+- Save profile/counter artifacts when available.
 - Update `work/state.json`.
 - Update `work/best.md` only if promotion rules pass.
 - Update `work/plan.md` with next branch status.

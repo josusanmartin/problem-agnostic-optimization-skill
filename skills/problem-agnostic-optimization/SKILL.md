@@ -19,6 +19,7 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 - Define the allowed edit surface. Reference, evaluation, harness, data, and scoring files are immutable unless the task explicitly asks to change them.
 - Use the authoritative score as the promotion gate. Local benchmarks and counters explain results but do not replace the real scoreboard or production metric.
 - If a runnable harness exists, run it before claiming performance progress. Do not rely on static reasoning for performance claims.
+- Treat profiling as a diagnostic layer, not a promotion gate. Record which profiler, counters, traces, case splits, or static models are available, and label confidence when profiling is weak or unavailable.
 - If the score comes from stochastic simulations or hidden seeds, define the seed protocol and statistical promotion gate before tuning.
 - Test one hypothesis at a time. Keep diffs surgical; every changed line should trace to the candidate hypothesis.
 - Continue candidate loops when the user says to keep iterating. Stop only for target achieved, budget exhausted, external blocker, or plateau audit.
@@ -37,10 +38,11 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
    - Identify benchmark, submit, validation, test, or production measurement command.
    - If the official signal is remote-only, do not substitute a local benchmark as promotion proof.
    - If the metric is stochastic, identify local seed controls, simulation count, hidden/server seed behavior, and output variance.
+   - Inventory evidence surfaces: profiler, hardware counters, traces, per-case timing, logs, static analyzers, public profiles, and known-unavailable tools.
 
 3. Run or reproduce the baseline.
    - Run the current artifact when possible.
-   - Save score, command, hardware, result ID, and noise notes.
+   - Save score, command, hardware, result ID, profile/counter artifact paths, profiling availability, and noise notes.
 
 4. Protect the best and define files.
    - Save or name the best artifact.
@@ -54,9 +56,9 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
 
 1. Build the contract: inputs, outputs, shapes, dtypes, layouts, seeds, tolerances, source limits, target hardware, budget, scoring formula, hidden/public differences, and edit surface.
 
-2. Build the bottleneck model: split aggregate scores by case, classify the target family, compute resource floors or statistical floors when possible, profile or inspect traces/counters when the runtime is not explained, identify the primary bottleneck, and state what likely will not help.
+2. Build the bottleneck model: split aggregate scores by case, classify the target family, compare profiles/counters/traces when available, compute resource floors or statistical floors when possible, identify the primary bottleneck, and state what likely will not help. If strong profiling is unavailable, use controlled ablations, static throughput models, per-case timings, and resource floors as lower-confidence evidence.
 
-3. Create one candidate: choose a hypothesis-rich filename, predict the expected metric/counter change, and make the smallest falsifiable edit. Prefer candidates that change a proven bottleneck floor, shorten an audited tail, or unlock a different primitive; avoid tweaks that merely move work into another saturated resource.
+3. Create one candidate: choose a hypothesis-rich filename, predict the expected metric/counter/profile change, and make the smallest falsifiable edit. Prefer candidates that change a proven bottleneck floor, shorten an audited tail, or unlock a different primitive; avoid tweaks that merely move work into another saturated resource.
 
 4. Validate and measure: correctness first unless the platform only exposes correctness through submit; then measure with the authoritative metric.
 
@@ -67,7 +69,7 @@ Operate as an optimization loop, not a brainstorming guide: set the objective, p
    - `bug`: correctness failed; performance is not meaningful.
    - `blocked`: platform or tooling failed before evaluating user code.
 
-6. Update the ledger and continue. After any promotion, recompute the bottleneck map before choosing the next candidate.
+6. Update the ledger and continue. After any promotion or surprising regression, recompute the bottleneck map before choosing the next candidate.
 
 ## Local-Optimum Escapes
 

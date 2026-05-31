@@ -18,6 +18,8 @@ Use these directly in notes, reports, or handoffs.
 - Hardware/system:
 - Compiler/runtime:
 - Budget:
+- Profiling availability:
+- Profiling command/artifacts:
 - Current best:
 - Editable files:
 - Immutable harness/reference files:
@@ -33,6 +35,8 @@ Use these directly in notes, reports, or handoffs.
 
 - Primary bottleneck:
 - Evidence:
+- Profiling strength:
+- Profile/counter deltas:
 - Secondary bottleneck:
 - Resource floors:
 - Runtime minus floor:
@@ -47,6 +51,39 @@ Use these directly in notes, reports, or handoffs.
 ```markdown
 | Resource | Work Count | Throughput | Floor | Current Pressure | Candidate Delta |
 |---|---:|---:|---:|---|---:|
+```
+
+## Profiling Inventory
+
+```markdown
+## Profiling Inventory
+
+- Authoritative metric:
+- Authoritative command:
+- Target hardware/system:
+- Profiling strength: strong | medium | weak | none
+- Available surfaces:
+- Unavailable surfaces:
+- Profile commands:
+- Profile artifact paths:
+- What profiles can prove:
+- What profiles cannot prove:
+- Fallback evidence:
+```
+
+## Profile Comparison
+
+```markdown
+## Profile Comparison
+
+| Artifact | Score | Runtime/Cycles | Key Profile Counters | What Improved | What Regressed | Confidence |
+|---|---:|---:|---|---|---|---|
+
+Interpretation:
+- Primary bottleneck:
+- Ruled-out knobs:
+- New pressure introduced:
+- Next candidate hypothesis:
 ```
 
 ## Tail Audit
@@ -134,10 +171,13 @@ policy_0002	L4	2.100	0.900	-6.500	8.200	0.480	0.000	discard	train overfit, bad h
 - Mechanism:
 - Expected per-case effect:
 - Expected resource-floor effect:
+- Profiling basis:
+- Expected profile/counter effect:
 - Tail/dependency risk:
 - Artifact:
 - Correctness:
 - Measurement command:
+- Profile command:
 - Result:
 - Per-case/counter delta:
 - Decision:

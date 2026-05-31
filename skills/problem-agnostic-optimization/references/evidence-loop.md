@@ -67,6 +67,47 @@ Turn profiles into candidate hypotheses:
 - Predict which counter, frame, kernel, block, engine, or tail should move.
 - If the profile does not identify an actionable limiter, stop profiling and change the model or question.
 
+## Profiling Ladder
+
+Profiling is how the search chooses better hypotheses. It is not required for every platform, and it should be used at the strongest level the environment honestly provides.
+
+Evidence strength:
+
+- `strong`: authoritative target-system profile, hardware counters, trace, per-case timing, or flamegraph for the same artifact and workload being scored.
+- `medium`: local profile on similar hardware, public competitor counters, component-level profiler output, sampled production trace, or target-system aggregate counters without source visibility.
+- `weak`: static throughput model, instruction/resource count, synthetic microbenchmark, local surrogate workload, or profiler from a different architecture.
+- `none`: no profiler or counter data; rely on controlled experiments, resource floors, and case decomposition.
+
+Use the strongest available layer:
+
+1. Profile the baseline or current best before broad tuning when profiler access is available.
+2. Compare profiles between baseline, current best, near misses, and public/production references when available.
+3. Identify what improved, what regressed, and what did not matter. A profile is often most valuable when it rules out a tempting knob.
+4. Translate profiler observations into falsifiable candidate hypotheses: "reduce backend load pressure", "lower branch misses", "shorten tail dependency", "shift port pressure", "remove allocation churn".
+5. Re-profile after a promotion or surprising regression, because the bottleneck can move.
+
+Record unavailable profiling explicitly. "No target profiler", "private profile", "no GPU trace access", or "local CPU differs from target" is useful state, not a footnote.
+
+## When Profiling Is Weak Or Unavailable
+
+Do not stop optimizing just because a profiler is missing. Replace it with lower-confidence evidence and label it as such.
+
+Fallback tools:
+
+- Resource floors: bytes moved, operations, launches, syscalls, allocations, critical path, memory footprint, network round trips, or scheduler slots.
+- Case splits: per-shape, per-input-size, per-scenario, per-token, per-request, warm/cold, and tail-percentile timing.
+- Controlled ablations: remove one feature, disable one branch, change one tile, one prefetch distance, one batch size, one cache, or one route.
+- Static models: compiler output, instruction mix, occupancy estimates, `llvm-mca`, roofline-style math, kernel launch count, or query plans.
+- Surrogate profiles: local `perf`, language profilers, flamegraphs, tracing logs, simulator output, or a smaller reproducible workload.
+- Differential timing: compare parent and candidate under identical commands, seeds, input order, and warmup protocol.
+
+Fallback discipline:
+
+- Promote only by the authoritative metric, even if a weak profiler says the candidate should win.
+- Use weak evidence to choose the next candidate, not to claim the bottleneck is proven.
+- If weak evidence repeatedly mispredicts the authoritative score, downgrade or discard that screening model.
+- If no profiler exists and candidates keep tying, run a local-optimum audit sooner than usual and switch to structural probes.
+
 ## Candidate Ledger
 
 Every meaningful candidate gets:
@@ -78,6 +119,8 @@ Every meaningful candidate gets:
 - Hypothesis:
 - Mechanism:
 - Expected signal:
+- Profiling basis:
+- Profiling availability:
 - Resource floor delta:
 - Profile/trace evidence:
 - Tail/dependency risk:
