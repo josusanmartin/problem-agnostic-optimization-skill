@@ -1,104 +1,141 @@
 ---
 name: problem-agnostic-optimization
-description: Evidence-driven workflow for improving any measured program, CPU/GPU kernel, benchmark, leaderboard submission, stateful stochastic policy/controller, latency target, or throughput target. Use when Codex needs to optimize performance or policy quality while preserving correctness, set an ambitious objective from prompts, public references, leaderboards, or theoretical floors, diagnose bottlenecks, run controlled experiments, interpret profiler/counter/statistical evidence, handle noisy leaderboards, or produce a reusable handoff across CPU, CUDA, ROCm/HIP, Triton, library, randomized-policy, or challenge platforms.
+description: "Use when improving a measured artifact under a correctness or scoring contract: performance, latency, throughput, leaderboard score, GPU/CPU kernel time, or stochastic policy quality. Runs an evidence loop: define objective, reproduce baseline, protect best artifact, model the bottleneck, test one hypothesis at a time, promote only authoritative wins, and escape local optima by changing representation, primitive, route, or specialization level."
 ---
 
 # Problem-Agnostic Optimization
 
-Operate as an optimization loop, not a brainstorming guide: set the objective, protect the best, run the code, measure the authoritative metric, promote only verified wins, and keep iterating until the target, budget, blocker, or plateau rule stops the run.
+Use this skill as a measured search loop:
 
-## Non-Negotiables
+```text
+contract -> baseline -> bottleneck model -> candidate -> validate/measure -> decide -> iterate or escape
+```
 
-- Set the objective before optimizing.
-- If the user gave a target, preserve it literally.
-- If no target is given, look for public leaderboards, papers, repos, docs, or production references and set the goal at the best known result or slightly better.
-- If no public reference exists, compute a theoretical lower bound or resource floor and set an ambitious goal at that floor or the nearest measurable threshold.
-- Record objective source, target metric, hardware/system, and budget.
-- Select mode early: `production` or `clean leaderboard`. Default to `production` for real products and `clean leaderboard` for challenges.
-- Preserve the current best artifact before editing. Every candidate needs a parent, mechanism, rollback path, and result.
-- Define the allowed edit surface. Reference, evaluation, harness, data, and scoring files are immutable unless the task explicitly asks to change them.
-- Use the authoritative score as the promotion gate. Local benchmarks and counters explain results but do not replace the real scoreboard or production metric.
-- If a runnable harness exists, run it before claiming performance progress. Do not rely on static reasoning for performance claims.
-- Treat profiling as a diagnostic layer, not a promotion gate. Record which profiler, counters, traces, case splits, or static models are available, and label confidence when profiling is weak or unavailable.
-- If the score comes from stochastic simulations or hidden seeds, define the seed protocol and statistical promotion gate before tuning.
-- Test one hypothesis at a time. Keep diffs surgical; every changed line should trace to the candidate hypothesis.
-- Continue candidate loops when the user says to keep iterating. Stop only for target achieved, budget exhausted, external blocker, or plateau audit.
-- Prefer the simplest winning change. If two candidates tie, keep the one with less complexity, less statefulness, and a smaller diff.
-- Classify candidate mechanisms before trusting them: work deletion, resource transfer, dependency/tail reshaping, scheduler/variance, representation change, contract specialization, approximation, or forbidden shortcut.
-- Never use exploit-like shortcuts. Do not implement, test, preserve, submit, or promote candidates that rely on wrong answers, leaked answers, stale state, hidden-harness bugs, invalid contracts, or grader weaknesses.
+Only the authoritative metric promotes. Everything else explains.
 
-## First 5 Minutes
+## Core Laws
 
-1. Set mode and objective.
-   - Use the user's explicit target when present.
-   - Otherwise search public references or leaderboards for the best known result.
-   - If no public target exists, estimate the theoretical minimum from bytes, ops, launches, resource slots, or unavoidable latency.
+1. The authoritative metric promotes; profiles, counters, local benchmarks, and static models only explain.
+2. Correctness comes before speed unless the platform only exposes correctness through submit.
+3. Preserve the current best artifact before editing.
+4. Define editable and immutable files before the first candidate.
+5. Test one hypothesis per candidate; keep the diff surgical.
+6. Classify the mechanism before trusting the result.
+7. When repeated same-family candidates tie or regress, stop tuning and change hill.
+8. Never use wrong answers, leaked answers, stale state, hidden-harness bugs, invalid contracts, grader edits, or harness manipulation as optimization wins.
 
-2. Find the authoritative command.
-   - Identify benchmark, submit, validation, test, or production measurement command.
-   - If the official signal is remote-only, do not substitute a local benchmark as promotion proof.
-   - If the metric is stochastic, identify local seed controls, simulation count, hidden/server seed behavior, and output variance.
-   - Inventory evidence surfaces: profiler, hardware counters, traces, per-case timing, logs, static analyzers, public profiles, and known-unavailable tools.
+## Entry Protocol
 
-3. Run or reproduce the baseline.
-   - Run the current artifact when possible.
-   - Save score, command, hardware, result ID, profile/counter artifact paths, profiling availability, and noise notes.
+Record before changing code:
 
-4. Protect the best and define files.
-   - Save or name the best artifact.
-   - Mark editable files and immutable harness/reference/scoring files.
+- Objective and target.
+- Mode: `production` or `clean leaderboard`.
+- Authoritative metric and command, submit path, dashboard, or scorer.
+- Baseline artifact, score, command, hardware/system, and result ID.
+- Editable files and immutable reference, harness, scoring, data, and contract files.
+- Budget and stopping rule.
+- Validation method.
+- Profiling, counter, trace, statistical, or static evidence available.
 
-5. Pick artifact mode.
-   - Minimal mode: for tiny one-shot tasks, keep only the best artifact plus command/result notes.
-   - Harness mode: for multi-candidate, noisy, remote, budget-limited, or autonomous runs, create `work/best.md`, `work/log.md`, `work/plan.md`, and `work/state.json`; read `references/harness.md`.
+If no target is given, find a public best, prior local best, paper result, production SLO, or theoretical/resource floor. If none is available, set an ambitious measurable floor and label the uncertainty.
 
-## Control Loop
+Use minimal mode for small one-shot tasks: keep the best artifact plus command/result notes. Use harness mode for multi-candidate, noisy, remote, budget-limited, or autonomous runs: create `work/best.md`, `work/log.md`, `work/plan.md`, and `work/state.json`; read `references/harness.md`.
 
-1. Build the contract: inputs, outputs, shapes, dtypes, layouts, seeds, tolerances, source limits, target hardware, budget, scoring formula, hidden/public differences, and edit surface.
+## Bottleneck Model
 
-2. Build the bottleneck model: split aggregate scores by case, classify the target family, compare profiles/counters/traces when available, compute resource floors or statistical floors when possible, identify the primary bottleneck, and state what likely will not help. If strong profiling is unavailable, use controlled ablations, static throughput models, per-case timings, and resource floors as lower-confidence evidence.
+Before choosing a candidate, explain the gap:
 
-3. Create one candidate: choose a hypothesis-rich filename, predict the expected metric/counter/profile change, and make the smallest falsifiable edit. Prefer candidates that change a proven bottleneck floor, shorten an audited tail, or unlock a different primitive; avoid tweaks that merely move work into another saturated resource. If the current best has low work counts but remains stuck on a hidden or target-specific bottleneck, test an equivalent higher-count primitive decomposition or scalarization instead of only making the compact graph denser.
+- Case split: which shapes, seeds, workloads, regimes, or scenarios matter.
+- Resource or statistical floor: unavoidable bytes, ops, launches, latency, variance, or sample budget.
+- Profile/counter confidence: `strong`, `medium`, `weak`, or `none`.
+- Tail and dependency risk: synchronization, allocation, scratch lifetime, aliasing, serialization, finalization, cold start, or variance tail.
+- What likely will not help.
+- Cheapest falsifiable probe.
 
-4. Validate and measure: correctness first unless the platform only exposes correctness through submit; then measure with the authoritative metric.
+Classify the current gap:
 
-5. Decide:
-   - `promote`: correct and improves the authoritative target.
-   - `keep variant`: correct and useful for a lane, shape, GPU, or future splice.
-   - `reject`: correct but slower, noisier, or worse on target.
-   - `bug`: correctness failed; performance is not meaningful.
-   - `blocked`: platform or tooling failed before evaluating user code.
+- `floor gap`: the current operation graph or policy family cannot reach target even with perfect scheduling.
+- `schedule gap`: the graph can reach target, but runtime is lost to packing, dependencies, tail, allocation, synchronization, resource pressure, or variance.
+- `evidence gap`: profiling, counters, logs, traces, or statistics are too weak; run a cheap model or ablation first.
+- `statistical gap`: the apparent delta may be noise; use matched scenarios, repeated runs, SEM/tails, or a stricter promotion gate.
 
-6. Update the ledger and continue. After any promotion or surprising regression, recompute the bottleneck map before choosing the next candidate.
+Do not micro-tune when the target is below the current floor. Move to work deletion, fusion, specialization, representation change, primitive change, route change, or valid approximation inside tolerance.
 
-## Local-Optimum Escapes
+## Candidate Protocol
 
-- If the score gap is greater than about 2x, assume algorithm, representation, route, or contract-specialization issue before micro-tuning.
-- If count or floor improves but runtime worsens, inspect dependencies, tail, scratch lifetime, barriers, aliasing, and resource pressure before discarding or composing.
-- If a route repeatedly produces ties, separate "same graph, different schedule" from "lower-count graph that cannot schedule"; use the former for scheduler/variance only when the target gap is within reach, and use the latter to look for dependency or representation changes.
-- Use negative audits to close seductive shortcuts: prove or find counterexamples for algebraic omissions, unobserved-state skips, branch/predicate substitutions, and contract specializations before investing in full implementations.
-- If previous attempts in a family were about 2x slower or repeatedly tied/regressed, mark that family `CLOSED` until a new premise appears.
-- Trigger a local-optimum audit after repeated parity/tie/regression, a lower-bound proof that the current family cannot hit target, or repeated failures of the same knob family.
-- The audit must name the current hill, why it is exhausted, at least three different hills, and the cheapest off-hill probe. Spend the next candidate off-hill by default.
+For each candidate, state:
 
-## Mode Rules
+- Parent best.
+- Hypothesis.
+- Mechanism class.
+- Expected signal.
+- Kill criterion.
+- Smallest edit that can falsify the hypothesis.
 
-- `production`: correctness, maintainability, observability, and stable p95/p99 beat benchmark-only tricks.
-- `clean leaderboard`: benchmark-contract specialization is allowed only when the public contract proves it; never use wrong-answer speed, stale state, leaked answers, or hidden-harness bugs as clean wins.
+Mechanism classes:
 
-## Reference Map
+- Work deletion.
+- Resource transfer.
+- Tail/dependency reshaping.
+- Scheduler/variance.
+- Representation change.
+- Primitive change.
+- Route/library/config change.
+- Contract specialization.
+- Approximation inside tolerance.
+- Forbidden shortcut.
 
-- Read `references/evidence-loop.md` for measurement integrity, objective evidence, logging, promotion gates, variance, and platform-blocker handling.
-- Read `references/harness.md` for persistent multi-candidate runs, fixed budgets, autonomous loops, crash handling, git-backed keep/discard, and result tables.
-- Read `references/stochastic-policy-search.md` for `stateful-stochastic-policy` targets: simulation-scored policies, controllers, agents, schedulers, hidden seeds, scenario sets, parameter search, regime analysis, and statistical promotion gates.
-- Read `references/resource-models.md` for theoretical floors, schedule-versus-op-graph diagnosis, tail audits, local-optimum audits, cheap pre-screen models, and composed resource trades.
-- Read `references/problem-families.md` for target-family playbooks: stateful stochastic policy/controller, elementwise, reduction, scan, pooling/stencil, GEMM/library, histogram/atomic, quantized, attention/MoE, runtime/system, and scheduler problems.
-- Read `references/gpu-architecture.md` for architecture-agnostic CUDA/ROCm/HIP/Triton tactics, device discovery, profiling, cross-GPU transfer checks, and attention/decode lessons.
-- Read `references/cpu-architecture.md` for architecture-agnostic CPU tactics across single-shot process benchmarks, service/load benchmarks, startup overhead, SIMD, memory-level parallelism, counters, and low-level artifact transfer.
-- Read `references/templates.md` when creating logs, reports, or handoffs.
+Validate correctness first when possible, then measure with the authoritative metric. If the authoritative signal is unavailable, use a clearly labeled screening metric and do not promote from it.
 
-## Integrity Boundary
+Decide:
 
-Before promoting, ask: does this compute the required output for all valid inputs under the stated contract; did it pass the required correctness scope; is the speedup outside noise; is the objective evidence current; and would the method remain valid if input order, warmup count, or hidden cases changed within the contract?
+- `PROMOTE`: correct and improves the authoritative target outside the required noise or stability gate.
+- `KEEP VARIANT`: correct and useful for one lane, shape, hardware, seed regime, or future composition.
+- `REJECT`: correct but worse, noisier, too complex, or aimed at the wrong bottleneck.
+- `BUG`: correctness failed; performance is not meaningful.
+- `BLOCKED`: the platform or tooling failed before evaluating the candidate cleanly.
+
+Log the result and learning. After a promotion or surprising regression, update the bottleneck model before choosing the next candidate.
+
+## Plateau And Escape Protocol
+
+Trigger a local-optimum audit after repeated parity, ties, regressions, same-knob failures, or a lower-bound proof that the current family cannot hit target.
+
+The audit must name:
+
+- Current hill.
+- Why it looked promising.
+- Plateau evidence.
+- Floor, tail, dependency, or statistical blocker.
+- At least three different hills.
+- Cheapest off-hill probe.
+
+After repeated same-family failures, spend the next candidate off-hill by default.
+
+Official hill changes:
+
+- Change representation.
+- Change route, library, configuration, or target split.
+- Invert the primitive: replace a compact toxic primitive with a decomposed version when the compact form is microcoded, serialized, frontend-heavy, or target-hostile.
+- Specialize the contract when the public or production contract proves the restriction.
+- Run a negative audit: prove or find a counterexample for a seductive shortcut before investing in it. A failed proof can be a successful experiment.
+
+## Mode And Integrity
+
+- `production`: correctness, maintainability, observability, rollback safety, and stable p95/p99 beat benchmark-only tricks.
+- `clean leaderboard`: benchmark-contract specialization is allowed only when the public contract proves it; never use wrong-answer speed, stale state, leaked answers, hidden-harness bugs, or grader changes as clean wins.
+
+Before promoting, ask: does this compute the required output for all valid inputs under the stated contract; did it pass the required correctness scope; is the speedup outside noise; is the objective evidence current; and would the method remain valid if input order, warmup count, seed, hardware, or hidden cases changed within the contract?
 
 When the answer is uncertain, keep the candidate separate and report the risk.
+
+## Reference Routing
+
+- Read `references/harness.md` for persistent long/noisy/remote/multi-candidate runs, fixed budgets, crash handling, git-backed keep/discard, and result tables.
+- Read `references/resource-models.md` for resource floors, floor-versus-runtime diagnosis, schedule-versus-op-graph gaps, tail audits, primitive inversion, negative audits, and local-optimum audits.
+- Read `references/evidence-loop.md` for measurement integrity, objective evidence, profiling confidence, variance, promotion gates, and platform-blocker handling.
+- Read `references/stochastic-policy-search.md` only for policy, controller, simulator, hidden-seed, scenario-set, or randomized-search targets.
+- Read `references/gpu-architecture.md` for GPU-specific probes and traps across CUDA, ROCm/HIP, Triton, device discovery, profiling, and cross-GPU transfer checks.
+- Read `references/cpu-architecture.md` for CPU-specific probes and traps across startup overhead, SIMD, memory-level parallelism, counters, service/load benchmarks, and low-level artifact transfer.
+- Read `references/problem-families.md` for target-family playbooks.
+- Read `references/templates.md` when creating logs, reports, ledgers, audits, or handoffs.

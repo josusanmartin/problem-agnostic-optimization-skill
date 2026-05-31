@@ -6,7 +6,22 @@ The skill works best when the task starts with a clear `/goal`. Optimization is 
 
 ## Use It With `/goal`
 
-For any substantial optimization run, start with `/goal` and include:
+For any substantial optimization run, start with `/goal`.
+
+Minimal form:
+
+```text
+/goal
+Objective:
+Authoritative metric:
+Baseline:
+Editable files:
+Immutable files:
+Budget / stopping rule:
+Validation:
+```
+
+Use the extended form when the run is noisy, remote, budget-limited, hardware-specific, or stochastic:
 
 ```text
 /goal
@@ -23,7 +38,13 @@ Stopping rule:
 Notes:
 ```
 
-Use concrete values. Avoid prompts like "make this faster" or "optimize this." The skill will work harder and make better decisions when it knows what counts as success.
+Use concrete values. Avoid prompts like "make this faster" or "optimize this." The core loop is:
+
+```text
+contract -> baseline -> bottleneck model -> candidate -> validate/measure -> decide -> iterate or escape
+```
+
+Only the authoritative metric promotes; profiles, counters, local benchmarks, and static models explain.
 
 ### Field Guide
 
@@ -31,13 +52,24 @@ Use concrete values. Avoid prompts like "make this faster" or "optimize this." T
 - `Context`: the repo, problem, benchmark, hardware, service, leaderboard, or paper/reference that defines the task.
 - `Target mode`: `production`, `clean leaderboard`, or another explicitly stated mode. Clean leaderboard still forbids exploit-like shortcuts.
 - `Authoritative metric`: the command, submit path, dashboard, leaderboard, p95, score, or public evaluator that decides promotion.
-- `Current baseline`: current best artifact, score, command, commit, submission ID, or "unknown, reproduce first".
+- `Baseline` / `Current baseline`: current best artifact, score, command, commit, submission ID, or "unknown, reproduce first".
 - `Editable files`: what Codex may change.
 - `Immutable files`: reference implementations, graders, harnesses, datasets, scoring code, and anything else that must not be changed.
-- `Budget`: submissions, GPU minutes, wall time, simulation count, API spend, or max candidates.
+- `Budget` / `Budget / stopping rule`: submissions, GPU minutes, wall time, simulation count, API spend, max candidates, or target exit condition.
 - `Validation`: correctness checks, seed protocol, shape sweep, test command, profiler/counter expectations, or production guardrails.
 - `Stopping rule`: target reached, budget exhausted, blocker, plateau audit, or handoff after N candidates.
 - `Notes`: known failed attempts, public clues, constraints, tolerances, hidden-test risk, and anything that would make an optimization invalid.
+
+## Operating Model
+
+The skill keeps four artifacts current:
+
+1. `Contract`: what counts as correct, what metric promotes, what files are editable, and what system, shape, seed, or scorer is authoritative.
+2. `Best`: the current best artifact, score, command, result ID, and promotion rationale.
+3. `Bottleneck model`: the current explanation of the gap, including resource floors, profile confidence, tails, case splits, and statistical uncertainty.
+4. `Candidate ledger`: one hypothesis, one diff, expected signal, result, decision, and learning.
+
+Candidate decisions are `PROMOTE`, `KEEP VARIANT`, `REJECT`, `BUG`, or `BLOCKED`. After repeated same-family ties or regressions, the skill should stop tuning and change representation, primitive, route, or specialization level.
 
 ## Prompt Templates
 
@@ -91,22 +123,6 @@ Validation: smoke/train/validation/holdout/adversarial scenario sets; report mea
 Stopping rule: public score improves, holdout rejects candidate, budget exhausted, or overfit audit triggers.
 Notes: compare parent and candidate on matched scenarios when possible.
 ```
-
-## What The Skill Does
-
-After `/goal`, the skill should:
-
-1. Confirm the objective and scoring contract.
-2. Reproduce or establish the baseline.
-3. Protect the current best artifact.
-4. Define editable and immutable files.
-5. Choose minimal or harness mode.
-6. Build a bottleneck, resource, or statistical model.
-7. Test one candidate hypothesis at a time.
-8. Validate correctness before performance when possible.
-9. Promote only authoritative, stable, non-exploit wins.
-10. Log failed ideas so the same branch is not retried without a new premise.
-11. Trigger a local-optimum audit when repeated candidates tie, regress, or cannot reach the target.
 
 ## Install
 
