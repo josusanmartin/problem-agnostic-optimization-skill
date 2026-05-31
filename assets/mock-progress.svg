@@ -1,94 +1,95 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="560" viewBox="0 0 1200 560">
-<style>text{font-family:Arial,Helvetica,sans-serif;font-size:13px}.small{font-size:11px}.title{font-size:18px}</style>
-<rect width="100%" height="100%" fill="white"/>
-<text x="600.0" y="28" text-anchor="middle" class="title">Mock Optimization Progress</text>
-<line x1="82" y1="482.00" x2="1090" y2="482.00" stroke="#eeeeee"/>
+<style>text{font-family:Inter,Arial,Helvetica,sans-serif;font-size:13px;fill:#1f2933}.small{font-size:11px;fill:#6b7280}.title{font-size:20px;font-weight:700}.axis{font-weight:600}.legend{font-size:12px}</style>
+<rect width="100%" height="100%" fill="#fbfbf7"/>
+<rect x="82" y="52" width="1008" height="430" rx="6" fill="#ffffff" stroke="#ddd8cd"/>
+<text x="600.0" y="30" text-anchor="middle" class="title">Mock Optimization Progress</text>
+<line x1="82" y1="482.00" x2="1090" y2="482.00" stroke="#e8e4da"/>
 <text x="72" y="486.00" text-anchor="end" class="small">0.9758</text>
-<line x1="82" y1="396.00" x2="1090" y2="396.00" stroke="#eeeeee"/>
+<line x1="82" y1="396.00" x2="1090" y2="396.00" stroke="#e8e4da"/>
 <text x="72" y="400.00" text-anchor="end" class="small">0.981</text>
-<line x1="82" y1="310.00" x2="1090" y2="310.00" stroke="#eeeeee"/>
+<line x1="82" y1="310.00" x2="1090" y2="310.00" stroke="#e8e4da"/>
 <text x="72" y="314.00" text-anchor="end" class="small">0.9862</text>
-<line x1="82" y1="224.00" x2="1090" y2="224.00" stroke="#eeeeee"/>
+<line x1="82" y1="224.00" x2="1090" y2="224.00" stroke="#e8e4da"/>
 <text x="72" y="228.00" text-anchor="end" class="small">0.9914</text>
-<line x1="82" y1="138.00" x2="1090" y2="138.00" stroke="#eeeeee"/>
+<line x1="82" y1="138.00" x2="1090" y2="138.00" stroke="#e8e4da"/>
 <text x="72" y="142.00" text-anchor="end" class="small">0.9966</text>
-<line x1="82" y1="52.00" x2="1090" y2="52.00" stroke="#eeeeee"/>
+<line x1="82" y1="52.00" x2="1090" y2="52.00" stroke="#e8e4da"/>
 <text x="72" y="56.00" text-anchor="end" class="small">1.002</text>
-<line x1="82.00" y1="52" x2="82.00" y2="482" stroke="#f3f3f3"/>
+<line x1="82.00" y1="52" x2="82.00" y2="482" stroke="#f1eee7"/>
 <text x="82.00" y="506" text-anchor="middle" class="small">0</text>
-<line x1="166.00" y1="52" x2="166.00" y2="482" stroke="#f3f3f3"/>
+<line x1="166.00" y1="52" x2="166.00" y2="482" stroke="#f1eee7"/>
 <text x="166.00" y="506" text-anchor="middle" class="small">2</text>
-<line x1="250.00" y1="52" x2="250.00" y2="482" stroke="#f3f3f3"/>
+<line x1="250.00" y1="52" x2="250.00" y2="482" stroke="#f1eee7"/>
 <text x="250.00" y="506" text-anchor="middle" class="small">4</text>
-<line x1="334.00" y1="52" x2="334.00" y2="482" stroke="#f3f3f3"/>
+<line x1="334.00" y1="52" x2="334.00" y2="482" stroke="#f1eee7"/>
 <text x="334.00" y="506" text-anchor="middle" class="small">6</text>
-<line x1="418.00" y1="52" x2="418.00" y2="482" stroke="#f3f3f3"/>
+<line x1="418.00" y1="52" x2="418.00" y2="482" stroke="#f1eee7"/>
 <text x="418.00" y="506" text-anchor="middle" class="small">8</text>
-<line x1="502.00" y1="52" x2="502.00" y2="482" stroke="#f3f3f3"/>
+<line x1="502.00" y1="52" x2="502.00" y2="482" stroke="#f1eee7"/>
 <text x="502.00" y="506" text-anchor="middle" class="small">10</text>
-<line x1="586.00" y1="52" x2="586.00" y2="482" stroke="#f3f3f3"/>
+<line x1="586.00" y1="52" x2="586.00" y2="482" stroke="#f1eee7"/>
 <text x="586.00" y="506" text-anchor="middle" class="small">12</text>
-<line x1="670.00" y1="52" x2="670.00" y2="482" stroke="#f3f3f3"/>
+<line x1="670.00" y1="52" x2="670.00" y2="482" stroke="#f1eee7"/>
 <text x="670.00" y="506" text-anchor="middle" class="small">14</text>
-<line x1="754.00" y1="52" x2="754.00" y2="482" stroke="#f3f3f3"/>
+<line x1="754.00" y1="52" x2="754.00" y2="482" stroke="#f1eee7"/>
 <text x="754.00" y="506" text-anchor="middle" class="small">16</text>
-<line x1="838.00" y1="52" x2="838.00" y2="482" stroke="#f3f3f3"/>
+<line x1="838.00" y1="52" x2="838.00" y2="482" stroke="#f1eee7"/>
 <text x="838.00" y="506" text-anchor="middle" class="small">18</text>
-<line x1="922.00" y1="52" x2="922.00" y2="482" stroke="#f3f3f3"/>
+<line x1="922.00" y1="52" x2="922.00" y2="482" stroke="#f1eee7"/>
 <text x="922.00" y="506" text-anchor="middle" class="small">20</text>
-<line x1="1006.00" y1="52" x2="1006.00" y2="482" stroke="#f3f3f3"/>
+<line x1="1006.00" y1="52" x2="1006.00" y2="482" stroke="#f1eee7"/>
 <text x="1006.00" y="506" text-anchor="middle" class="small">22</text>
-<line x1="1090.00" y1="52" x2="1090.00" y2="482" stroke="#f3f3f3"/>
+<line x1="1090.00" y1="52" x2="1090.00" y2="482" stroke="#f1eee7"/>
 <text x="1090.00" y="506" text-anchor="middle" class="small">24</text>
-<text x="1100" y="486.00" fill="#2563eb" class="small">-3.15k</text>
-<text x="1100" y="400.00" fill="#2563eb" class="small">9.47k</text>
-<text x="1100" y="314.00" fill="#2563eb" class="small">22.1k</text>
-<text x="1100" y="228.00" fill="#2563eb" class="small">34.7k</text>
-<text x="1100" y="142.00" fill="#2563eb" class="small">47.3k</text>
+<text x="1100" y="486.00" fill="#2563eb" class="small">0k</text>
+<text x="1100" y="400.00" fill="#2563eb" class="small">12k</text>
+<text x="1100" y="314.00" fill="#2563eb" class="small">24k</text>
+<text x="1100" y="228.00" fill="#2563eb" class="small">36k</text>
+<text x="1100" y="142.00" fill="#2563eb" class="small">48k</text>
 <text x="1100" y="56.00" fill="#2563eb" class="small">60k</text>
-<line x1="82" y1="52" x2="82" y2="482" stroke="#222"/>
+<line x1="82" y1="52" x2="82" y2="482" stroke="#2f2f2f"/>
 <line x1="1090" y1="52" x2="1090" y2="482" stroke="#2563eb"/>
-<line x1="82" y1="482" x2="1090" y2="482" stroke="#222"/>
-<text x="600.0" y="538" text-anchor="middle">Candidate #</text>
-<text x="22" y="280.0" transform="rotate(-90 22 280.0)" text-anchor="middle">Validation loss (lower is better)</text>
-<text x="1176" y="280.0" transform="rotate(90 1176 280.0)" text-anchor="middle" fill="#2563eb">Cumulative tokens</text>
-<polyline points="82.00,81.66 124.00,214.04 166.00,214.04 208.00,290.17 250.00,290.17 292.00,290.17 334.00,339.81 376.00,339.81 418.00,339.81 460.00,339.81 502.00,381.19 544.00,381.19 586.00,381.19 628.00,381.19 670.00,381.19 712.00,419.25 754.00,419.25 796.00,419.25 838.00,419.25 880.00,419.25 922.00,419.25 964.00,419.25 1006.00,449.04 1048.00,449.04 1090.00,449.04" fill="none" stroke="#169c55" stroke-width="2"/>
-<polyline points="82.00,452.34 124.00,439.40 166.00,428.50 208.00,413.50 250.00,401.92 292.00,389.65 334.00,370.58 376.00,357.63 418.00,345.36 460.00,328.33 502.00,309.93 544.00,296.30 586.00,283.35 628.00,269.04 670.00,252.01 712.00,232.25 754.00,217.26 796.00,202.27 838.00,194.09 880.00,175.01 922.00,156.61 964.00,140.94 1006.00,119.13 1048.00,100.73 1090.00,81.66" fill="none" stroke="#2563eb" stroke-width="2"/>
-<circle cx="82.00" cy="81.66" r="4" fill="#169c55" opacity="0.95"/>
-<text x="90.00" y="74.66" fill="#169c55" class="small" transform="rotate(-25 90.00 74.66)">baseline</text>
-<circle cx="124.00" cy="214.04" r="4" fill="#169c55" opacity="0.95"/>
-<text x="132.00" y="207.04" fill="#169c55" class="small" transform="rotate(-25 132.00 207.04)">fused validation route</text>
-<circle cx="166.00" cy="139.58" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="208.00" cy="290.17" r="4" fill="#169c55" opacity="0.95"/>
-<text x="216.00" y="283.17" fill="#169c55" class="small" transform="rotate(-25 216.00 283.17)">remove redundant pass</text>
-<circle cx="250.00" cy="233.90" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="292.00" cy="252.11" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="334.00" cy="339.81" r="4" fill="#169c55" opacity="0.95"/>
-<text x="342.00" y="332.81" fill="#169c55" class="small" transform="rotate(-25 342.00 332.81)">vectorized inner loop</text>
-<circle cx="376.00" cy="311.68" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="418.00" cy="324.92" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="460.00" cy="331.54" r="4" fill="#3b82f6" opacity="0.95"/>
-<circle cx="502.00" cy="381.19" r="4" fill="#169c55" opacity="0.95"/>
-<text x="510.00" y="374.19" fill="#169c55" class="small" transform="rotate(-25 510.00 374.19)">specialize hot shape</text>
-<circle cx="544.00" cy="362.98" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="586.00" cy="367.95" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="628.00" cy="371.26" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="670.00" cy="382.84" r="4" fill="#3b82f6" opacity="0.95"/>
-<circle cx="712.00" cy="419.25" r="4" fill="#169c55" opacity="0.95"/>
-<text x="720.00" y="412.25" fill="#169c55" class="small" transform="rotate(-25 720.00 412.25)">reduce tail barrier</text>
-<circle cx="754.00" cy="406.01" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="796.00" cy="410.97" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="838.00" cy="401.04" r="4" fill="#dc2626" opacity="0.95"/>
-<circle cx="880.00" cy="414.28" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="922.00" cy="425.87" r="4" fill="#3b82f6" opacity="0.95"/>
-<circle cx="964.00" cy="422.56" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="1006.00" cy="449.04" r="4" fill="#169c55" opacity="0.95"/>
-<text x="1014.00" y="442.04" fill="#169c55" class="small" transform="rotate(-25 1014.00 442.04)">fast path for common case</text>
-<circle cx="1048.00" cy="444.07" r="4" fill="#cfcfcf" opacity="0.55"/>
-<circle cx="1090.00" cy="452.34" r="4" fill="#3b82f6" opacity="0.95"/>
-<rect x="930" y="44" width="150" height="72" fill="white" stroke="#dddddd"/>
-<circle cx="944" cy="60" r="4" fill="#cfcfcf" opacity="0.55"/><text x="956" y="64" class="small">Discarded</text>
-<circle cx="944" cy="80" r="4" fill="#169c55"/><text x="956" y="84" class="small">Promoted/kept</text>
-<line x1="937" y1="100" x2="951" y2="100" stroke="#169c55" stroke-width="2"/><text x="956" y="104" class="small">Running best</text>
-<line x1="937" y1="120" x2="951" y2="120" stroke="#2563eb" stroke-width="2"/><text x="956" y="124" class="small">Tokens</text>
+<line x1="82" y1="482" x2="1090" y2="482" stroke="#2f2f2f"/>
+<text x="600.0" y="538" text-anchor="middle" class="axis">Candidate #</text>
+<text x="22" y="280.0" transform="rotate(-90 22 280.0)" text-anchor="middle" class="axis">Validation loss (lower is better)</text>
+<text x="1176" y="280.0" transform="rotate(90 1176 280.0)" text-anchor="middle" fill="#2563eb" class="axis">Cumulative tokens</text>
+<polyline points="82.00,81.66 124.00,214.04 166.00,214.04 208.00,290.17 250.00,290.17 292.00,290.17 334.00,339.81 376.00,339.81 418.00,339.81 460.00,339.81 502.00,381.19 544.00,381.19 586.00,381.19 628.00,381.19 670.00,381.19 712.00,419.25 754.00,419.25 796.00,419.25 838.00,419.25 880.00,419.25 922.00,419.25 964.00,419.25 1006.00,449.04 1048.00,449.04 1090.00,449.04" fill="none" stroke="#169c55" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<polyline points="82.00,473.41 124.00,459.80 166.00,448.34 208.00,432.59 250.00,420.42 292.00,407.53 334.00,387.48 376.00,373.87 418.00,360.98 460.00,343.08 502.00,323.74 544.00,309.42 586.00,295.82 628.00,280.78 670.00,262.88 712.00,242.11 754.00,226.35 796.00,210.60 838.00,202.01 880.00,181.96 922.00,162.62 964.00,146.15 1006.00,123.24 1048.00,103.90 1090.00,83.85" fill="none" stroke="#2563eb" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="82.00" cy="81.66" r="4.8" fill="#18a058" opacity="0.96" stroke="#ffffff" stroke-width="1.5"/>
+<text x="90.00" y="74.66" fill="#18a058" class="small" transform="rotate(-25 90.00 74.66)">baseline</text>
+<circle cx="124.00" cy="214.04" r="4.8" fill="#18a058" opacity="0.96" stroke="#ffffff" stroke-width="1.5"/>
+<text x="132.00" y="207.04" fill="#18a058" class="small" transform="rotate(-25 132.00 207.04)">fused validation route</text>
+<circle cx="166.00" cy="139.58" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="208.00" cy="290.17" r="4.8" fill="#18a058" opacity="0.96" stroke="#ffffff" stroke-width="1.5"/>
+<text x="216.00" y="283.17" fill="#18a058" class="small" transform="rotate(-25 216.00 283.17)">remove redundant pass</text>
+<circle cx="250.00" cy="233.90" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="292.00" cy="252.11" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="334.00" cy="339.81" r="4.8" fill="#18a058" opacity="0.96" stroke="#ffffff" stroke-width="1.5"/>
+<text x="342.00" y="332.81" fill="#18a058" class="small" transform="rotate(-25 342.00 332.81)">vectorized inner loop</text>
+<circle cx="376.00" cy="311.68" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="418.00" cy="324.92" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="460.00" cy="331.54" r="3.6" fill="#0ea5e9" opacity="0.96" stroke="none" stroke-width="1.5"/>
+<circle cx="502.00" cy="381.19" r="4.8" fill="#18a058" opacity="0.96" stroke="#ffffff" stroke-width="1.5"/>
+<text x="510.00" y="374.19" fill="#18a058" class="small" transform="rotate(-25 510.00 374.19)">specialize hot shape</text>
+<circle cx="544.00" cy="362.98" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="586.00" cy="367.95" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="628.00" cy="371.26" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="670.00" cy="382.84" r="3.6" fill="#0ea5e9" opacity="0.96" stroke="none" stroke-width="1.5"/>
+<circle cx="712.00" cy="419.25" r="4.8" fill="#18a058" opacity="0.96" stroke="#ffffff" stroke-width="1.5"/>
+<text x="720.00" y="412.25" fill="#18a058" class="small" transform="rotate(-25 720.00 412.25)">reduce tail barrier</text>
+<circle cx="754.00" cy="406.01" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="796.00" cy="410.97" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="838.00" cy="401.04" r="3.6" fill="#dc2626" opacity="0.96" stroke="none" stroke-width="1.5"/>
+<circle cx="880.00" cy="414.28" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="922.00" cy="425.87" r="3.6" fill="#0ea5e9" opacity="0.96" stroke="none" stroke-width="1.5"/>
+<circle cx="964.00" cy="422.56" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="1006.00" cy="449.04" r="4.8" fill="#18a058" opacity="0.96" stroke="#ffffff" stroke-width="1.5"/>
+<text x="1014.00" y="442.04" fill="#18a058" class="small" transform="rotate(-25 1014.00 442.04)">fast path for common case</text>
+<circle cx="1048.00" cy="444.07" r="3.6" fill="#c7c7c7" opacity="0.56" stroke="none" stroke-width="1.5"/>
+<circle cx="1090.00" cy="452.34" r="3.6" fill="#0ea5e9" opacity="0.96" stroke="none" stroke-width="1.5"/>
+<rect x="930" y="44" width="150" height="72" rx="6" fill="white" stroke="#ddd8cd"/>
+<circle cx="944" cy="60" r="4" fill="#c7c7c7" opacity="0.56"/><text x="956" y="64" class="legend">Discarded</text>
+<circle cx="944" cy="80" r="4.8" fill="#18a058"/><text x="956" y="84" class="legend">Promoted/kept</text>
+<line x1="937" y1="100" x2="951" y2="100" stroke="#18a058" stroke-width="2.5" stroke-linecap="round"/><text x="956" y="104" class="legend">Running best</text>
+<line x1="937" y1="120" x2="951" y2="120" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round"/><text x="956" y="124" class="legend">Tokens</text>
 </svg>

@@ -47,3 +47,5 @@ def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
     assert "Cumulative tokens" in svg
     assert "Running best" in svg
     assert "first win" in svg
+    assert ">0k<" in svg
+    assert ">-" not in svg
