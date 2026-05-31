@@ -1,8 +1,10 @@
 # Templates
 
-Use these directly in notes, reports, or handoffs.
+Use the default templates for normal optimization runs. Use the extended templates only when the run needs extra profiling, per-case, stochastic, or handoff structure.
 
-## Contract Table
+## Default Templates
+
+### Contract
 
 ```markdown
 ## Contract
@@ -10,50 +12,96 @@ Use these directly in notes, reports, or handoffs.
 - Mode:
 - Objective:
 - Objective source:
-- Theoretical floor:
-- Target metric:
+- Authoritative metric:
 - Authoritative measurement:
 - Correctness method:
-- Tolerance:
+- Baseline artifact:
+- Baseline score:
+- Target or floor:
 - Hardware/system:
-- Compiler/runtime:
 - Budget:
-- Profiling availability:
-- Profiling command/artifacts:
-- Current best:
 - Editable files:
-- Immutable harness/reference files:
+- Immutable harness/reference/scoring/data files:
 
-| Case | Shape/Input | Dtype/Layout | Current Route | Current Time | Target/Leader | Notes |
+| Case | Shape/Input | Dtype/Layout/Seed | Current Route | Current Score/Time | Target/Leader | Notes |
 |---|---|---|---|---:|---:|---|
 ```
 
-## Bottleneck Map
+### Bottleneck Model
 
 ```markdown
 ## Bottleneck Model
 
 - Primary bottleneck:
+- Gap class: floor gap | schedule gap | evidence gap | statistical gap
 - Evidence:
-- Profiling strength:
-- Profile/counter deltas:
-- Secondary bottleneck:
-- Resource floors:
-- Runtime minus floor:
-- Tail critical path:
+- Profiling strength: strong | medium | weak | none
+- Resource/statistical floors:
+- Runtime or score gap versus floor:
+- Tail/dependency risk:
 - What likely will not help:
 - Structural alternatives:
 - Next cheapest falsifiable probe:
 ```
 
-## Resource Floor Table
+### Candidate Ledger Entry
+
+```markdown
+## vNN-short-name
+
+- Parent:
+- Hypothesis:
+- Mechanism class:
+- Expected authoritative signal:
+- Expected per-case/resource/profile signal:
+- Kill criterion:
+- Artifact:
+- Correctness:
+- Validation command:
+- Measurement command:
+- Result:
+- Decision: PROMOTE | KEEP VARIANT | REJECT | BUG | BLOCKED
+- Learning:
+- Next:
+```
+
+### Local-Optimum Audit
+
+```markdown
+## Local-Optimum Audit
+
+- Current hill:
+- Why it looked promising:
+- Best verified result:
+- Plateau evidence:
+- Floor/resource blocker:
+- Tail/dependency/statistical blocker:
+- Remaining plausible gain on this hill:
+- Why that is not enough:
+
+Different hills:
+- Primitive change:
+- Representation change:
+- Route/library/config change:
+- Contract specialization or target split:
+
+Next off-hill probe:
+- Artifact:
+- Hypothesis:
+- Expected signal:
+- Kill criterion:
+```
+
+## Extended Templates
+
+### Resource Floor Table
 
 ```markdown
 | Resource | Work Count | Throughput | Floor | Current Pressure | Candidate Delta |
 |---|---:|---:|---:|---|---:|
 ```
 
-## Profiling Inventory
+### Profiling Inventory
 
 ```markdown
 ## Profiling Inventory
@@ -71,7 +119,7 @@ Use these directly in notes, reports, or handoffs.
 - Fallback evidence:
 ```
 
-## Profile Comparison
+### Profile Comparison
 
 ```markdown
 ## Profile Comparison
@@ -86,7 +134,7 @@ Interpretation:
 - Next candidate hypothesis:
 ```
 
-## Tail Audit
+### Tail Audit
 
 ```markdown
 ## Tail Audit
@@ -99,34 +147,7 @@ Interpretation:
 - Candidate tail risk:
 ```
 
-## Local Optimum Audit
-
-```markdown
-## Local Optimum Audit
-
-- Current hill:
-- Why it looked promising:
-- Best verified result:
-- Plateau evidence:
-- Lower-bound/resource-floor blocker:
-- Tail/dependency blocker:
-- Remaining plausible gain on this hill:
-- Why that is not enough:
-
-Different hills:
-- Primitive change:
-- Representation change:
-- Route/library/config change:
-- Contract specialization or target split:
-
-Next off-hill probe:
-- Artifact:
-- Hypothesis:
-- Expected signal:
-- Kill criterion:
-```
-
-## Stateful Stochastic Policy Result
+### Stateful Stochastic Policy Result
 
 ```markdown
 ## policy-NN
@@ -161,37 +182,14 @@ policy_0001	L3	1.250	0.180	-0.400	2.800	0.620	0.000	verify	better validation, ch
 policy_0002	L4	2.100	0.900	-6.500	8.200	0.480	0.000	discard	train overfit, bad holdout
 ```
 
-## Candidate Entry
-
-```markdown
-## vNN-short-name
-
-- Parent:
-- Hypothesis:
-- Mechanism:
-- Expected per-case effect:
-- Expected resource-floor effect:
-- Profiling basis:
-- Expected profile/counter effect:
-- Tail/dependency risk:
-- Artifact:
-- Correctness:
-- Measurement command:
-- Profile command:
-- Result:
-- Per-case/counter delta:
-- Decision:
-- Next:
-```
-
-## Per-Case Winner Table
+### Per-Case Winner Table
 
 ```markdown
 | Case | Best Artifact | Best Time | Runner/ID | Why it wins | Risk |
 |---|---|---:|---|---|---|
 ```
 
-## Results TSV
+### Results TSV
 
 ```text
 candidate	score	memory_or_cost	status	description
@@ -201,7 +199,7 @@ cand_0002	0.000	0.0	crash	OOM on larger tile
 cand_0003	38.200	0.0	discard	graph wrapper regressed
 ```
 
-## Speedup Classification
+### Speedup Classification
 
 ```markdown
 Speedup class:
@@ -216,7 +214,7 @@ Promotion rationale:
 Risk:
 ```
 
-## Final Handoff
+### Final Handoff
 
 ```markdown
 ## Optimization Handoff
@@ -234,7 +232,7 @@ Risk:
 - Next experiments:
 ```
 
-## `work/best.md`
+### `work/best.md`
 
 ```markdown
 # Best Known State
@@ -270,7 +268,7 @@ Complexity:
 1. 
 ```
 
-## `work/plan.md`
+### `work/plan.md`
 
 ```markdown
 # Active Plan
