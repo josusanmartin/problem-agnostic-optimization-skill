@@ -16,6 +16,7 @@ Use the default templates for normal optimization runs. Use the extended templat
 - Target or floor:
 - Validation:
 - Budget / stopping rule:
+- Progress chart: on | off
 - Editable files:
 - Immutable files:
 - Evidence available:
@@ -205,7 +206,7 @@ cand_0003	38.200	0.0	discard	graph wrapper regressed
 
 ### Progress TSV
 
-Use this for `work/progress.tsv`; regenerate `work/progress.svg` after appending rows.
+Use this for `work/progress.tsv`; progress charting is on by default for substantial optimization runs. Regenerate `work/progress.svg` after appending rows unless `/goal` says `Progress chart: off`.
 
 ```text
 candidate	score	decision	tokens_total	tokens_delta	label

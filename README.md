@@ -19,6 +19,7 @@ Editable files:
 Immutable files:
 Budget / stopping rule:
 Validation:
+Progress chart: on
 ```
 
 Use the extended form when the run is noisy, remote, budget-limited, hardware-specific, or stochastic:
@@ -35,6 +36,7 @@ Immutable files:
 Budget:
 Validation:
 Stopping rule:
+Progress chart: on
 Notes:
 ```
 
@@ -59,6 +61,7 @@ Internally, the skill tracks the contract, current best, bottleneck model, and c
 - `Budget` / `Budget / stopping rule`: submissions, GPU minutes, wall time, simulation count, API spend, max candidates, or target exit condition.
 - `Validation`: correctness checks, seed protocol, shape sweep, test command, profiler/counter expectations, or production guardrails.
 - `Stopping rule`: target reached, budget exhausted, blocker, plateau audit, or handoff after N candidates.
+- `Progress chart`: defaults to `on` for substantial optimization runs. Set `Progress chart: off` to skip `work/progress.tsv`, `work/progress.svg`, and `work/review.md`.
 - `Notes`: known failed attempts, public clues, constraints, tolerances, hidden-test risk, and anything that would make an optimization invalid.
 
 ## Prompt Templates
@@ -77,6 +80,7 @@ Immutable files: problem statement, checker, benchmark, reference, scoring code.
 Budget: <N submissions or time limit>.
 Validation: run correctness first when available; compare per-shape/per-case results; record variance.
 Stopping rule: stop when first place is verified, budget is exhausted, or plateau audit says change hill.
+Progress chart: on.
 Notes: no exploits, no wrong-answer speed, no harness edits.
 ```
 
@@ -94,6 +98,7 @@ Immutable files: public API, correctness tests, datasets, benchmark contract.
 Budget: <wall time, candidate count, risk window>.
 Validation: tests, load test, profiling artifacts, p95/p99, error rate, rollback safety.
 Stopping rule: target reached with stable validation, or handoff with bottleneck map.
+Progress chart: on.
 Notes: maintainability and correctness beat benchmark-only tricks.
 ```
 
@@ -111,12 +116,13 @@ Immutable files: simulator, scorer, seed generator, reference policies, submissi
 Budget: <simulations, submissions, wall time>.
 Validation: smoke/train/validation/holdout/adversarial scenario sets; report mean, SEM, p05/p95, invalid rate, win rate vs parent.
 Stopping rule: public score improves, holdout rejects candidate, budget exhausted, or overfit audit triggers.
+Progress chart: on.
 Notes: compare parent and candidate on matched scenarios when possible.
 ```
 
 ## Progress Monitoring
 
-For long runs, the harness can maintain `work/progress.tsv` and render `work/progress.svg`:
+For substantial optimization runs, progress monitoring is on by default. The harness maintains `work/progress.tsv`, renders `work/progress.svg`, and keeps `work/review.md` unless `/goal` says `Progress chart: off`.
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower

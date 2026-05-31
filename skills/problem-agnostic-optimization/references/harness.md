@@ -15,6 +15,9 @@ work/
   best.md
   log.md
   plan.md
+  progress.tsv              # default on unless /goal says Progress chart: off
+  progress.svg
+  review.md
   state.json
 ```
 
@@ -55,7 +58,7 @@ Adapt names to the repository. The important part is that best state, history, a
 
 ## Progress Monitor
 
-For long or autonomous runs, maintain a live progress surface:
+For substantial optimization runs, maintain a live progress surface by default. Skip these files only when `/goal` says `Progress chart: off`.
 
 ```text
 work/progress.tsv   # one row per measured candidate
@@ -82,6 +85,8 @@ cand_0000	1.000	baseline	1200	1200	baseline
 cand_0001	0.992	promote	3100	1900	fused route
 cand_0002	0.996	reject	4500	1400	tile too small
 ```
+
+To disable charting, record `Progress chart: off` in the `/goal` contract and set `progress.enabled` to `false` in `work/state.json`.
 
 After every measured candidate:
 
@@ -246,6 +251,7 @@ Small machine-readable state:
   "rate_limits": {},
   "pending_jobs": [],
   "progress": {
+    "enabled": true,
     "table": "work/progress.tsv",
     "chart": "work/progress.svg",
     "review": "work/review.md",
@@ -455,7 +461,7 @@ At the start:
 - Read the tail of `work/log.md`.
 - Read `work/plan.md`.
 - Read `work/state.json`.
-- Open `work/progress.svg` and `work/review.md` if they exist.
+- Open `work/progress.svg` and `work/review.md` if `progress.enabled` is not `false`.
 - Check pending jobs if using a remote system.
 
 Before editing:
@@ -473,7 +479,7 @@ After running:
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/state.json`.
-- Append `work/progress.tsv`, regenerate `work/progress.svg`, and refresh `work/review.md`.
+- If `progress.enabled` is not `false`, append `work/progress.tsv`, regenerate `work/progress.svg`, and refresh `work/review.md`.
 - Update `work/best.md` only if promotion rules pass.
 - Update `work/plan.md` with next branch status.
 
