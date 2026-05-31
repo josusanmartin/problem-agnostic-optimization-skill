@@ -11,20 +11,14 @@ Use the default templates for normal optimization runs. Use the extended templat
 
 - Mode:
 - Objective:
-- Objective source:
 - Authoritative metric:
-- Authoritative measurement:
-- Correctness method:
-- Baseline artifact:
-- Baseline score:
+- Baseline:
 - Target or floor:
-- Hardware/system:
-- Budget:
+- Validation:
+- Budget / stopping rule:
 - Editable files:
-- Immutable harness/reference/scoring/data files:
-
-| Case | Shape/Input | Dtype/Layout/Seed | Current Route | Current Score/Time | Target/Leader | Notes |
-|---|---|---|---|---:|---:|---|
+- Immutable files:
+- Evidence available:
 ```
 
 ### Bottleneck Model
@@ -52,8 +46,7 @@ Use the default templates for normal optimization runs. Use the extended templat
 - Parent:
 - Hypothesis:
 - Mechanism class:
-- Expected authoritative signal:
-- Expected per-case/resource/profile signal:
+- Expected signal:
 - Kill criterion:
 - Artifact:
 - Correctness:
@@ -93,6 +86,15 @@ Next off-hill probe:
 ```
 
 ## Extended Templates
+
+Use the per-case table when aggregate metrics hide important differences.
+
+### Per-Case Contract Table
+
+```markdown
+| Case | Shape/Input | Dtype/Layout/Seed | Current Route | Current Score/Time | Target/Leader | Notes |
+|---|---|---|---|---:|---:|---|
+```
 
 ### Resource Floor Table
 
