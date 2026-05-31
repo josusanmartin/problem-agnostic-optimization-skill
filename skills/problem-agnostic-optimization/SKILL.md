@@ -33,7 +33,13 @@ If the user asks to prepare, draft, write, fill, or format a goal "for later", r
 
 If no target is given, find a public best, prior local best, paper result, production SLO, or theoretical/resource floor. If none is available, set an ambitious measurable floor and label the uncertainty.
 
-Use minimal notes for small one-shot tasks. For long, noisy, remote, budget-limited, or autonomous runs, create `work/best.md`, `work/log.md`, `work/plan.md`, `work/events.jsonl`, and `work/state.json`; read `references/harness.md`.
+Use minimal notes for small one-shot tasks. For long, noisy, remote, budget-limited, or autonomous runs, create `work/best.md`, `work/log.md`, `work/plan.md`, `work/events.jsonl`, `work/progress.svg`, `work/dashboard.html`, `work/review.md`, and `work/state.json`; read `references/harness.md`.
+
+## Progress
+
+For substantial runs, progress artifacts are default-on unless the `/goal` says `Progress chart: off`.
+
+Before the first candidate, initialize `work/events.jsonl` and the `progress` fields in `work/state.json`. After every measured candidate, append one event to `work/events.jsonl`, regenerate `work/progress.svg` and `work/dashboard.html`, and refresh `work/review.md`. If the chart/dashboard scripts are unavailable or a result cannot be charted yet, write the blocker into `work/log.md` or `work/review.md`; do not silently skip progress artifacts.
 
 ## Gap
 

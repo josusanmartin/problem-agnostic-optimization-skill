@@ -110,7 +110,7 @@ Fresh-run isolation: on
 - `Budget` / `Budget / stopping rule`: submissions, GPU minutes, wall time, simulation count, API spend, max candidates, or target exit condition.
 - `Validation`: correctness checks, seed protocol, shape sweep, test command, profiler/counter expectations, or production guardrails.
 - `Stopping rule`: target reached, budget exhausted, blocker, plateau audit, or handoff after N candidates.
-- `Progress chart`: defaults to `on` for substantial optimization runs. Set `Progress chart: off` to skip `work/progress.tsv`, `work/progress.svg`, and `work/review.md`.
+- `Progress chart`: defaults to `on` for substantial optimization runs. When on, Codex should keep `work/events.jsonl`, `work/progress.svg`, `work/dashboard.html`, and `work/review.md` current after each measured candidate. Set `Progress chart: off` to skip chart/dashboard/review rendering.
 - `Fresh-run isolation`: defaults to `on`. In a new assigned workspace, do not inspect sibling workspaces or prior run artifacts unless the user sets `Fresh-run isolation: off`.
 - `Notes`: known failed attempts, public clues, constraints, tolerances, hidden-test risk, and anything that would make an optimization invalid.
 
@@ -175,7 +175,7 @@ Notes: compare parent and candidate on matched scenarios when possible.
 
 ## Progress Monitoring
 
-For substantial optimization runs, progress monitoring is on by default. Long-running harnesses should treat `work/events.jsonl` as the canonical event ledger and render `work/progress.svg` from either `work/events.jsonl` or `work/progress.tsv`. Use TSV for small/manual runs or as a derived export.
+For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/events.jsonl` before the first candidate, append one event after every measured candidate, and regenerate `work/progress.svg`, `work/dashboard.html`, and `work/review.md` after each event. Long-running harnesses should treat `work/events.jsonl` as the canonical event ledger and render `work/progress.svg` from either `work/events.jsonl` or `work/progress.tsv`. Use TSV for small/manual runs or as a derived export.
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower
@@ -184,6 +184,8 @@ python skills/problem-agnostic-optimization/scripts/record_event.py --candidate 
 ```
 
 The chart shows all candidates, the running promoted best, and cumulative token usage on a right-side axis. Supported x-axis modes are `candidate`, `tokens`, `active`, and `wall`.
+
+If a run has `Progress chart: on` but no progress artifacts, ask the optimizer to backfill them from `work/log.md` and any saved result files, then continue appending `work/events.jsonl` after every measured candidate. Missing chart files should be treated as a harness bug, not as normal behavior.
 
 ## Progress Dashboard
 
