@@ -54,6 +54,27 @@ Decision: `PROMOTE` | `KEEP VARIANT` | `REJECT` | `BUG` | `BLOCKED`.
 
 Never promote from a screening metric. Near ties favor the simpler, smaller, less stateful artifact. After a promotion or surprising regression, update the bottleneck model before choosing the next candidate.
 
+## Push Or Reassess
+
+Keep pushing the current hill when at least one is true:
+
+- The last candidate improved the authoritative metric.
+- The candidate improved a proven bottleneck signal and the target gap is still plausibly reachable.
+- Failures are implementation bugs, not evidence against the mechanism.
+- A proven knob has not yet been bracketed.
+- A kept variant wins a lane, shape, seed regime, or hardware target that can be composed or routed.
+
+Reassess before the next candidate when any is true:
+
+- Three same-family candidates tie, regress, or move less than noise.
+- Better floors, counts, or counters repeatedly fail to improve the authoritative metric.
+- The target is below the current resource or statistical floor.
+- The same mechanism fails across independent formulations or target cases.
+- Same-artifact reruns show the target is outside plausible variance.
+- The bottleneck model cannot predict candidate results.
+
+After reassessment, either continue with a narrower hypothesis and kill criterion, or mark the hill `CLOSED` and spend the next candidate off-hill.
+
 ## Escape
 
 After repeated ties, regressions, same-knob failures, or a lower-bound proof against the current family, run a local-optimum audit:
@@ -64,7 +85,7 @@ After repeated ties, regressions, same-knob failures, or a lower-bound proof aga
 - Three different hills.
 - Cheapest off-hill probe.
 
-After repeated same-family failures, spend the next candidate off-hill by default: representation, primitive, route/library/config, target split, or contract specialization.
+After reassessment, mark exhausted hills `CLOSED` until a new premise appears. Spend the next candidate off-hill by default: representation, primitive, route/library/config, target split, or contract specialization.
 
 Invert the primitive when compact work counts hide a target-specific bottleneck. Use negative audits to kill seductive shortcuts before implementing them.
 

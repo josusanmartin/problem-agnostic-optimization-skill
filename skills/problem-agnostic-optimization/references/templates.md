@@ -54,6 +54,8 @@ Use the default templates for normal optimization runs. Use the extended templat
 - Measurement command:
 - Result:
 - Decision: PROMOTE | KEEP VARIANT | REJECT | BUG | BLOCKED
+- Push/reassess:
+- Hill status: OPEN | NARROWED | CLOSED
 - Learning:
 - Next:
 ```
