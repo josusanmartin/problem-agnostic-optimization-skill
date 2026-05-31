@@ -4,6 +4,41 @@ Codex skill for evidence-driven optimization across measured programs, CPU/GPU k
 
 The skill works best when the task starts with a clear `/goal`. Optimization is a long-running search problem; the agent needs an explicit objective, context, constraints, and stopping rule before it starts changing code.
 
+## Quick Start
+
+1. Install the skill using the commands in [Install](#install).
+2. Start a new Codex session so the skill metadata is loaded.
+3. For a real optimization run, paste a filled `/goal` block and ask Codex to use `problem-agnostic-optimization`.
+4. For a draft only, ask Codex to draft the `/goal` block for later and explicitly say not to start or activate it.
+5. For long runs, open a second Codex session in auditor mode to review `work/` progress without editing the active candidate.
+
+Start a real run:
+
+```text
+Use problem-agnostic-optimization.
+
+/goal
+Objective: Find a correct sub-1000-cycle solution for the no-index Angthoic challenge.
+Authoritative metric: cycles from the official challenge benchmark.
+Baseline: unknown, reproduce first.
+Editable files: solution/candidate files only.
+Immutable files: challenge statement, checker, benchmark harness, scoring code, reference data.
+Budget / stopping rule: no budget limit; stop when a correct <1000-cycle solution is verified.
+Validation: official correctness check plus authoritative cycle measurement.
+Progress chart: on
+Fresh-run isolation: on
+```
+
+Draft a goal without starting:
+
+```text
+Use problem-agnostic-optimization.
+
+Draft a /goal block for later. Do not start or activate the goal yet.
+The task is to solve the no-index Angthoic challenge with a sub-1000-cycle solution.
+The metric is cycles. Baseline is unknown. No budget limit.
+```
+
 ## Use It With `/goal`
 
 For any substantial optimization run, start with `/goal`.
@@ -50,6 +85,33 @@ contract -> baseline -> bottleneck model -> candidate -> validate/measure -> dec
 
 Only the authoritative metric promotes; profiles, counters, local benchmarks, and static models explain.
 Internally, the skill tracks the contract, current best, bottleneck model, and candidate ledger.
+
+### Draft A Goal For Later
+
+If you want Codex to prepare the `/goal` block without starting an optimization run, say that explicitly:
+
+```text
+Draft a /goal block for later. Do not start or activate the goal yet.
+
+The task is <task>. The authoritative metric is <metric>. Baseline is <baseline or unknown>.
+Editable files are <files>. Immutable files are <files>. Budget/stopping rule is <budget>.
+Validation is <validation>.
+```
+
+The expected response is a filled copy-paste block, not an active goal:
+
+```text
+/goal
+Objective:
+Authoritative metric:
+Baseline:
+Editable files:
+Immutable files:
+Budget / stopping rule:
+Validation:
+Progress chart: on
+Fresh-run isolation: on
+```
 
 ### Field Guide
 
@@ -175,18 +237,35 @@ Repos that bundle a copy of this skill should record the upstream repository URL
 
 ## Install
 
-Clone the repository and copy the skill directory into your Codex skills folder:
+Clone the repository and copy the skill directory into your Codex skills folder. The commands use `CODEX_HOME` when it is set, otherwise they install into `$HOME/.codex`.
 
 ```bash
 git clone https://github.com/josusanmartin/problem-agnostic-optimization-skill.git
-mkdir -p "$HOME/.codex/skills"
-cp -R problem-agnostic-optimization-skill/skills/problem-agnostic-optimization "$HOME/.codex/skills/"
+cd problem-agnostic-optimization-skill
+
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+mkdir -p "$CODEX_HOME/skills"
+rm -rf "$CODEX_HOME/skills/problem-agnostic-optimization"
+cp -R skills/problem-agnostic-optimization "$CODEX_HOME/skills/"
+```
+
+If you previously edited the installed copy by hand, back it up before running the `rm -rf` line. Restart Codex, or start a new Codex session, after installing or updating the skill.
+
+Check the installed files:
+
+```bash
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/SKILL.md"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/agents/openai.yaml"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/progress_chart.py"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/record_event.py"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/references/auditor.md"
 ```
 
 The installed layout should be:
 
 ```text
-$HOME/.codex/skills/problem-agnostic-optimization/
+$CODEX_HOME/skills/problem-agnostic-optimization/
   SKILL.md
   agents/
     openai.yaml
@@ -203,6 +282,17 @@ $HOME/.codex/skills/problem-agnostic-optimization/
     resource-models.md
     stochastic-policy-search.md
     templates.md
+```
+
+Update an existing checkout and reinstall:
+
+```bash
+cd problem-agnostic-optimization-skill
+git pull --ff-only
+
+CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
+rm -rf "$CODEX_HOME/skills/problem-agnostic-optimization"
+cp -R skills/problem-agnostic-optimization "$CODEX_HOME/skills/"
 ```
 
 ## Validate
