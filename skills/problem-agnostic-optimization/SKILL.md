@@ -29,7 +29,7 @@ Only the authoritative metric promotes. Everything else explains.
 
 Record objective, mode, authoritative metric, baseline, edit surface, budget, validation, and evidence availability.
 
-If the user asks to prepare, draft, write, fill, or format a goal "for later", return a copy-paste `/goal` block and stop. Do not create, activate, start, or persist an active goal unless the user explicitly asks to start the optimization run now.
+If the user asks to prepare, draft, write, fill, or format a goal "for later", return a copy-paste prompt that starts with `Use problem-agnostic-optimization.` and then includes the filled `/goal` block. Do not create, activate, start, or persist an active goal unless the user explicitly asks to start the optimization run now.
 
 If no target is given, find a public best, prior local best, paper result, production SLO, or theoretical/resource floor. If none is available, set an ambitious measurable floor and label the uncertainty.
 
