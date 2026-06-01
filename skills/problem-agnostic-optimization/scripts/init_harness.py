@@ -237,7 +237,7 @@ def main() -> int:
         work / "plan.md": plan_md(args),
         work / "review.md": review_md(args),
         work / "audit.md": audit_md(),
-        work / "progress.tsv": "candidate\tscore\tdecision\ttokens_total\ttokens_delta\tlabel\n",
+        work / "progress.tsv": "timestamp\tcandidate\tscore\tdecision\ttokens_total\ttokens_delta\tlabel\n",
         work / "state.json": json.dumps(state(args), indent=2, sort_keys=True) + "\n",
     }
     if args.progress_chart == "on":

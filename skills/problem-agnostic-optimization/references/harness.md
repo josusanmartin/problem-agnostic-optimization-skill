@@ -157,13 +157,13 @@ ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
 {"candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"tokens_delta":1400,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
 ```
 
-`work/progress.tsv` should be tab-separated:
+`work/progress.tsv` should be tab-separated. Include `timestamp` and cumulative token consumption. For metric-specific runs, the authoritative metric column can be named directly, such as `cycles`; the chart reader also accepts the generic `score` column.
 
 ```text
-candidate	score	decision	tokens_total	tokens_delta	label
-cand_0000	1.000	baseline	1200	1200	baseline
-cand_0001	0.992	promote	3100	1900	fused route
-cand_0002	0.996	reject	4500	1400	tile too small
+timestamp	candidate	cycles	status	tokens_total	tokens_delta	description
+2026-06-01T00:00:00Z	0	147734	baseline	1200	1200	scalar starter baseline
+2026-06-01T00:10:00Z	1	3360	promote	3100	1900	vectorized full gather, scratch values and paths
+2026-06-01T00:18:00Z	2	2226	promote	4500	1400	dependency-list scheduled vector kernel
 ```
 
 To disable chart rendering, record `Progress chart: off` in the `/goal` contract and set `progress.chart_enabled` to `false` in `work/state.json`. Continue appending `work/events.jsonl` unless the user explicitly disables progress logging too.

@@ -178,7 +178,7 @@ Notes: compare parent and candidate on matched scenarios when possible.
 
 For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/events.jsonl` before the first candidate, append one event after every measured candidate, and regenerate `work/progress.svg`, `work/dashboard.html`, and `work/review.md` after each event. Long-running harnesses should treat `work/events.jsonl` as the canonical event ledger and render `work/progress.svg` from either `work/events.jsonl` or `work/progress.tsv`. Use TSV for small/manual runs or as a derived export.
 
-Every event should include token/time fields even when the value is not available yet: `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. In Codex, the optimizer should call `get_goal` when available and persist `tokensUsed` as `tokens_total` and `timeUsedSeconds` as `active_seconds`. If an existing run lacks token fields, backfill only the current cumulative value going forward and mark earlier per-candidate token usage as unknown; do not invent historical usage.
+Every event should include token/time fields even when the value is not available yet: `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. In Codex, the optimizer should call `get_goal` when available and persist `tokensUsed` as `tokens_total` and `timeUsedSeconds` as `active_seconds`. If an existing run lacks token fields, backfill only the current cumulative value going forward and mark earlier per-candidate token usage as unknown; do not invent historical usage. `work/progress.tsv` should include `timestamp`, `tokens_total`, and `tokens_delta`; metric-specific columns such as `cycles` are supported.
 
 Fast harness bootstrap from an installed skill:
 

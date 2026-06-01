@@ -15,11 +15,11 @@ RECORD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "script
 def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
     progress = tmp_path / "progress.tsv"
     progress.write_text(
-        "\t".join(["candidate", "score", "decision", "tokens_total", "label"]) + "\n"
-        + "cand_0000\t1.000\tbaseline\t1000\tbaseline\n"
-        + "cand_0001\t0.990\tpromote\t2500\tfirst win\n"
-        + "cand_0002\t0.995\treject\t3600\tbad branch\n"
-        + "cand_0003\t0.982\tkeep\t5200\tsecond win\n",
+        "\t".join(["timestamp", "candidate", "score", "decision", "tokens_total", "tokens_delta", "label"]) + "\n"
+        + "2026-06-01T00:00:00Z\tcand_0000\t1.000\tbaseline\t1000\t1000\tbaseline\n"
+        + "2026-06-01T00:05:00Z\tcand_0001\t0.990\tpromote\t2500\t1500\tfirst win\n"
+        + "2026-06-01T00:10:00Z\tcand_0002\t0.995\treject\t3600\t1100\tbad branch\n"
+        + "2026-06-01T00:15:00Z\tcand_0003\t0.982\tkeep\t5200\t1600\tsecond win\n",
         encoding="utf-8",
     )
     output = tmp_path / "progress.svg"
@@ -52,6 +52,63 @@ def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
     assert "first win" in svg
     assert ">0k<" in svg
     assert ">-" not in svg
+
+
+def test_progress_chart_reads_cycles_status_description_tsv(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    progress.write_text(
+        "timestamp\tcandidate\tcycles\tstatus\ttokens_total\ttokens_delta\tdescription\n"
+        "2026-06-01T00:00:00Z\t0\t147734\tbaseline\t1200\t1200\tscalar starter baseline\n"
+        "2026-06-01T00:10:00Z\t1\t3360\tpromote\t3100\t1900\tvectorized full gather, scratch values and paths\n"
+        "2026-06-01T00:18:00Z\t2\t2226\tpromote\t4500\t1400\tdependency-list scheduled vector kernel\n"
+        "2026-06-01T00:25:00Z\t3\t2117\tpromote\t5900\t1400\tdepth-1 runtime-loaded two-node lookup\n"
+        "2026-06-01T00:34:00Z\t4\t2104\tpromote\t7600\t1700\tdepth-2 four-node affine lookup\n"
+        "2026-06-01T00:44:00Z\t5\t1788\tpromote\t9700\t2100\tglobal cross-round dependency scheduler\n"
+        "2026-06-01T00:53:00Z\t6\t1779\tpromote\t11200\t1500\tpacked vector-constant initialization\n"
+        "2026-06-01T01:00:00Z\t7\t1771\tpromote\t12600\t1400\troot assignment with bit extract\n"
+        "2026-06-01T01:09:00Z\t8\t1751\tpromote\t14500\t1900\troute one vector block through scalar ALU\n"
+        "2026-06-01T01:18:00Z\t9\t1708\tpromote\t16100\t1600\tbracket scalar ALU split\n"
+        "2026-06-01T01:27:00Z\t10\t1587\tpromote\t18100\t2000\tdepth-2 lookup via flow vselect\n"
+        "2026-06-01T01:35:00Z\t11\t1561\tpromote\t19800\t1700\tround-robin depth-2 temp vectors\n"
+        "2026-06-01T01:42:00Z\t12\t1560\tpromote\t21100\t1300\tremove unused zero vector initialization\n"
+        "2026-06-01T01:50:00Z\t13\t1547\tpromote\t22700\t1600\tdepth-1 flow vselect lookup\n"
+        "2026-06-01T01:57:00Z\t14\t1544\tpromote\t24100\t1400\tre-bracket depth-2 temp count\n"
+        "2026-06-01T02:06:00Z\t15\t1542\tpromote\t25900\t1800\tswitch deeper paths to absolute forest addresses\n"
+        "2026-06-01T02:15:00Z\t16\t1541\tpromote\t27400\t1500\troute first four blocks through scalar ALU\n"
+        "2026-06-01T02:24:00Z\t17\t1536\tpromote\t29200\t1800\tre-bracket scalar split with front blocks\n"
+        "2026-06-01T02:32:00Z\t18\t1533\tpromote\t30900\t1700\tre-bracket depth-2 temp count with five scalar blocks\n"
+        "2026-06-01T02:42:00Z\t19\t1501\tpromote\t32900\t2000\tscreen scalar block placement\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "progress.svg"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--title",
+            "Cycle Progress",
+            "--ylabel",
+            "Cycles",
+            "--direction",
+            "lower",
+            "--x-axis",
+            "wall",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    svg = output.read_text(encoding="utf-8")
+    assert "Cycle Progress" in svg
+    assert "Cycles" in svg
+    assert "Wall elapsed time" in svg
+    assert "Cumulative tokens" in svg
+    assert "screen scalar block placement" in svg
 
 
 def test_progress_chart_reads_events_jsonl_and_active_axis(tmp_path: Path) -> None:
