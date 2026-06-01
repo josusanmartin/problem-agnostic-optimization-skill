@@ -31,13 +31,13 @@ def compact_record(args: argparse.Namespace) -> dict[str, object]:
         "timestamp": args.timestamp or datetime.now(timezone.utc).isoformat(),
         "candidate": args.candidate,
         "decision": args.decision,
-    }
-    optional = {
-        "score": args.score,
         "tokens_total": args.tokens_total,
         "tokens_delta": args.tokens_delta,
         "active_seconds": args.active_seconds,
         "wall_seconds": args.wall_seconds,
+    }
+    optional = {
+        "score": args.score,
         "label": args.label,
         "parent": args.parent,
         "branch": args.branch,

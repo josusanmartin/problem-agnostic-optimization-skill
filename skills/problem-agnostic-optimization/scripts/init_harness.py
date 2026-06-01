@@ -77,6 +77,8 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "tokens_total": 0,
             "tokens_since_promotion": 0,
             "token_budget": None,
+            "usage_source": "runtime goal usage if available",
+            "usage_gap": None,
         },
         "audit": {
             "enabled": True,
@@ -156,6 +158,8 @@ def review_md(args: argparse.Namespace) -> str:
 - Last promotion:
 - Candidates since promotion: 0
 - Tokens since promotion: 0
+- Token source: runtime goal usage if available
+- Token gap:
 - Active time:
 - Wall elapsed:
 - Stagnation count: 0
@@ -233,7 +237,7 @@ def main() -> int:
         work / "plan.md": plan_md(args),
         work / "review.md": review_md(args),
         work / "audit.md": audit_md(),
-        work / "progress.tsv": "candidate\tscore\tdecision\ttokens_total\ttokens_delta\tlabel\n",
+        work / "progress.tsv": "timestamp\tcandidate\tscore\tdecision\ttokens_total\ttokens_delta\tlabel\n",
         work / "state.json": json.dumps(state(args), indent=2, sort_keys=True) + "\n",
     }
     if args.progress_chart == "on":

@@ -100,9 +100,36 @@ def parse_timestamp(value: Any) -> float | None:
 
 
 def make_point(row_index: int, row: dict[str, Any], token_total: float) -> tuple[Point, float]:
-    score = to_float(first_present(row, ["score", "authoritative_score", "metric", "benchmark.score", "ranked.score"]))
-    total = to_float(first_present(row, ["tokens_total", "total_tokens", "cumulative_tokens", "goal_tokens_used", "run_tokens_used"]))
-    delta = to_float(first_present(row, ["tokens_delta", "token_delta", "run_tokens_delta"]))
+    score = to_float(
+        first_present(
+            row,
+            [
+                "score",
+                "authoritative_score",
+                "metric",
+                "cycles",
+                "runtime",
+                "latency",
+                "benchmark.score",
+                "ranked.score",
+            ],
+        )
+    )
+    total = to_float(
+        first_present(
+            row,
+            [
+                "tokens_total",
+                "total_tokens",
+                "cumulative_tokens",
+                "token_consumption_cumulative",
+                "cumulative_token_consumption",
+                "goal_tokens_used",
+                "run_tokens_used",
+            ],
+        )
+    )
+    delta = to_float(first_present(row, ["tokens_delta", "token_delta", "token_consumption_delta", "run_tokens_delta"]))
     if total is None and delta is not None:
         token_total += delta
         total = token_total
@@ -137,8 +164,14 @@ def read_tsv_points(path: Path) -> list[Point]:
 
         points: list[Point] = []
         token_total = 0.0
+        first_timestamp: float | None = None
         for i, row in enumerate(reader):
             point, token_total = make_point(i, row, token_total)
+            timestamp = parse_timestamp(first_present(row, ["checkpoint_timestamp", "timestamp", "created_at"]))
+            if point.wall_seconds is None and timestamp is not None:
+                if first_timestamp is None:
+                    first_timestamp = timestamp
+                point.wall_seconds = max(0.0, timestamp - first_timestamp)
             points.append(point)
 
     if not points:

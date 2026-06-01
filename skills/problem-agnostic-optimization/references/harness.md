@@ -115,6 +115,9 @@ python skills/problem-agnostic-optimization/scripts/record_event.py \
   --decision promote \
   --score 0.992 \
   --tokens-total 3100 \
+  --tokens-delta 1900 \
+  --active-seconds 420 \
+  --wall-seconds 900 \
   --chart work/progress.svg \
   --direction lower
 ```
@@ -146,28 +149,29 @@ On a remote server, keep the server bound to `127.0.0.1` and open a tunnel from 
 ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
 ```
 
-`work/events.jsonl` should append one object after every completed result. Leave unavailable values null or omit them; do not encode failure as a fake zero score.
+`work/events.jsonl` should append one object after every completed result. Token/time fields are required but nullable: every new event should include `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. In Codex, call `get_goal` when available and persist `tokensUsed` as `tokens_total` and `timeUsedSeconds` as `active_seconds`; compute `tokens_delta` from the previous event when possible. If usage is unavailable, set the field to `null` and note the gap in `work/review.md`. Do not omit token fields from new events, invent historical per-candidate usage, or encode failure as a fake zero score.
 
 ```json
-{"candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1200,"active_seconds":30,"wall_seconds":60,"label":"baseline"}
-{"candidate":"cand_0001","decision":"promote","score":0.992,"tokens_total":3100,"active_seconds":420,"wall_seconds":900,"label":"fused route"}
-{"candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
+{"candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1200,"tokens_delta":1200,"active_seconds":30,"wall_seconds":60,"label":"baseline"}
+{"candidate":"cand_0001","decision":"promote","score":0.992,"tokens_total":3100,"tokens_delta":1900,"active_seconds":420,"wall_seconds":900,"label":"fused route"}
+{"candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"tokens_delta":1400,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
 ```
 
-`work/progress.tsv` should be tab-separated:
+`work/progress.tsv` should be tab-separated. Include `timestamp` and cumulative token consumption. For metric-specific runs, the authoritative metric column can be named directly, such as `cycles`; the chart reader also accepts the generic `score` column.
 
 ```text
-candidate	score	decision	tokens_total	tokens_delta	label
-cand_0000	1.000	baseline	1200	1200	baseline
-cand_0001	0.992	promote	3100	1900	fused route
-cand_0002	0.996	reject	4500	1400	tile too small
+timestamp	candidate	cycles	status	tokens_total	tokens_delta	description
+2026-06-01T00:00:00Z	0	147734	baseline	1200	1200	scalar starter baseline
+2026-06-01T00:10:00Z	1	3360	promote	3100	1900	vectorized full gather, scratch values and paths
+2026-06-01T00:18:00Z	2	2226	promote	4500	1400	dependency-list scheduled vector kernel
 ```
 
 To disable chart rendering, record `Progress chart: off` in the `/goal` contract and set `progress.chart_enabled` to `false` in `work/state.json`. Continue appending `work/events.jsonl` unless the user explicitly disables progress logging too.
 
 After every measured candidate:
 
-- Append `work/events.jsonl`; if using TSV, append or regenerate `work/progress.tsv`.
+- Capture current token/time usage when the runtime exposes it.
+- Append `work/events.jsonl` with token/time fields; if using TSV, append or regenerate `work/progress.tsv` with `tokens_total` and `tokens_delta` columns.
 - Regenerate `work/progress.svg` and `work/dashboard.html` unless charting is disabled.
 - Update `work/review.md` unless charting is disabled. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
 - Treat high token burn without authoritative improvement, rising bug/crash rate, or many same-family rejects as evidence for reassessment.
@@ -379,7 +383,9 @@ Small machine-readable state:
     "x_axis": "candidate",
     "tokens_total": 0,
     "tokens_since_promotion": 0,
-    "token_budget": null
+    "token_budget": null,
+    "usage_source": "runtime goal usage if available",
+    "usage_gap": null
   },
   "audit": {
     "enabled": true,
@@ -606,7 +612,7 @@ Before editing:
 After running:
 
 - Append `work/log.md`.
-- Append `work/events.jsonl` if `progress.logging_enabled` is not `false`.
+- Capture current token/time usage and append `work/events.jsonl` with `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds` if `progress.logging_enabled` is not `false`.
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/state.json`.
