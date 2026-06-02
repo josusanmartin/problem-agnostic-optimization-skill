@@ -8,7 +8,7 @@ from pathlib import Path
 import tempfile
 from typing import Iterable
 
-from progress_chart import BAD_DECISIONS, BEST_DECISIONS, Point, TokenSnapshot, generated_at_value, infer_log_path, infer_state_path, read_points, read_token_snapshots, render_svg, state_snapshot
+from progress_chart import BAD_DECISIONS, BEST_DECISIONS, SKILL_LINK_TEXT, SKILL_URL, Point, TokenSnapshot, generated_at_value, infer_log_path, infer_state_path, read_points, read_token_snapshots, render_svg, state_snapshot
 
 
 def fmt_number(value: float | None, suffix: str = "") -> str:
@@ -314,6 +314,13 @@ def render_dashboard(
       color: var(--muted);
       font-size: 12px;
     }}
+    footer a {{
+      color: var(--blue);
+      text-decoration: none;
+    }}
+    footer a:hover {{
+      text-decoration: underline;
+    }}
   </style>
 </head>
 <body>
@@ -334,7 +341,7 @@ def render_dashboard(
         <tbody>{rows(points, row_limit)}</tbody>
       </table>
     </section>
-    <footer>Regenerate this file after new events, or run the dashboard server with SSH port forwarding for live remote review: ssh -L 8765:127.0.0.1:8765 &lt;user&gt;@&lt;remote-host&gt;.</footer>
+    <footer>Regenerate this file after new events, or run the dashboard server with SSH port forwarding for live remote review: ssh -L 8765:127.0.0.1:8765 &lt;user&gt;@&lt;remote-host&gt;. Built with <a href="{SKILL_URL}" target="_blank" rel="noopener noreferrer">{escape(SKILL_LINK_TEXT)}</a>.</footer>
   </main>
 </body>
 </html>

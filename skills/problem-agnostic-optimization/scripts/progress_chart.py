@@ -46,6 +46,8 @@ BEST_DECISIONS = {"baseline", "promote", "promoted"}
 KEEP_DECISIONS = {"keep", "kept", "keep variant", "verify", "tie", "tied"}
 BAD_DECISIONS = {"bug", "crash", "blocked", "fail", "failed", "wrong", "incorrect"}
 REJECT_DECISIONS = {"reject", "rejected", "discard", "discarded"}
+SKILL_URL = "https://github.com/josusanmartin/problem-agnostic-optimization-skill"
+SKILL_LINK_TEXT = "problem-agnostic-optimization skill"
 
 
 @dataclass
@@ -1035,6 +1037,11 @@ def render_svg(
         parts.append(f'<text x="{x0:.1f}" y="{legend_y + 4:.1f}" font-family="Arial, sans-serif" font-size="11" fill="{SUBTLE}" text-anchor="start">dashed token category lines when recorded</text>')
     if generated_at is not None:
         parts.append(f'<text x="{PLOT_RIGHT:.1f}" y="{legend_y + 4:.1f}" font-family="Arial, sans-serif" font-size="10" fill="{SUBTLE}" text-anchor="end">generated {escape(generated_at)}</text>')
+    parts.append(
+        f'<a href="{SKILL_URL}" target="_blank" rel="noopener noreferrer">'
+        f'<text x="{LEFT:.1f}" y="714" font-family="Arial, sans-serif" font-size="10" fill="{BLUE}" text-anchor="start">'
+        f'{escape(SKILL_LINK_TEXT)}</text></a>'
+    )
     parts.append("</svg>")
     output.write_text("\n".join(part for part in parts if part), encoding="utf-8")
 

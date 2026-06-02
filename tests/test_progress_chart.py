@@ -92,6 +92,8 @@ def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
     assert "current usage snapshot" in svg
     assert "second win" in svg
     assert "dashed token category lines" in svg
+    assert "https://github.com/josusanmartin/problem-agnostic-optimization-skill" in svg
+    assert "problem-agnostic-optimization skill" in svg
     assert ">-" not in svg
 
 
@@ -607,6 +609,8 @@ def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:
     assert "Cumulative tokens" in html
     assert "generated 2026-06-01T00:30:10Z" in html
     assert "ssh -L" in html
+    assert "https://github.com/josusanmartin/problem-agnostic-optimization-skill" in html
+    assert "problem-agnostic-optimization skill" in html
 
 
 def test_progress_dashboard_uses_log_snapshot_for_summary_cards(tmp_path: Path) -> None:
