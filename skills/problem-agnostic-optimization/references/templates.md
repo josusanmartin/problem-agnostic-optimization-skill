@@ -207,20 +207,19 @@ cand_0003	38.200	0.0	discard	graph wrapper regressed
 
 ### Progress Event JSONL
 
-Use this for `work/events.jsonl`, the canonical progress ledger for long-running or dashboarded optimization. Append one JSON object after each baseline, measurement, failure, blocker, or handoff.
+Use this for compatibility `work/events.jsonl` rows or structured progress exports. Append one JSON object after each baseline, measurement, failure, blocker, or handoff when this file is enabled.
 
-Required fields: `candidate`, `decision`, `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. Token/time fields may be `null` when unavailable, but do not omit them from new events. In Codex, capture `tokensUsed` and `timeUsedSeconds` from `get_goal` when available.
+Required fields: `timestamp`, `candidate`, `decision`, `tokens_total`, `tokens_delta`, `active_seconds`, `wall_seconds`, and `label`. `timestamp` must be UTC in `YYYY-MM-DDTHH:MM:SSZ` form. Token/time fields may be `null` when unavailable, but do not omit them from new events. In Codex, always try to capture `tokensUsed` and `timeUsedSeconds` from `get_goal` after each measured candidate.
 
 ```json
-{"candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1200,"tokens_delta":1200,"active_seconds":30,"wall_seconds":60,"label":"baseline"}
-{"candidate":"cand_0001","decision":"promote","score":0.992,"tokens_total":3100,"tokens_delta":1900,"active_seconds":420,"wall_seconds":900,"label":"fused route"}
-{"candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"tokens_delta":1400,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
+{"timestamp":"2026-06-01T00:00:00Z","candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1200,"tokens_delta":1200,"active_seconds":30,"wall_seconds":60,"label":"baseline"}
+{"timestamp":"2026-06-01T00:10:00Z","candidate":"cand_0001","decision":"promote","score":0.992,"tokens_total":3100,"tokens_delta":1900,"active_seconds":420,"wall_seconds":900,"label":"fused route"}
+{"timestamp":"2026-06-01T00:18:00Z","candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"tokens_delta":1400,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
 ```
 
 Optional fields:
 
 ```text
-timestamp
 parent
 branch
 mode
@@ -236,13 +235,13 @@ raw_result_path
 
 Use this for small/manual `work/progress.tsv` runs or as a derived export from `work/events.jsonl`. Progress charting is on by default for substantial optimization runs. Regenerate `work/progress.svg` after appending rows unless `/goal` says `Progress chart: off`.
 
-Required columns: `timestamp`, `candidate`, an authoritative metric column such as `score` or `cycles`, decision/status, `tokens_total`, `tokens_delta`, and label/description.
+Required columns: `timestamp`, `candidate`, an authoritative metric column such as `score` or `cycles`, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form.
 
 ```text
-timestamp	candidate	cycles	status	tokens_total	tokens_delta	description
-2026-06-01T00:00:00Z	0	147734	baseline	1200	1200	scalar starter baseline
-2026-06-01T00:10:00Z	1	3360	promote	3100	1900	vectorized full gather, scratch values and paths
-2026-06-01T00:18:00Z	2	2226	promote	4500	1400	dependency-list scheduled vector kernel
+timestamp	candidate	cycles	decision	tokens_total	tokens_delta	wall_seconds	label
+2026-06-01T00:00:00Z	0	147734	baseline	1200	1200	0	scalar starter baseline
+2026-06-01T00:10:00Z	1	3360	promote	3100	1900	600	vectorized full gather, scratch values and paths
+2026-06-01T00:18:00Z	2	2226	promote	4500	1400	1080	dependency-list scheduled vector kernel
 ```
 
 ### `work/review.md`

@@ -9,6 +9,24 @@ from pathlib import Path
 from progress_chart import infer_log_path, infer_state_path, read_points, render_svg
 
 
+def utc_now() -> str:
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def utc_timestamp(value: str | None) -> str:
+    if not value:
+        return utc_now()
+    text = value.strip()
+    candidate = f"{text[:-1]}+00:00" if text.endswith("Z") else text
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError as exc:
+        raise SystemExit("--timestamp must be an ISO-8601 timestamp") from exc
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
 def json_value(text: str) -> object:
     try:
         return json.loads(text)
@@ -28,7 +46,7 @@ def add_extra_field(record: dict[str, object], field: str) -> None:
 
 def compact_record(args: argparse.Namespace) -> dict[str, object]:
     record: dict[str, object] = {
-        "timestamp": args.timestamp or datetime.now(timezone.utc).isoformat(),
+        "timestamp": utc_timestamp(args.timestamp),
         "candidate": args.candidate,
         "decision": args.decision,
         "tokens_total": args.tokens_total,

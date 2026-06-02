@@ -56,7 +56,9 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert "latest_usage_snapshot" in state["progress"]
     assert state["multi_agent"]["enabled"] is False
     assert state["multi_agent"]["mode"] == "off"
-    assert (work / "progress.tsv").read_text(encoding="utf-8").startswith("timestamp\tcandidate\tscore\tstatus\tdescription")
+    assert (work / "progress.tsv").read_text(encoding="utf-8").startswith(
+        "timestamp\tcandidate\tscore\tdecision\ttokens_total\ttokens_delta\twall_seconds\tlabel"
+    )
     assert "sub 1000 cycles" in (work / "best.md").read_text(encoding="utf-8")
     assert "Multi-agent mode: off" in (work / "best.md").read_text(encoding="utf-8")
     assert "Token source:" in (work / "review.md").read_text(encoding="utf-8")

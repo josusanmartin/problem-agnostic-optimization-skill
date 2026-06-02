@@ -421,10 +421,40 @@ def test_record_event_keeps_nullable_token_and_time_fields(tmp_path: Path) -> No
     assert "tokens_delta" in record
     assert "active_seconds" in record
     assert "wall_seconds" in record
+    assert "timestamp" in record
+    assert record["timestamp"].endswith("Z")
+    assert "+00:00" not in record["timestamp"]
     assert record["tokens_total"] is None
     assert record["tokens_delta"] is None
     assert record["active_seconds"] is None
     assert record["wall_seconds"] is None
+
+
+def test_record_event_normalizes_explicit_timestamp_to_utc_z(tmp_path: Path) -> None:
+    events = tmp_path / "events.jsonl"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(RECORD_SCRIPT),
+            "--events",
+            str(events),
+            "--candidate",
+            "cand_0001",
+            "--decision",
+            "promote",
+            "--score",
+            "0.99",
+            "--timestamp",
+            "2026-06-01T02:30:10+02:00",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    record = json.loads(events.read_text(encoding="utf-8"))
+    assert record["timestamp"] == "2026-06-01T00:30:10Z"
 
 
 def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:
