@@ -108,7 +108,7 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progr
   --target 1000
 ```
 
-Use `--direction higher` for scores where larger is better. The score panel always uses candidate number on the x-axis. The score y-axis defaults to `--score-scale auto`: log scale when all plotted score and target values are positive, otherwise linear scale. The token panel uses elapsed wall time from recorded `get_goal` snapshots.
+Use `--direction higher` for scores where larger is better. The score panel always uses candidate number on the x-axis. The score y-axis defaults to `--score-scale auto`: log scale when all plotted score and target values are positive, otherwise linear scale. The token panel uses elapsed wall time from recorded `get_goal` snapshots. For deterministic artifacts or exact snapshot tests, set `--generated-at <iso timestamp>`, `--no-generated-at`, or `SOURCE_DATE_EPOCH`.
 
 Render the static dashboard:
 
@@ -127,6 +127,8 @@ python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/p
   --host 127.0.0.1 \
   --port 8765
 ```
+
+`progress_dashboard.py` passes `--target`, `--hide-before-candidate`, `--score-scale`, `--generated-at`, `--no-generated-at`, and `SOURCE_DATE_EPOCH` through to the embedded SVG renderer.
 
 On a remote server, keep the server bound to `127.0.0.1` and open a tunnel from the local machine:
 

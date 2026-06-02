@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -10,6 +11,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CHART_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "progress_chart.py"
 RUN_DASHBOARD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "progress_dashboard.py"
 RECORD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "record_event.py"
+
+
+def write_minimal_progress(path: Path) -> None:
+    path.write_text(
+        "timestamp\tcandidate\tscore\tdecision\ttokens_total\ttokens_delta\twall_seconds\tlabel\n"
+        "2026-06-01T00:00:00Z\tcand_0000\t1.0\tbaseline\t1000\t1000\t0\tbaseline\n"
+        "2026-06-01T00:05:00Z\tcand_0001\t0.9\tpromote\t2400\t1400\t300\twin\n",
+        encoding="utf-8",
+    )
 
 
 def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
@@ -83,6 +93,74 @@ def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
     assert "second win" in svg
     assert "dashed token category lines" in svg
     assert ">-" not in svg
+
+
+def test_progress_chart_generated_at_is_fixed_and_normalized(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    write_minimal_progress(progress)
+    output_a = tmp_path / "a.svg"
+    output_b = tmp_path / "b.svg"
+    command = [
+        sys.executable,
+        str(CHART_SCRIPT),
+        str(progress),
+        "--generated-at",
+        "2026-06-01T02:30:10+02:00",
+        "--direction",
+        "lower",
+    ]
+
+    subprocess.run([*command, "-o", str(output_a)], check=True, text=True, capture_output=True)
+    subprocess.run([*command, "-o", str(output_b)], check=True, text=True, capture_output=True)
+
+    svg = output_a.read_text(encoding="utf-8")
+    assert output_a.read_text(encoding="utf-8") == output_b.read_text(encoding="utf-8")
+    assert "generated 2026-06-01T00:30:10Z" in svg
+
+
+def test_progress_chart_can_omit_generated_at(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    write_minimal_progress(progress)
+    output = tmp_path / "progress.svg"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--no-generated-at",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "generated " not in output.read_text(encoding="utf-8")
+
+
+def test_progress_chart_uses_source_date_epoch(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    write_minimal_progress(progress)
+    output = tmp_path / "progress.svg"
+    env = {**os.environ, "SOURCE_DATE_EPOCH": "0"}
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+
+    assert "generated 1970-01-01T00:00:00Z" in output.read_text(encoding="utf-8")
 
 
 def test_progress_chart_reads_cycles_status_description_tsv(tmp_path: Path) -> None:
@@ -482,6 +560,8 @@ def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:
             "lower",
             "--x-axis",
             "tokens",
+            "--generated-at",
+            "2026-06-01T02:30:10+02:00",
         ],
         check=True,
         text=True,
@@ -493,4 +573,5 @@ def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:
     assert "Run Dashboard" in html
     assert "dashboard win" in html
     assert "Cumulative tokens" in html
+    assert "generated 2026-06-01T00:30:10Z" in html
     assert "ssh -L" in html

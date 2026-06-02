@@ -4,10 +4,11 @@ from __future__ import annotations
 import argparse
 import csv
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from html import escape
 import json
 import math
+import os
 from pathlib import Path
 import re
 from typing import Any, Iterable
@@ -133,6 +134,39 @@ def parse_timestamp(value: Any) -> float | None:
         return datetime.fromisoformat(text).timestamp()
     except ValueError:
         return None
+
+
+def utc_timestamp(value: str) -> str:
+    text = value.strip()
+    if not text:
+        raise ValueError("timestamp cannot be empty")
+    candidate = f"{text[:-1]}+00:00" if text.endswith("Z") else text
+    parsed = datetime.fromisoformat(candidate)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def timestamp_from_epoch(value: str) -> str:
+    seconds = int(value.strip())
+    return datetime.fromtimestamp(seconds, timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def generated_at_value(explicit: str | None = None, omit: bool = False) -> str | None:
+    if omit:
+        return None
+    if explicit is not None:
+        try:
+            return utc_timestamp(explicit)
+        except ValueError as exc:
+            raise SystemExit("--generated-at must be an ISO-8601 timestamp") from exc
+    epoch = os.environ.get("SOURCE_DATE_EPOCH")
+    if epoch:
+        try:
+            return timestamp_from_epoch(epoch)
+        except ValueError as exc:
+            raise SystemExit("SOURCE_DATE_EPOCH must be an integer Unix timestamp") from exc
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def candidate_number(text: str, row_index: int, explicit: Any = None) -> float:
@@ -772,6 +806,7 @@ def render_svg(
     target: float | None = None,
     hide_before_candidate: int = 3,
     score_scale: str = "auto",
+    generated_at: str | None = None,
 ) -> None:
     del x_axis
     if not points:
@@ -987,7 +1022,8 @@ def render_svg(
         x0 += 145
     if category_series(token_chart_snapshots):
         parts.append(f'<text x="{x0:.1f}" y="{legend_y + 4:.1f}" font-family="Arial, sans-serif" font-size="11" fill="{SUBTLE}" text-anchor="start">dashed token category lines when recorded</text>')
-    parts.append(f'<text x="{PLOT_RIGHT:.1f}" y="{legend_y + 4:.1f}" font-family="Arial, sans-serif" font-size="10" fill="{SUBTLE}" text-anchor="end">generated {datetime.utcnow().replace(microsecond=0).isoformat()}Z</text>')
+    if generated_at is not None:
+        parts.append(f'<text x="{PLOT_RIGHT:.1f}" y="{legend_y + 4:.1f}" font-family="Arial, sans-serif" font-size="10" fill="{SUBTLE}" text-anchor="end">generated {escape(generated_at)}</text>')
     parts.append("</svg>")
     output.write_text("\n".join(part for part in parts if part), encoding="utf-8")
 
@@ -1019,6 +1055,8 @@ def main() -> int:
     parser.add_argument("--direction", choices=("lower", "higher"), default="lower")
     parser.add_argument("--x-axis", choices=("candidate", "tokens", "active", "wall"), default="candidate", help="Accepted for compatibility; score panel uses candidate number")
     parser.add_argument("--score-scale", choices=("auto", "log", "linear"), default="auto", help="Score y-axis scale; auto uses log only when all plotted score/target values are positive")
+    parser.add_argument("--generated-at", help="Fixed generation timestamp for deterministic SVG output; ISO-8601, normalized to UTC Z")
+    parser.add_argument("--no-generated-at", action="store_true", help="Omit the generated timestamp footer")
     args = parser.parse_args()
 
     points = read_points(args.input)
@@ -1035,6 +1073,7 @@ def main() -> int:
         args.target,
         args.hide_before_candidate,
         args.score_scale,
+        generated_at_value(args.generated_at, args.no_generated_at),
     )
     print(args.output)
     return 0

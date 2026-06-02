@@ -230,7 +230,7 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progr
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower --target 1000 --ylabel cycles
 ```
 
-The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis, with `--score-scale auto|log|linear`. The token panel uses elapsed wall time from recorded snapshots.
+The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis, with `--score-scale auto|log|linear`. The token panel uses elapsed wall time from recorded snapshots. For exact golden tests or stable artifacts, set `--generated-at <iso timestamp>`, `--no-generated-at`, or `SOURCE_DATE_EPOCH`.
 
 If a run has `Progress chart: on` but no progress artifacts, ask the optimizer to backfill `work/progress.tsv` from `work/log.md` and any saved result files, then continue appending `work/progress.tsv` after every measured candidate and explicit `get_goal` snapshots to `work/log.md`. Missing chart files should be treated as a harness bug, not as normal behavior.
 
@@ -244,7 +244,7 @@ python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/p
   --direction lower
 ```
 
-Open `work/dashboard.html` in a browser, download it from the remote host, or attach it to a handoff. The static dashboard includes the two-panel SVG, current best, latest candidate, token/time burn, bug/blocker count, and recent candidate table.
+Open `work/dashboard.html` in a browser, download it from the remote host, or attach it to a handoff. The static dashboard includes the two-panel SVG, current best, latest candidate, token/time burn, bug/blocker count, and recent candidate table. The dashboard wrapper accepts the same deterministic SVG controls: `--generated-at`, `--no-generated-at`, and `SOURCE_DATE_EPOCH`.
 
 For live refresh on a local machine:
 

@@ -8,7 +8,7 @@ from pathlib import Path
 import tempfile
 from typing import Iterable
 
-from progress_chart import BAD_DECISIONS, BEST_DECISIONS, Point, TokenSnapshot, infer_log_path, infer_state_path, read_points, render_svg, state_snapshot
+from progress_chart import BAD_DECISIONS, BEST_DECISIONS, Point, TokenSnapshot, generated_at_value, infer_log_path, infer_state_path, read_points, render_svg, state_snapshot
 
 
 def fmt_number(value: float | None, suffix: str = "") -> str:
@@ -67,7 +67,18 @@ def decision_counts(points: list[Point]) -> dict[str, int]:
     return counts
 
 
-def inline_chart(input_path: Path, points: list[Point], title: str, ylabel: str, direction: str, x_axis: str) -> str:
+def inline_chart(
+    input_path: Path,
+    points: list[Point],
+    title: str,
+    ylabel: str,
+    direction: str,
+    x_axis: str,
+    target: float | None,
+    hide_before_candidate: int,
+    score_scale: str,
+    generated_at: str | None,
+) -> str:
     with tempfile.TemporaryDirectory() as tmp:
         chart_path = Path(tmp) / "progress.svg"
         render_svg(
@@ -79,6 +90,10 @@ def inline_chart(input_path: Path, points: list[Point], title: str, ylabel: str,
             x_axis,
             infer_log_path(input_path, None),
             infer_state_path(input_path, None),
+            target,
+            hide_before_candidate,
+            score_scale,
+            generated_at,
         )
         return chart_path.read_text(encoding="utf-8")
 
@@ -150,10 +165,14 @@ def render_dashboard(
     x_axis: str,
     row_limit: int,
     refresh_seconds: int | None = None,
+    target: float | None = None,
+    hide_before_candidate: int = 3,
+    score_scale: str = "auto",
+    generated_at: str | None = None,
 ) -> str:
     points = read_points(input_path)
     usage, _, _ = state_snapshot(infer_state_path(input_path, None))
-    chart = inline_chart(input_path, points, title, ylabel, direction, x_axis)
+    chart = inline_chart(input_path, points, title, ylabel, direction, x_axis, target, hide_before_candidate, score_scale, generated_at)
     refresh = f'<meta http-equiv="refresh" content="{refresh_seconds}">' if refresh_seconds else ""
     latest = points[-1]
     return f"""<!doctype html>
@@ -327,6 +346,10 @@ def serve_dashboard(args: argparse.Namespace) -> None:
                     args.x_axis,
                     args.rows,
                     args.refresh_seconds,
+                    args.target,
+                    args.hide_before_candidate,
+                    args.score_scale,
+                    generated_at_value(args.generated_at, args.no_generated_at),
                 )
                 args.output.parent.mkdir(parents=True, exist_ok=True)
                 args.output.write_text(html, encoding="utf-8")
@@ -357,6 +380,11 @@ def main() -> int:
     parser.add_argument("--ylabel", default="Authoritative metric")
     parser.add_argument("--direction", choices=("lower", "higher"), default="lower")
     parser.add_argument("--x-axis", choices=("candidate", "tokens", "active", "wall"), default="candidate")
+    parser.add_argument("--target", type=float, help="Target score line for the embedded SVG")
+    parser.add_argument("--hide-before-candidate", type=int, default=3, help="Hide early candidate numbers below this value when possible")
+    parser.add_argument("--score-scale", choices=("auto", "log", "linear"), default="auto", help="Score y-axis scale for the embedded SVG")
+    parser.add_argument("--generated-at", help="Fixed generation timestamp for deterministic embedded SVG output; ISO-8601, normalized to UTC Z")
+    parser.add_argument("--no-generated-at", action="store_true", help="Omit the embedded SVG generated timestamp footer")
     parser.add_argument("--rows", type=int, default=30, help="Recent rows to include in the table")
     parser.add_argument("--serve", action="store_true", help="Serve live HTML and regenerate on each request")
     parser.add_argument("--host", default="127.0.0.1")
@@ -368,7 +396,19 @@ def main() -> int:
         serve_dashboard(args)
         return 0
 
-    html = render_dashboard(args.input, args.title, args.ylabel, args.direction, args.x_axis, args.rows)
+    html = render_dashboard(
+        args.input,
+        args.title,
+        args.ylabel,
+        args.direction,
+        args.x_axis,
+        args.rows,
+        None,
+        args.target,
+        args.hide_before_candidate,
+        args.score_scale,
+        generated_at_value(args.generated_at, args.no_generated_at),
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(html, encoding="utf-8")
     print(args.output)
