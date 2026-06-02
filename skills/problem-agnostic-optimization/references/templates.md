@@ -233,9 +233,23 @@ raw_result_path
 
 ### Progress TSV
 
-Use this for small/manual `work/progress.tsv` runs or as a derived export from `work/events.jsonl`. Progress charting is on by default for substantial optimization runs. Regenerate `work/progress.svg` after appending rows unless `/goal` says `Progress chart: off`.
+Use this for small/manual `work/progress.tsv` runs or as a derived export from `work/events.jsonl`. Progress charting is on by default for substantial optimization runs. Use `scripts/record_progress.py` when available, then regenerate `work/progress.svg` after appending rows unless `/goal` says `Progress chart: off`.
 
 Required columns: `timestamp`, `candidate`, an authoritative metric column such as `score` or `cycles`, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form.
+
+Optional `candidate_number` should be used for candidate names with unrelated digits.
+
+```bash
+python skills/problem-agnostic-optimization/scripts/record_progress.py \
+  --progress work/progress.tsv \
+  --candidate cand_0002 \
+  --metric cycles=2226 \
+  --decision promote \
+  --tokens-total 4500 \
+  --tokens-delta 1400 \
+  --wall-seconds 1080 \
+  --label "dependency-list scheduled vector kernel"
+```
 
 ```text
 timestamp	candidate	cycles	decision	tokens_total	tokens_delta	wall_seconds	label

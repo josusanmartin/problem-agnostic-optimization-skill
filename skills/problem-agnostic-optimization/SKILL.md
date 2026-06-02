@@ -60,7 +60,7 @@ Only skip harness deployment when the task is explicitly tiny or the user disabl
 
 For substantial runs, progress artifacts are default-on unless the `/goal` says `Progress chart: off`.
 
-Before the first candidate, initialize `work/progress.tsv`, `work/log.md`, and the `progress` fields in `work/state.json`. After every measured candidate, append one candidate row to `work/progress.tsv`, regenerate `work/progress.svg` and `work/dashboard.html`, and refresh `work/review.md`. If the chart/dashboard scripts are unavailable or a result cannot be charted yet, write the blocker into `work/log.md` or `work/review.md`; do not silently skip progress artifacts.
+Before the first candidate, initialize `work/progress.tsv`, `work/log.md`, and the `progress` fields in `work/state.json`. After every measured candidate, try to capture current usage, append one candidate row to `work/progress.tsv`, regenerate `work/progress.svg` and `work/dashboard.html`, and refresh `work/review.md`. Use the bundled `scripts/record_progress.py` when available; hand-write TSV rows only when the script is missing. If the chart/dashboard scripts are unavailable or a result cannot be charted yet, write the blocker into `work/log.md` or `work/review.md`; do not silently skip progress artifacts.
 
 `work/progress.tsv` is the score ledger. New runs must include these columns in every row: `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. Timestamps must be UTC snapshots in `YYYY-MM-DDTHH:MM:SSZ` form. Token/time values may be blank when unavailable, but do not omit the columns. Do not use candidate count as a proxy for resource burn.
 
