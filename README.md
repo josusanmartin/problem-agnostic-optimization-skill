@@ -199,7 +199,7 @@ For substantial optimization runs, progress monitoring is on by default. The opt
 
 - Top panel: authoritative score by candidate number, with auto log/linear scale, measured results, protected-best curve, promoted candidates, rejected candidates, kept ties, correctness failures, optional target line, and the current protected-best label. Candidates 0-2 are hidden by default when later candidates exist so startup work does not visually compress the real search.
 - Bottom panel: token usage snapshots by elapsed wall time, using explicit `get_goal` snapshots recorded in `work/log.md`. The chart marks the pre-snapshot region as unknown instead of interpolating or fabricating token history. If an old run has no explicit snapshots but has legacy token columns, the chart may render those as lower-confidence legacy data. The latest usage snapshot is read from `work/state.json` and shown in the header.
-- Footer: link back to the bundled `problem-agnostic-optimization` skill source.
+- Footer: visible full URL linking back to the bundled `problem-agnostic-optimization` skill source.
 
 Use `work/progress.tsv` as the score ledger. New rows must include `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. Timestamps must be UTC snapshots in `YYYY-MM-DDTHH:MM:SSZ` form. Token/time values may be blank when unavailable, but the columns should always be present. If candidate names contain unrelated digits, include `candidate_number` or `candidate_index`.
 

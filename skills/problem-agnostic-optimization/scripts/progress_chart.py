@@ -47,7 +47,7 @@ KEEP_DECISIONS = {"keep", "kept", "keep variant", "verify", "tie", "tied"}
 BAD_DECISIONS = {"bug", "crash", "blocked", "fail", "failed", "wrong", "incorrect"}
 REJECT_DECISIONS = {"reject", "rejected", "discard", "discarded"}
 SKILL_URL = "https://github.com/josusanmartin/problem-agnostic-optimization-skill"
-SKILL_LINK_TEXT = "problem-agnostic-optimization skill"
+SKILL_LINK_TEXT = SKILL_URL
 
 
 @dataclass

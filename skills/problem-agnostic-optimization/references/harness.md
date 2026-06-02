@@ -110,7 +110,7 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progr
 
 Use `--direction higher` for scores where larger is better. The score panel always uses candidate number on the x-axis. The score y-axis defaults to `--score-scale auto`: log scale when all plotted score and target values are positive, otherwise linear scale. The token panel uses elapsed wall time from recorded `get_goal` snapshots. For deterministic artifacts or exact snapshot tests, set `--generated-at <iso timestamp>`, `--no-generated-at`, or `SOURCE_DATE_EPOCH`.
 
-The rendered SVG and static dashboard footer link back to the bundled `problem-agnostic-optimization` skill source.
+The rendered SVG and static dashboard footer show the full URL for the bundled `problem-agnostic-optimization` skill source.
 
 Render the static dashboard:
 
