@@ -482,13 +482,24 @@ def parse_snapshot_line(line: str) -> TokenSnapshot | None:
     if "tokens" not in lower or not any(marker in lower for marker in ["get_goal", "snapshot", "usage", "token usage"]):
         return None
     token_match = re.search(r"([0-9][0-9,]*(?:\.[0-9]+)?\s*[kKmM]?)\s*(?:total\s*)?tokens\b", line)
+    if token_match is None:
+        token_match = re.search(r"\btokensUsed\s*=\s*([0-9][0-9,]*(?:\.[0-9]+)?\s*[kKmM]?)\b", line)
     time_match = re.search(r"(?:at|elapsed|wall|time)\s*[:=]?\s*([0-9][0-9,]*(?:\.[0-9]+)?)\s*(h|hr|hrs|hour|hours|m|min|mins|minute|minutes|s|sec|secs|second|seconds)\b", line, re.IGNORECASE)
+    time_seconds_match = None
+    if time_match is None:
+        time_seconds_match = re.search(r"\btimeUsedSeconds\s*=\s*([0-9][0-9,]*(?:\.[0-9]+)?)\b", line)
     if not token_match or not time_match:
-        return None
+        if not token_match or not time_seconds_match:
+            return None
     best_match = re.search(r"\bbest\s*[:=]?\s*([0-9][0-9,]*(?:\.[0-9]+)?)", line, re.IGNORECASE)
+    wall_seconds = (
+        parse_duration(time_match.group(1), time_match.group(2))
+        if time_match is not None
+        else to_float(time_seconds_match.group(1))
+    )
     return TokenSnapshot(
         label=context_label(line) or "snapshot",
-        wall_seconds=parse_duration(time_match.group(1), time_match.group(2)),
+        wall_seconds=wall_seconds,
         total_tokens=to_float(token_match.group(1)),
         best_score=to_float(best_match.group(1)) if best_match else None,
     )

@@ -8,7 +8,7 @@ from pathlib import Path
 import tempfile
 from typing import Iterable
 
-from progress_chart import BAD_DECISIONS, BEST_DECISIONS, Point, TokenSnapshot, generated_at_value, infer_log_path, infer_state_path, read_points, render_svg, state_snapshot
+from progress_chart import BAD_DECISIONS, BEST_DECISIONS, Point, TokenSnapshot, generated_at_value, infer_log_path, infer_state_path, read_points, read_token_snapshots, render_svg, state_snapshot
 
 
 def fmt_number(value: float | None, suffix: str = "") -> str:
@@ -172,6 +172,16 @@ def render_dashboard(
 ) -> str:
     points = read_points(input_path)
     usage, _, _ = state_snapshot(infer_state_path(input_path, None))
+    snapshots = read_token_snapshots(infer_log_path(input_path, None))
+    if snapshots:
+        latest_snapshot = snapshots[-1]
+        if usage is None:
+            usage = latest_snapshot
+        else:
+            if usage.total_tokens is None:
+                usage.total_tokens = latest_snapshot.total_tokens
+            if usage.wall_seconds is None:
+                usage.wall_seconds = latest_snapshot.wall_seconds
     chart = inline_chart(input_path, points, title, ylabel, direction, x_axis, target, hide_before_candidate, score_scale, generated_at)
     refresh = f'<meta http-equiv="refresh" content="{refresh_seconds}">' if refresh_seconds else ""
     latest = points[-1]

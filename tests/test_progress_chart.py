@@ -163,6 +163,38 @@ def test_progress_chart_uses_source_date_epoch(tmp_path: Path) -> None:
     assert "generated 1970-01-01T00:00:00Z" in output.read_text(encoding="utf-8")
 
 
+def test_progress_chart_parses_get_goal_tokens_used_lines(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    log = tmp_path / "log.md"
+    write_minimal_progress(progress)
+    log.write_text(
+        "Usage snapshot after Candidate 66: get_goal reported tokensUsed=1331162 and timeUsedSeconds=8681.\n"
+        "Usage snapshot after Candidate 67: get_goal reported tokensUsed=1487048 and timeUsedSeconds=9337.\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "progress.svg"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--generated-at",
+            "2026-06-01T00:00:00Z",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    svg = output.read_text(encoding="utf-8")
+    assert "current usage snapshot: 1.49M tokens | at 2h35m" in svg
+    assert "C66" in svg
+    assert "no explicit get_goal snapshots" not in svg
+
+
 def test_progress_chart_reads_cycles_status_description_tsv(tmp_path: Path) -> None:
     progress = tmp_path / "progress.tsv"
     progress.write_text(
@@ -575,3 +607,44 @@ def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:
     assert "Cumulative tokens" in html
     assert "generated 2026-06-01T00:30:10Z" in html
     assert "ssh -L" in html
+
+
+def test_progress_dashboard_uses_log_snapshot_for_summary_cards(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    log = tmp_path / "log.md"
+    progress.write_text(
+        "candidate\tcycles\tdecision\tlabel\n"
+        "0\t147734\tbaseline\tbaseline\n"
+        "1\t3360\tpromote\twin\n",
+        encoding="utf-8",
+    )
+    log.write_text(
+        "Usage snapshot after Candidate 66: get_goal reported tokensUsed=1331162 and timeUsedSeconds=8681.\n"
+        "Usage snapshot after Candidate 67: get_goal reported tokensUsed=1487048 and timeUsedSeconds=9337.\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "dashboard.html"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(RUN_DASHBOARD_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--ylabel",
+            "cycles",
+            "--direction",
+            "lower",
+            "--generated-at",
+            "2026-06-01T00:00:00Z",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    html = output.read_text(encoding="utf-8")
+    assert "1,487,048" in html
+    assert "latest get_goal snapshot" in html
+    assert "2.59h" in html
