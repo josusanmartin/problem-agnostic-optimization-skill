@@ -91,24 +91,7 @@ Never promote from a screening metric. Near ties favor the simpler, smaller, les
 
 ## Multi-Agent Mode
 
-Default is `Multi-agent mode: off`. Enable only when the `/goal` says `Multi-agent mode: on` or the user explicitly asks for parallel workers. Use it only after the contract, protected best, and durable ledger exist, and candidate hypotheses can be isolated. Parallelism is for exploration; promotion remains serial.
-
-Roles:
-
-- Coordinator owns the canonical workspace, current best, plan, ledger, charts, dashboard, and promotion gate.
-- Workers run in isolated worktrees or copied sandboxes from a named parent artifact. They receive exactly one candidate spec and may screen locally, but may not promote.
-- Auditor is optional and read-only; use `references/auditor.md` after batches, surprising wins, or integrity concerns.
-
-Worker packet: parent artifact/hash, hypothesis, mechanism, expected signal, kill criterion, editable and immutable files, validation, screening metric, authoritative metric, and budget.
-
-Worker return: patch or diff, raw outputs, correctness evidence, metric evidence, token/time used if available, risk notes, and `PROMOTE`/`KEEP VARIANT`/`REJECT`/`BUG` recommendation.
-
-Promotion gate:
-
-- Coordinator applies at most one candidate to the canonical workspace, reruns correctness and the authoritative metric, checks parent staleness, then logs/promotes/rejects.
-- If the worker parent is stale, rebase or replay onto the current protected best and rerun the authoritative gate before promotion.
-- Workers must not write canonical `work/state.json`, `work/best.md`, `work/log.md`, `work/events.jsonl`, `work/progress.tsv`, charts, dashboards, harnesses, immutable files, or final submissions.
-- Do not launch duplicate workers on the same hill unless bracketing a proven knob. After plateau evidence, allocate at least one worker to an off-hill representation, primitive, route, or specialization probe.
+Default is `Multi-agent mode: off`. Enable only when the `/goal` says `Multi-agent mode: on` or the user explicitly asks for parallel workers. Use it only after the contract, protected best, and durable ledger exist. Workers run isolated one-hypothesis candidates from a named parent. The coordinator owns canonical files and promotion. Promotion remains serial and authoritative. For the worker packet and batch protocol, read `references/harness.md`.
 
 ## Push Or Reassess
 

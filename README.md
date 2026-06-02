@@ -189,6 +189,8 @@ The coordinator owns the canonical workspace, `work/state.json`, `work/best.md`,
 
 Promotion remains serial: the coordinator applies at most one worker result at a time, checks parent staleness, reruns correctness and the authoritative metric in the canonical workspace, then logs the decision. Parallel workers are for throughput and search diversity, not for bypassing the authoritative promotion gate.
 
+Use workers to diversify search allocation, not to multiply the same local tweak. Worker packets should include hill status (`OPEN`, `NARROWED`, or `CLOSED`) and a push budget before reassessment.
+
 ## Progress Monitoring
 
 For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/progress.tsv`, `work/log.md`, and `work/state.json` before the first candidate, append one score row after every measured candidate, and regenerate `work/progress.svg`, `work/dashboard.html`, and `work/review.md` after each row.
@@ -201,6 +203,10 @@ For substantial optimization runs, progress monitoring is on by default. The opt
 Use `work/progress.tsv` as the score ledger. Include at least `timestamp`, `candidate`, one authoritative metric column such as `cycles` or `score`, `status`, and `description`.
 
 Use `work/log.md` for token/time snapshots. In Codex, call `get_goal` when available and paste or summarize the snapshot with elapsed wall time and all available token fields: total, input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If an existing run lacks early token snapshots, record only the current cumulative value going forward and mark earlier token history as unknown; do not invent per-candidate token deltas.
+
+`work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read for compatibility only; new token history should come from explicit `get_goal` snapshots.
+
+The dashboard is diagnostic. It can trigger push/reassess decisions, but it never replaces correctness checks or the authoritative promotion gate.
 
 Fast harness bootstrap from an installed skill:
 

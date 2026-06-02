@@ -145,6 +145,10 @@ timestamp	candidate	cycles	status	description
 
 Token snapshots must be explicit. In Codex, call `get_goal` when available and append the raw or structured snapshot to `work/log.md` with elapsed wall time and all available token fields: total, input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, show it as unknown; do not interpolate or invent per-candidate token usage.
 
+`work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read for compatibility only; they are lower-confidence than explicit `get_goal` snapshots and should not be used as new-run doctrine.
+
+The dashboard is diagnostic. It can trigger push/reassess decisions, but it never replaces correctness checks or the authoritative promotion gate.
+
 To disable chart rendering, record `Progress chart: off` in the `/goal` contract and set `progress.chart_enabled` to `false` in `work/state.json`. Continue appending `work/progress.tsv` and `work/log.md` unless the user explicitly disables progress logging too.
 
 After every measured candidate:
@@ -191,7 +195,7 @@ Use only when `Multi-agent mode: on` is present in the `/goal` or the user expli
 ### Batch Protocol
 
 1. Freeze a parent: current best path, score, hash, ledger index, and bottleneck model.
-2. Issue one candidate packet per worker: parent, hypothesis, mechanism class, expected signal, kill criterion, smallest edit, validation, screening metric, authoritative metric, budget, editable files, and immutable files.
+2. Issue one candidate packet per worker: parent, hill status (`OPEN`, `NARROWED`, or `CLOSED`), push budget, hypothesis, mechanism class, expected signal, kill criterion, smallest edit, validation, screening metric, authoritative metric, budget, editable files, and immutable files.
 3. Workers run only in their isolated sandboxes and save raw outputs under worker-local paths.
 4. Workers return a patch/diff, evidence summary, raw output paths, token/time usage if available, parent hash, and recommendation.
 5. Coordinator triages results, rejects wrong or stale outputs, and applies at most one candidate at a time to the canonical workspace.
@@ -208,6 +212,7 @@ Use parallelism to reduce duplicate thinking:
 
 - Assign some workers to exploit the active hill only while recent evidence predicts improvement.
 - Assign at least one worker off-hill after plateau evidence: representation, primitive, route/library/config, target split, or contract specialization.
+- Use workers to diversify search allocation, not to multiply the same local tweak.
 - Record closed hills and duplicate attempts so future batches do not retry them without a new premise.
 - Near ties still favor the smaller, simpler, less stateful artifact after canonical retest.
 
