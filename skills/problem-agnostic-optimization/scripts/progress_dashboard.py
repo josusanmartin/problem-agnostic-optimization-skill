@@ -8,7 +8,7 @@ from pathlib import Path
 import tempfile
 from typing import Iterable
 
-from progress_chart import BAD_DECISIONS, BEST_DECISIONS, Point, read_points, render_svg
+from progress_chart import BAD_DECISIONS, BEST_DECISIONS, Point, TokenSnapshot, infer_log_path, infer_state_path, read_points, render_svg, state_snapshot
 
 
 def fmt_number(value: float | None, suffix: str = "") -> str:
@@ -67,30 +67,48 @@ def decision_counts(points: list[Point]) -> dict[str, int]:
     return counts
 
 
-def inline_chart(points: list[Point], title: str, ylabel: str, direction: str, x_axis: str) -> str:
+def inline_chart(input_path: Path, points: list[Point], title: str, ylabel: str, direction: str, x_axis: str) -> str:
     with tempfile.TemporaryDirectory() as tmp:
         chart_path = Path(tmp) / "progress.svg"
-        render_svg(points, chart_path, title, ylabel, direction, x_axis)
+        render_svg(
+            points,
+            chart_path,
+            title,
+            ylabel,
+            direction,
+            x_axis,
+            infer_log_path(input_path, None),
+            infer_state_path(input_path, None),
+        )
         return chart_path.read_text(encoding="utf-8")
 
 
-def summary_cards(points: list[Point], direction: str) -> str:
+def summary_cards(points: list[Point], direction: str, usage: TokenSnapshot | None) -> str:
     latest = points[-1]
     best = best_point(points, direction)
     promotion = last_promotion(points)
     counts = decision_counts(points)
-    tokens_total = latest.tokens_total
+    tokens_total = usage.total_tokens if usage is not None and usage.total_tokens is not None else latest.tokens_total
     tokens_since_promotion = None
     if tokens_total is not None and promotion is not None and promotion.tokens_total is not None:
         tokens_since_promotion = max(0.0, tokens_total - promotion.tokens_total)
+    if tokens_since_promotion is not None:
+        token_sub = f"{fmt_number(tokens_since_promotion)} since promotion"
+    elif usage is not None and usage.total_tokens is not None:
+        token_sub = f"latest {usage.source} snapshot"
+    elif latest.tokens_total is not None:
+        token_sub = "legacy token total"
+    else:
+        token_sub = "since promotion n/a"
+    wall_seconds = usage.wall_seconds if usage is not None and usage.wall_seconds is not None else latest.wall_seconds
 
     cards = [
         ("Best", fmt_number(best.score if best else None), best.candidate if best else "no promoted score"),
         ("Latest", latest.candidate, latest.decision or "no decision"),
         ("Candidates", str(len(points)), f"{counts['promoted']} promoted / {counts['rejected']} rejected"),
-        ("Tokens", fmt_number(tokens_total), f"{fmt_number(tokens_since_promotion)} since promotion"),
+        ("Tokens", fmt_number(tokens_total), token_sub),
         ("Active Time", fmt_seconds(latest.active_seconds), "tracked agent time"),
-        ("Wall Time", fmt_seconds(latest.wall_seconds), "elapsed from first event"),
+        ("Wall Time", fmt_seconds(wall_seconds), "elapsed from first snapshot/event"),
         ("Bugs/Blocked", str(counts["bug_blocked"]), "needs attention" if counts["bug_blocked"] else "none"),
     ]
     return "\n".join(
@@ -134,7 +152,8 @@ def render_dashboard(
     refresh_seconds: int | None = None,
 ) -> str:
     points = read_points(input_path)
-    chart = inline_chart(points, title, ylabel, direction, x_axis)
+    usage, _, _ = state_snapshot(infer_state_path(input_path, None))
+    chart = inline_chart(input_path, points, title, ylabel, direction, x_axis)
     refresh = f'<meta http-equiv="refresh" content="{refresh_seconds}">' if refresh_seconds else ""
     latest = points[-1]
     return f"""<!doctype html>
@@ -275,7 +294,7 @@ def render_dashboard(
   </header>
   <main>
     <div class="cards">
-      {summary_cards(points, direction)}
+      {summary_cards(points, direction, usage)}
     </div>
     <section class="chart">{chart}</section>
     <section class="table-wrap">
@@ -332,7 +351,7 @@ def serve_dashboard(args: argparse.Namespace) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render or serve a zero-dependency optimization progress dashboard.")
-    parser.add_argument("input", type=Path, nargs="?", default=Path("work/events.jsonl"))
+    parser.add_argument("input", type=Path, nargs="?", default=Path("work/progress.tsv"))
     parser.add_argument("-o", "--output", type=Path, default=Path("work/dashboard.html"))
     parser.add_argument("--title", default="Optimization Dashboard")
     parser.add_argument("--ylabel", default="Authoritative metric")

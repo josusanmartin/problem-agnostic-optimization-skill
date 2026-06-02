@@ -1,26 +1,26 @@
-timestamp	candidate	score	decision	tokens_total	tokens_delta	label
-2026-06-01T00:00:00Z	cand_0000	1.0000	baseline	1200	1200	baseline
-2026-06-01T00:06:00Z	cand_0001	0.9920	promote	3100	1900	fused validation route
-2026-06-01T00:12:00Z	cand_0002	0.9965	reject	4700	1600	tile too small
-2026-06-01T00:18:00Z	cand_0003	0.9874	promote	6900	2200	remove redundant pass
-2026-06-01T00:24:00Z	cand_0004	0.9908	reject	8600	1700	cache layout trial
-2026-06-01T00:30:00Z	cand_0005	0.9897	reject	10400	1800	wider batch probe
-2026-06-01T00:36:00Z	cand_0006	0.9844	promote	13200	2800	vectorized inner loop
-2026-06-01T00:42:00Z	cand_0007	0.9861	reject	15100	1900	over-aggressive unroll
-2026-06-01T00:48:00Z	cand_0008	0.9853	reject	16900	1800	alternate packing
-2026-06-01T00:54:00Z	cand_0009	0.9849	verify	19400	2500	rerun vectorized route
-2026-06-01T01:00:00Z	cand_0010	0.9819	promote	22100	2700	specialize hot shape
-2026-06-01T01:06:00Z	cand_0011	0.9830	reject	24100	2000	branchless variant
-2026-06-01T01:12:00Z	cand_0012	0.9827	reject	26000	1900	prefetch distance sweep
-2026-06-01T01:18:00Z	cand_0013	0.9825	reject	28100	2100	route split attempt
-2026-06-01T01:24:00Z	cand_0014	0.9818	verify	30600	2500	rerun specialized shape
-2026-06-01T01:30:00Z	cand_0015	0.9796	promote	33500	2900	reduce tail barrier
-2026-06-01T01:36:00Z	cand_0016	0.9804	reject	35700	2200	extra fusion attempt
-2026-06-01T01:42:00Z	cand_0017	0.9801	reject	37900	2200	metadata cache
-2026-06-01T01:48:00Z	cand_0018	0.9807	blocked	39100	1200	remote queue timeout
-2026-06-01T01:54:00Z	cand_0019	0.9799	reject	41900	2800	primitive inversion probe
-2026-06-01T02:00:00Z	cand_0020	0.9792	verify	44600	2700	rerun tail fix
-2026-06-01T02:06:00Z	cand_0021	0.9794	reject	46900	2300	target split no gain
-2026-06-01T02:12:00Z	cand_0022	0.9778	promote	50100	3200	fast path for common case
-2026-06-01T02:18:00Z	cand_0023	0.9781	reject	52800	2700	late cleanup variant
-2026-06-01T02:24:00Z	cand_0024	0.9776	verify	55600	2800	rerun fast path
+timestamp	candidate	score	status	description
+2026-06-01T00:00:00Z	cand_0000	1.0000	baseline	baseline
+2026-06-01T00:06:00Z	cand_0001	0.9920	promote	fused validation route
+2026-06-01T00:12:00Z	cand_0002	0.9965	reject	tile too small
+2026-06-01T00:18:00Z	cand_0003	0.9874	promote	remove redundant pass
+2026-06-01T00:24:00Z	cand_0004	0.9908	reject	cache layout trial
+2026-06-01T00:30:00Z	cand_0005	0.9897	reject	wider batch probe
+2026-06-01T00:36:00Z	cand_0006	0.9844	promote	vectorized inner loop
+2026-06-01T00:42:00Z	cand_0007	0.9861	reject	over-aggressive unroll
+2026-06-01T00:48:00Z	cand_0008	0.9853	reject	alternate packing
+2026-06-01T00:54:00Z	cand_0009	0.9849	verify	rerun vectorized route
+2026-06-01T01:00:00Z	cand_0010	0.9819	promote	specialize hot shape
+2026-06-01T01:06:00Z	cand_0011	0.9830	reject	branchless variant
+2026-06-01T01:12:00Z	cand_0012	0.9827	reject	prefetch distance sweep
+2026-06-01T01:18:00Z	cand_0013	0.9825	reject	route split attempt
+2026-06-01T01:24:00Z	cand_0014	0.9818	verify	rerun specialized shape
+2026-06-01T01:30:00Z	cand_0015	0.9796	promote	reduce tail barrier
+2026-06-01T01:36:00Z	cand_0016	0.9804	reject	extra fusion attempt
+2026-06-01T01:42:00Z	cand_0017	0.9801	reject	metadata cache
+2026-06-01T01:48:00Z	cand_0018	0.9807	blocked	remote queue timeout
+2026-06-01T01:54:00Z	cand_0019	0.9799	reject	primitive inversion probe
+2026-06-01T02:00:00Z	cand_0020	0.9792	verify	rerun tail fix
+2026-06-01T02:06:00Z	cand_0021	0.9794	reject	target split no gain
+2026-06-01T02:12:00Z	cand_0022	0.9778	promote	fast path for common case
+2026-06-01T02:18:00Z	cand_0023	0.9781	reject	late cleanup variant
+2026-06-01T02:24:00Z	cand_0024	0.9776	verify	rerun fast path

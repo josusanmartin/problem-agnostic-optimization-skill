@@ -1,6 +1,6 @@
 ---
 name: problem-agnostic-optimization
-description: "Use when improving a measured artifact under a correctness or scoring contract: performance, latency, throughput, leaderboard score, CPU/GPU kernel time, or stochastic policy quality. Runs an evidence loop: objective, baseline, protected best, bottleneck model, one-hypothesis candidates, authoritative promotion, and plateau escapes via representation, primitive, route, or specialization changes."
+description: "Use when improving a measured artifact under a correctness or scoring contract: performance, latency, throughput, leaderboard score, CPU/GPU kernel time, or stochastic policy quality. Runs an evidence loop: objective, baseline, protected best, bottleneck model, one-hypothesis candidates, authoritative promotion, plateau escapes, and optional coordinator-led multi-agent exploration."
 ---
 
 # Problem-Agnostic Optimization
@@ -27,7 +27,7 @@ Only the authoritative metric promotes. Everything else explains.
 
 ## Contract
 
-Record objective, mode, authoritative metric, baseline, edit surface, budget, validation, and evidence availability.
+Record objective, mode, authoritative metric, baseline, edit surface, budget, validation, evidence availability, and `Multi-agent mode: on|off`.
 
 If the user asks to prepare, draft, write, fill, or format a goal "for later", return a copy-paste prompt that starts with `Use problem-agnostic-optimization.` and then includes the filled `/goal` block. Do not create, activate, start, or persist an active goal unless the user explicitly asks to start the optimization run now.
 
@@ -37,7 +37,7 @@ Use minimal notes only for tiny one-shot tasks that do not use `/goal` and do no
 
 ## Harness Trigger
 
-Harness deployment is default-on for every substantial `/goal` run, leaderboard/challenge run, production optimization, open-ended run, remote/noisy/rate-limited run, auditor-reviewed run, or run with `Progress chart: on`.
+Harness deployment is default-on for every substantial `/goal` run, leaderboard/challenge run, production optimization, open-ended run, remote/noisy/rate-limited run, auditor-reviewed run, multi-agent run, or run with `Progress chart: on`.
 
 Before baseline or candidate work, read `references/harness.md` and initialize the harness. Fast path: run the bundled `scripts/init_harness.py` if available; otherwise create the same files manually:
 
@@ -60,9 +60,13 @@ Only skip harness deployment when the task is explicitly tiny or the user disabl
 
 For substantial runs, progress artifacts are default-on unless the `/goal` says `Progress chart: off`.
 
-Before the first candidate, initialize `work/events.jsonl` and the `progress` fields in `work/state.json`. After every measured candidate, append one event to `work/events.jsonl`, regenerate `work/progress.svg` and `work/dashboard.html`, and refresh `work/review.md`. If the chart/dashboard scripts are unavailable or a result cannot be charted yet, write the blocker into `work/log.md` or `work/review.md`; do not silently skip progress artifacts.
+Before the first candidate, initialize `work/progress.tsv`, `work/log.md`, and the `progress` fields in `work/state.json`. After every measured candidate, append one candidate row to `work/progress.tsv`, regenerate `work/progress.svg` and `work/dashboard.html`, and refresh `work/review.md`. If the chart/dashboard scripts are unavailable or a result cannot be charted yet, write the blocker into `work/log.md` or `work/review.md`; do not silently skip progress artifacts.
 
-Each progress event must include token/time fields: `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. When the runtime exposes usage, capture the current cumulative values before writing the event; in Codex, use `get_goal` when available and map `tokensUsed` to `tokens_total` and `timeUsedSeconds` to `active_seconds`. Compute `tokens_delta` from the previous event when possible. If usage is unavailable, write these fields as `null` and note the gap in `work/review.md`; do not omit the fields or invent historical per-candidate tokens.
+`work/progress.tsv` is the score ledger. Include at least `timestamp`, `candidate`, one authoritative metric column such as `cycles` or `score`, `status`, and `description`. Do not use candidate count as a proxy for resource burn.
+
+Token history comes only from explicit `get_goal` usage snapshots recorded in `work/log.md`, not from interpolation across candidates. In Codex, call `get_goal` when available and append the raw or structured snapshot to `work/log.md` with elapsed wall time and all available token fields: total, input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, mark it as unknown; do not backfill or invent per-candidate token deltas.
+
+The SVG chart has two panels: the top plots authoritative score by candidate number with a protected-best curve and optional target line; the bottom plots recorded token snapshots by elapsed wall time. Candidate count is the right x-axis for score progress. Elapsed wall time is the right x-axis for token burn.
 
 ## Gap
 
@@ -84,6 +88,10 @@ Mechanism class: work deletion | resource transfer | tail/dependency | scheduler
 Decision: `PROMOTE` | `KEEP VARIANT` | `REJECT` | `BUG` | `BLOCKED`.
 
 Never promote from a screening metric. Near ties favor the simpler, smaller, less stateful artifact. After a promotion or surprising regression, update the bottleneck model before choosing the next candidate.
+
+## Multi-Agent Mode
+
+Default is `Multi-agent mode: off`. Enable only when the `/goal` says `Multi-agent mode: on` or the user explicitly asks for parallel workers. Use it only after the contract, protected best, and durable ledger exist. Workers run isolated one-hypothesis candidates from a named parent. The coordinator owns canonical files and promotion. Promotion remains serial and authoritative. For the worker packet and batch protocol, read `references/harness.md`.
 
 ## Push Or Reassess
 
@@ -130,7 +138,7 @@ When uncertain, keep the candidate separate and report the risk.
 
 | Need | Read |
 |---|---|
-| Long/noisy/remote run | `references/harness.md` |
+| Long/noisy/remote or multi-agent run | `references/harness.md` |
 | Audit an active run from a second session | `references/auditor.md` |
 | Floors, tails, primitive inversion, local optima | `references/resource-models.md` |
 | Measurement, profiling, variance, blockers | `references/evidence-loop.md` |

@@ -28,6 +28,7 @@ def touch(path: Path) -> bool:
 
 def state(args: argparse.Namespace) -> dict[str, object]:
     chart_enabled = args.progress_chart == "on"
+    multi_agent_enabled = args.multi_agent_mode == "on"
     return {
         "target_score": None,
         "score_unit": args.metric,
@@ -57,6 +58,15 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "fresh_run": args.fresh_run_isolation == "on",
             "allowed_prior_sources": [],
         },
+        "multi_agent": {
+            "enabled": multi_agent_enabled,
+            "mode": args.multi_agent_mode,
+            "coordinator_workspace": "canonical",
+            "worker_isolation": "worktree_or_copied_sandbox",
+            "active_workers": [],
+            "completed_workers": [],
+            "promotion_policy": "coordinator_only_authoritative_gate",
+        },
         "round": 0,
         "iterations": 0,
         "stagnation_count": 0,
@@ -77,8 +87,20 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "tokens_total": 0,
             "tokens_since_promotion": 0,
             "token_budget": None,
-            "usage_source": "runtime goal usage if available",
+            "usage_source": "explicit get_goal snapshots in work/log.md",
             "usage_gap": None,
+            "latest_usage_snapshot": {
+                "source": "get_goal",
+                "recorded_at": None,
+                "wall_seconds": None,
+                "total_tokens": None,
+                "input_tokens": None,
+                "cached_input_tokens": None,
+                "output_tokens": None,
+                "reasoning_output_tokens": None,
+                "cache_creation_input_tokens": None,
+                "cache_read_input_tokens": None,
+            },
         },
         "audit": {
             "enabled": True,
@@ -104,6 +126,7 @@ Budget / stopping rule: {args.budget}
 Validation: {args.validation}
 Progress chart: {args.progress_chart}
 Fresh-run isolation: {args.fresh_run_isolation}
+Multi-agent mode: {args.multi_agent_mode}
 
 ## Current Best
 Current best stable:
@@ -131,6 +154,7 @@ def log_md(args: argparse.Namespace) -> str:
 - baseline: {args.baseline}
 - validation: {args.validation}
 - progress chart: {args.progress_chart}
+- multi-agent mode: {args.multi_agent_mode}
 - decision: BOOTSTRAP
 - learning: harness initialized before candidate work
 """
@@ -142,9 +166,12 @@ def plan_md(args: argparse.Namespace) -> str:
 - Target: {args.objective}
 - Current best: {args.baseline}
 - Stagnation count: 0
+- Multi-agent mode: {args.multi_agent_mode}
 - Next candidate: reproduce or establish baseline before optimization
 
 ## Active Branches
+
+## Worker Queue
 
 ## Closed Branches
 """
@@ -158,7 +185,7 @@ def review_md(args: argparse.Namespace) -> str:
 - Last promotion:
 - Candidates since promotion: 0
 - Tokens since promotion: 0
-- Token source: runtime goal usage if available
+- Token source: explicit get_goal snapshots in work/log.md
 - Token gap:
 - Active time:
 - Wall elapsed:
@@ -189,11 +216,13 @@ def audit_md() -> str:
 
 
 def placeholder_svg() -> str:
-    return """<svg xmlns="http://www.w3.org/2000/svg" width="900" height="360" viewBox="0 0 900 360">
+    return """<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720">
 <rect width="100%" height="100%" fill="#fbfbf7"/>
-<rect x="40" y="40" width="820" height="260" rx="8" fill="#ffffff" stroke="#ded8cc"/>
-<text x="450" y="160" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#17202a">Progress chart waiting for first measurement</text>
-<text x="450" y="195" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#697386">Append a work/events.jsonl entry after the baseline or first candidate.</text>
+<rect x="92" y="72" width="943" height="318" fill="#f9fafb" stroke="#e5e7eb"/>
+<rect x="92" y="475" width="943" height="165" fill="#fffbeb" stroke="#fde68a"/>
+<text x="560" y="170" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#17202a">Progress chart waiting for first measurement</text>
+<text x="560" y="205" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#697386">Append measured candidate rows to work/progress.tsv.</text>
+<text x="560" y="555" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#92400e">Record explicit get_goal snapshots in work/log.md for token history.</text>
 </svg>
 """
 
@@ -206,7 +235,7 @@ def placeholder_dashboard() -> str:
 <main style="max-width:860px;margin:auto;background:#fff;border:1px solid #ded8cc;border-radius:8px;padding:28px">
 <h1>Optimization Dashboard</h1>
 <p>Waiting for the first measurement.</p>
-<p>Append one JSON object to <code>work/events.jsonl</code>, then regenerate this dashboard.</p>
+<p>Append one measured candidate row to <code>work/progress.tsv</code>, record any explicit <code>get_goal</code> snapshot in <code>work/log.md</code>, then regenerate this dashboard.</p>
 </main>
 </body>
 </html>
@@ -224,6 +253,7 @@ def main() -> int:
     parser.add_argument("--mode", default="clean leaderboard")
     parser.add_argument("--progress-chart", choices=("on", "off"), default="on")
     parser.add_argument("--fresh-run-isolation", choices=("on", "off"), default="on")
+    parser.add_argument("--multi-agent-mode", choices=("on", "off"), default="off")
     parser.add_argument("--force", action="store_true", help="Overwrite existing harness files")
     args = parser.parse_args()
 
@@ -237,7 +267,7 @@ def main() -> int:
         work / "plan.md": plan_md(args),
         work / "review.md": review_md(args),
         work / "audit.md": audit_md(),
-        work / "progress.tsv": "timestamp\tcandidate\tscore\tdecision\ttokens_total\ttokens_delta\tlabel\n",
+        work / "progress.tsv": "timestamp\tcandidate\tscore\tstatus\tdescription\n",
         work / "state.json": json.dumps(state(args), indent=2, sort_keys=True) + "\n",
     }
     if args.progress_chart == "on":
