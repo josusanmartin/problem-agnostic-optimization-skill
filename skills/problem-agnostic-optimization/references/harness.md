@@ -138,7 +138,25 @@ On a remote server, keep the server bound to `127.0.0.1` and open a tunnel from 
 ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
 ```
 
-`work/progress.tsv` should be tab-separated. New runs must include `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label` in every row. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form. `wall_seconds` is the elapsed wall-time delta from the start of the run or first recorded snapshot. Token/time values may be blank when unavailable, but do not omit the columns. If candidate names contain unrelated digits, include `candidate_number` or `candidate_index`; otherwise the chart only parses pure numeric IDs and `cand_0001`-style IDs as candidate numbers. Do not put fabricated token deltas into this table.
+`work/progress.tsv` should be tab-separated. New runs must include `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label` in every row. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form. `wall_seconds` is cumulative elapsed wall time since the run start, or since the first recorded snapshot if the true run start is unavailable. Token/time values may be blank when unavailable, but do not omit the columns. If candidate names contain unrelated digits, include `candidate_number`; otherwise the chart only parses pure numeric IDs and `cand_0001`-style IDs as candidate numbers. Do not put fabricated token deltas into this table.
+
+Use the bundled writer when available so the row shape is deterministic:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/record_progress.py \
+  --progress work/progress.tsv \
+  --candidate cand_0007 \
+  --metric cycles=2226 \
+  --decision promote \
+  --tokens-total 4500 \
+  --tokens-delta 1400 \
+  --wall-seconds 1080 \
+  --label "dependency-list scheduled vector kernel"
+```
+
+Use `--score 0.992` for a default `score` column, `--metric name=value` for metric-specific columns such as `cycles`, and `--metric-name cycles` for bug/crash rows where the metric column must exist but the value is unavailable. Hand-write TSV rows only if `record_progress.py` is missing.
+
+Use `--candidate-number 7` when the candidate name has unrelated digits and the TSV has a `candidate_number` column. If `--candidate-number` is provided for an existing TSV that lacks that column, the writer fails instead of silently changing a live schema. If `--tokens-total` is provided and `--tokens-delta` is omitted, the writer computes `tokens_delta` from the previous nonblank cumulative token total when available; otherwise it leaves the field blank.
 
 ```text
 timestamp	candidate	cycles	decision	tokens_total	tokens_delta	wall_seconds	label
@@ -159,8 +177,9 @@ To disable chart rendering, record `Progress chart: off` in the `/goal` contract
 
 After every measured candidate:
 
-- Append or regenerate `work/progress.tsv` with the authoritative metric result.
-- Always try to capture current token/time usage with `get_goal` and append the UTC snapshot to `work/log.md`.
+- Always try to capture current token/time usage with `get_goal`.
+- Append `work/progress.tsv` with `record_progress.py` when available, using the authoritative metric result and token/time fields when available.
+- Append the raw or structured UTC usage snapshot to `work/log.md`.
 - Copy the latest usage snapshot to `work/state.json`.
 - Regenerate `work/progress.svg` and `work/dashboard.html` unless charting is disabled.
 - Update `work/review.md` unless charting is disabled. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
@@ -661,8 +680,9 @@ Before editing:
 After running:
 
 - Append `work/log.md`.
-- Append the measured candidate to `work/progress.tsv` if `progress.logging_enabled` is not `false`.
-- Always try to capture current token/time usage with `get_goal`; append the UTC snapshot, wall-time delta, `tokens_total`, and `tokens_delta` to `work/log.md`, and copy the latest snapshot to `work/state.json`.
+- Always try to capture current token/time usage with `get_goal`.
+- Append the measured candidate to `work/progress.tsv` with `record_progress.py` if `progress.logging_enabled` is not `false` and the script is available, using token/time fields when available.
+- Append the UTC snapshot, wall time, `tokens_total`, and `tokens_delta` to `work/log.md`, and copy the latest snapshot to `work/state.json`.
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/state.json`.

@@ -201,7 +201,21 @@ For substantial optimization runs, progress monitoring is on by default. The opt
 - Bottom panel: token usage snapshots by elapsed wall time, using explicit `get_goal` snapshots recorded in `work/log.md`. The chart marks the pre-snapshot region as unknown instead of interpolating or fabricating token history. If an old run has no explicit snapshots but has legacy token columns, the chart may render those as lower-confidence legacy data. The latest usage snapshot is read from `work/state.json` and shown in the header.
 - Footer: visible full URL linking back to the bundled `problem-agnostic-optimization` skill source.
 
-Use `work/progress.tsv` as the score ledger. New rows must include `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. Timestamps must be UTC snapshots in `YYYY-MM-DDTHH:MM:SSZ` form. Token/time values may be blank when unavailable, but the columns should always be present. If candidate names contain unrelated digits, include `candidate_number` or `candidate_index`.
+Use `work/progress.tsv` as the score ledger. New rows must include `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. Timestamps must be UTC snapshots in `YYYY-MM-DDTHH:MM:SSZ` form. Token/time values may be blank when unavailable, but the columns should always be present. If candidate names contain unrelated digits, include `candidate_number`. Use the bundled writer when available; do not hand-write TSV rows unless the script is missing:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/record_progress.py \
+  --progress work/progress.tsv \
+  --candidate cand_0007 \
+  --metric cycles=2226 \
+  --decision promote \
+  --tokens-total 4500 \
+  --tokens-delta 1400 \
+  --wall-seconds 1080 \
+  --label "dependency-list scheduled vector kernel"
+```
+
+Add `--candidate-number 7` when the candidate name has unrelated digits and the TSV has a `candidate_number` column.
 
 Use `work/log.md` for token/time snapshots. In Codex, always try to call `get_goal` after each measured candidate and paste or summarize the snapshot with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If an existing run lacks early token snapshots, record only the current cumulative value going forward and mark earlier token history as unknown; do not invent per-candidate token deltas.
 
@@ -334,6 +348,7 @@ test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.p
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/progress_chart.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/progress_dashboard.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/record_event.py"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/record_progress.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/references/auditor.md"
 ```
 
@@ -349,6 +364,7 @@ $CODEX_HOME/skills/problem-agnostic-optimization/
     progress_chart.py
     progress_dashboard.py
     record_event.py
+    record_progress.py
   references/
     cpu-architecture.md
     auditor.md

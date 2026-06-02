@@ -29,6 +29,7 @@ REQUIRED_SKILL_SCRIPTS = [
     "progress_chart.py",
     "progress_dashboard.py",
     "record_event.py",
+    "record_progress.py",
 ]
 
 
