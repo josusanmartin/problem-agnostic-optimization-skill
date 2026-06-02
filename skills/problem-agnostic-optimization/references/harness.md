@@ -108,7 +108,7 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progr
   --target 1000
 ```
 
-Use `--direction higher` for scores where larger is better. The score panel always uses candidate number on the x-axis. The token panel always uses elapsed wall time from recorded `get_goal` snapshots.
+Use `--direction higher` for scores where larger is better. The score panel always uses candidate number on the x-axis. The score y-axis defaults to `--score-scale auto`: log scale when all plotted score and target values are positive, otherwise linear scale. The token panel uses elapsed wall time from recorded `get_goal` snapshots.
 
 Render the static dashboard:
 
@@ -134,7 +134,7 @@ On a remote server, keep the server bound to `127.0.0.1` and open a tunnel from 
 ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
 ```
 
-`work/progress.tsv` should be tab-separated. Include `timestamp`, `candidate`, one authoritative metric column such as `cycles` or `score`, `status`, and `description`. Do not put fabricated token deltas into this table.
+`work/progress.tsv` should be tab-separated. Include `timestamp`, `candidate`, one authoritative metric column such as `cycles` or `score`, `status`, and `description`. If candidate names contain unrelated digits, include `candidate_number` or `candidate_index`; otherwise the chart only parses pure numeric IDs and `cand_0001`-style IDs as candidate numbers. Do not put fabricated token deltas into this table.
 
 ```text
 timestamp	candidate	cycles	status	description
@@ -145,7 +145,9 @@ timestamp	candidate	cycles	status	description
 
 Token snapshots must be explicit. In Codex, call `get_goal` when available and append the raw or structured snapshot to `work/log.md` with elapsed wall time and all available token fields: total, input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, show it as unknown; do not interpolate or invent per-candidate token usage.
 
-`work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read for compatibility only; they are lower-confidence than explicit `get_goal` snapshots and should not be used as new-run doctrine.
+`work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read for compatibility only; they are lower-confidence than explicit `get_goal` snapshots, should be labeled as legacy when charted, and should not be used as new-run doctrine.
+
+Only `baseline`, `promote`, and `promoted` rows update the protected-best curve. Use `keep` for retained evidence or ties that did not pass the canonical promotion gate.
 
 The dashboard is diagnostic. It can trigger push/reassess decisions, but it never replaces correctness checks or the authoritative promotion gate.
 
@@ -540,13 +542,13 @@ For autonomous or overnight runs, maintain a compact tab-separated results table
 
 ```text
 candidate	score	memory_or_cost	status	description
-cand_0000	37.900	0.0	keep	baseline
-cand_0001	36.700	0.0	keep	exact-shape route
+cand_0000	37.900	0.0	baseline	baseline
+cand_0001	36.700	0.0	promote	exact-shape route
 cand_0002	0.000	0.0	crash	OOM on larger tile
 cand_0003	38.200	0.0	discard	graph wrapper regressed
 ```
 
-Use status values like `keep`, `discard`, `crash`, `bug`, `blocked`, and `verify`. The score column should be the authoritative metric when available; otherwise label it as a screening metric in the description.
+Use status values like `baseline`, `promote`, `keep`, `discard`, `crash`, `bug`, `blocked`, and `verify`. The score column should be the authoritative metric when available; otherwise label it as a screening metric in the description.
 
 ## Normalized Result JSON
 

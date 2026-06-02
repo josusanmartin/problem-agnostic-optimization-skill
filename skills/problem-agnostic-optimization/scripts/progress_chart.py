@@ -135,10 +135,19 @@ def parse_timestamp(value: Any) -> float | None:
         return None
 
 
-def candidate_number(text: str, row_index: int) -> float:
-    match = re.search(r"(\d+)(?!.*\d)", text)
+def candidate_number(text: str, row_index: int, explicit: Any = None) -> float:
+    parsed = to_float(explicit)
+    if parsed is not None:
+        return parsed
+
+    stripped = text.strip()
+    if re.fullmatch(r"\d+", stripped):
+        return float(int(stripped))
+
+    match = re.fullmatch(r"(?:cand|candidate|c)[_\-\s]?0*(\d+)", stripped, re.IGNORECASE)
     if match:
         return float(int(match.group(1)))
+
     return float(row_index)
 
 
@@ -198,7 +207,7 @@ def make_point(row_index: int, row: dict[str, Any], token_total: float) -> tuple
     point = Point(
         row_index,
         candidate,
-        candidate_number(candidate, row_index),
+        candidate_number(candidate, row_index, first_present(row, ["candidate_number", "candidate_index", "candidate_idx"])),
         score,
         decision,
         label,
@@ -485,6 +494,22 @@ def read_token_snapshots(path: Path | None) -> list[TokenSnapshot]:
     return dedupe_snapshots(snapshots)
 
 
+def legacy_token_snapshots(points: list[Point]) -> list[TokenSnapshot]:
+    snapshots: list[TokenSnapshot] = []
+    for point in points:
+        if point.tokens_total is None or point.wall_seconds is None:
+            continue
+        snapshots.append(
+            TokenSnapshot(
+                label=point.candidate,
+                wall_seconds=point.wall_seconds,
+                total_tokens=point.tokens_total,
+                source="legacy token columns",
+            )
+        )
+    return dedupe_snapshots(snapshots)
+
+
 def state_snapshot(path: Path | None) -> tuple[TokenSnapshot | None, float | None, float | None]:
     if path is None or not path.exists():
         return None, None, None
@@ -680,7 +705,8 @@ def best_series(points: list[Point], direction: str, xmin: float) -> tuple[list[
     best_point: Point | None = None
     series: list[tuple[float, float]] = []
     for point in sorted(points, key=lambda item: item.candidate_number):
-        if point.score is not None and status_kind(point.decision) in {"promote", "keep"}:
+        eligible = point.decision in BEST_DECISIONS or (point.row == 0 and not point.decision)
+        if point.score is not None and eligible:
             if best_score is None or improves(point.score, best_score, direction):
                 best_score = point.score
                 best_point = point
@@ -717,6 +743,8 @@ def category_series(snapshots: list[TokenSnapshot]) -> list[tuple[str, str, list
 
 def snapshot_title(snapshot: TokenSnapshot, ylabel: str) -> str:
     parts = [f"{snapshot.label}: {format_tokens(snapshot.total_tokens)} tokens at {format_duration(snapshot.wall_seconds)}"]
+    if snapshot.source != "get_goal":
+        parts.append(snapshot.source)
     for label, value in [
         ("input", snapshot.input_tokens),
         ("cached input", snapshot.cached_input_tokens),
@@ -743,12 +771,18 @@ def render_svg(
     state_path: Path | None = None,
     target: float | None = None,
     hide_before_candidate: int = 3,
+    score_scale: str = "auto",
 ) -> None:
     del x_axis
     if not points:
         raise SystemExit("progress data has no candidate rows")
 
     snapshots = read_token_snapshots(log_path)
+    token_source = "explicit get_goal snapshots"
+    if not snapshots:
+        snapshots = legacy_token_snapshots(points)
+        if snapshots:
+            token_source = "legacy token columns"
     current_snapshot, state_target, state_best = state_snapshot(state_path)
     if target is None:
         target = state_target
@@ -756,37 +790,59 @@ def render_svg(
         current_snapshot = snapshots[-1]
 
     visible, xmin, xmax, hid_early = visible_points(points, hide_before_candidate)
+    series, protected_best = best_series(points, direction, xmin)
     scored_visible = [p for p in visible if p.score is not None]
-    score_values = [p.score for p in scored_visible if p.score is not None and p.score > 0]
+    score_values = [p.score for p in scored_visible if p.score is not None]
     if not score_values:
-        score_values = [p.score for p in points if p.score is not None and p.score > 0]
+        score_values = [p.score for p in points if p.score is not None]
     if not score_values:
-        raise SystemExit("progress data has no positive numeric score values for log-scale rendering")
-    if target is not None and target > 0:
+        raise SystemExit("progress data has no numeric score values")
+    score_values.extend(score for _, score in series)
+    if target is not None:
         score_values.append(target)
-    score_min = min(score_values) * 0.965
-    score_max = max(score_values) * 1.045
-    log_min = math.log(score_min)
-    log_max = math.log(score_max)
+    if state_best is not None:
+        score_values.append(state_best)
+
+    if score_scale == "auto":
+        scale = "log" if all(value > 0 for value in score_values) else "linear"
+    else:
+        scale = score_scale
+    if scale == "log" and any(value <= 0 for value in score_values):
+        raise SystemExit("log score scale requires all plotted score and target values to be positive; use --score-scale linear")
+
+    raw_min = min(score_values)
+    raw_max = max(score_values)
+    if scale == "log":
+        score_min = raw_min * 0.965
+        score_max = raw_max * 1.045
+        scale_min = math.log(score_min)
+        scale_max = math.log(score_max)
+    else:
+        span = raw_max - raw_min
+        pad = max(abs(raw_min), abs(raw_max), 1.0) * 0.045 if span == 0 else span * 0.08
+        score_min = raw_min - pad
+        score_max = raw_max + pad
+        scale_min = score_min
+        scale_max = score_max
 
     def x_candidate(value: float) -> float:
         return LEFT + (value - xmin) / (xmax - xmin) * PLOT_W
 
     def y_score(score: float) -> float:
-        return SCORE_Y + (log_max - math.log(score)) / (log_max - log_min) * SCORE_H
+        scaled = math.log(score) if scale == "log" else score
+        return SCORE_Y + (scale_max - scaled) / (scale_max - scale_min) * SCORE_H
 
-    series, protected_best = best_series(points, direction, xmin)
     if state_best is not None and (protected_best is None or protected_best.score != state_best):
         protected_best_value = state_best
     else:
         protected_best_value = protected_best.score if protected_best is not None else None
     measured_line = polyline(
-        [(x_candidate(p.candidate_number), y_score(p.score)) for p in scored_visible if p.score is not None and p.score > 0],
+        [(x_candidate(p.candidate_number), y_score(p.score)) for p in scored_visible if p.score is not None and (scale != "log" or p.score > 0)],
         MEASURED,
         1.2,
         'stroke-opacity="0.65" stroke-dasharray="3 4"',
     )
-    best_line = polyline([(x_candidate(candidate), y_score(score)) for candidate, score in series if score > 0], BLUE, 2.8)
+    best_line = polyline([(x_candidate(candidate), y_score(score)) for candidate, score in series if scale != "log" or score > 0], BLUE, 2.8)
 
     token_chart_snapshots = [s for s in snapshots if s.wall_seconds is not None and s.total_tokens is not None]
     max_wall = max([s.wall_seconds or 0.0 for s in token_chart_snapshots] + [current_snapshot.wall_seconds or 0.0 if current_snapshot else 0.0, 1.0])
@@ -806,7 +862,7 @@ def render_svg(
     desc = (
         f"Optimization timeline displayed from Candidate {xmin:.0f} through Candidate {xmax:.0f}. "
         f"Protected best is {format_number(protected_best_value)} {ylabel}. "
-        "Token usage is plotted only for recorded get_goal snapshots."
+        f"Token usage source: {token_source}."
     )
     parts = [
         f'<svg xmlns="http://www.w3.org/2000/svg" width="{WIDTH}" height="{HEIGHT}" viewBox="0 0 {WIDTH} {HEIGHT}" role="img" aria-labelledby="title desc">',
@@ -819,7 +875,8 @@ def render_svg(
         f'<rect x="{LEFT:.1f}" y="{SCORE_Y:.1f}" width="{PLOT_W:.1f}" height="{SCORE_H:.1f}" fill="{SCORE_PANEL}" stroke="{GRID}"/>',
     ]
 
-    for value in log_ticks(score_min, score_max):
+    tick_values = log_ticks(score_min, score_max) if scale == "log" else linear_ticks(score_min, score_max)
+    for value in tick_values:
         yy = y_score(value)
         parts.append(f'<line x1="{LEFT:.1f}" y1="{yy:.1f}" x2="{PLOT_RIGHT:.1f}" y2="{yy:.1f}" stroke="{GRID}" stroke-width="1"/>')
         parts.append(f'<text x="{LEFT - 10:.1f}" y="{yy + 4:.1f}" font-family="Arial, sans-serif" font-size="11" fill="{SUBTLE}" text-anchor="end">{format_number(value)}</text>')
@@ -837,7 +894,7 @@ def render_svg(
         parts.append(f'<text x="{xx:.1f}" y="{axis_y + 22:.1f}" font-family="Arial, sans-serif" font-size="11" fill="{SUBTLE}" text-anchor="middle">{value:.0f}</text>')
     hidden_note = f" ({hide_before_candidate} early candidates hidden)" if hid_early else ""
     parts.append(f'<text x="{(LEFT + PLOT_RIGHT) / 2:.1f}" y="{axis_y + 42:.1f}" font-family="Arial, sans-serif" font-size="12" fill="{MUTED}" text-anchor="middle">Candidate number{escape(hidden_note)}</text>')
-    parts.append(f'<text x="22" y="{SCORE_Y + SCORE_H / 2:.1f}" font-family="Arial, sans-serif" font-size="12" fill="{MUTED}" text-anchor="middle" transform="rotate(-90 22 {SCORE_Y + SCORE_H / 2:.1f})">{escape(ylabel)}, log scale</text>')
+    parts.append(f'<text x="22" y="{SCORE_Y + SCORE_H / 2:.1f}" font-family="Arial, sans-serif" font-size="12" fill="{MUTED}" text-anchor="middle" transform="rotate(-90 22 {SCORE_Y + SCORE_H / 2:.1f})">{escape(ylabel)}, {scale} scale</text>')
     parts.append(measured_line)
     parts.append(best_line)
 
@@ -846,7 +903,7 @@ def render_svg(
         xx = x_candidate(point.candidate_number)
         kind = status_kind(point.decision)
         title_text = escape(score_title(point, ylabel))
-        if point.score is None or point.score <= 0:
+        if point.score is None or (scale == "log" and point.score <= 0):
             if kind == "failure":
                 parts.append(f'<path d="M {xx - 4:.1f} {failure_y - 4:.1f} L {xx + 4:.1f} {failure_y + 4:.1f} M {xx + 4:.1f} {failure_y - 4:.1f} L {xx - 4:.1f} {failure_y + 4:.1f}" stroke="{RED}" stroke-width="1.7"><title>{title_text}</title></path>')
             continue
@@ -862,7 +919,7 @@ def render_svg(
         else:
             parts.append(f'<circle cx="{xx:.1f}" cy="{yy:.1f}" r="2.8" fill="{MEASURED}"><title>{title_text}</title></circle>')
 
-    if protected_best_value is not None and protected_best_value > 0:
+    if protected_best_value is not None and (scale != "log" or protected_best_value > 0):
         yy = y_score(protected_best_value)
         parts.append(f'<text x="{PLOT_RIGHT - 4:.1f}" y="{yy - 10:.1f}" font-family="Arial, sans-serif" font-size="12" fill="#065f46" text-anchor="end" font-weight="700">protected best: {format_number(protected_best_value)} {escape(ylabel)}</text>')
     if hid_early:
@@ -871,7 +928,7 @@ def render_svg(
     parts.extend(
         [
             f'<text x="{LEFT:.1f}" y="447" font-family="Arial, sans-serif" font-size="16" fill="{TEXT}" text-anchor="start" font-weight="700">Recorded Token Usage</text>',
-            f'<text x="{PLOT_RIGHT:.1f}" y="447" font-family="Arial, sans-serif" font-size="12" fill="{MUTED}" text-anchor="end">x-axis is elapsed wall time from recorded get_goal snapshots</text>',
+            f'<text x="{PLOT_RIGHT:.1f}" y="447" font-family="Arial, sans-serif" font-size="12" fill="{MUTED}" text-anchor="end">x-axis is elapsed wall time from {escape(token_source)}</text>',
             f'<rect x="{LEFT:.1f}" y="{TOKEN_Y:.1f}" width="{PLOT_W:.1f}" height="{TOKEN_H:.1f}" fill="{TOKEN_PANEL}" stroke="{TOKEN_GRID}"/>',
         ]
     )
@@ -882,7 +939,7 @@ def render_svg(
             parts.append(f'<text x="{LEFT + 12:.1f}" y="{TOKEN_Y + 20:.1f}" font-family="Arial, sans-serif" font-size="11" fill="{SUBTLE}" text-anchor="start">token/time not recorded before first snapshot</text>')
     else:
         parts.append(f'<rect x="{LEFT:.1f}" y="{TOKEN_Y:.1f}" width="{PLOT_W:.1f}" height="{TOKEN_H:.1f}" fill="{UNKNOWN}" opacity="0.65"/>')
-        parts.append(f'<text x="{(LEFT + PLOT_RIGHT) / 2:.1f}" y="{TOKEN_Y + TOKEN_H / 2:.1f}" font-family="Arial, sans-serif" font-size="13" fill="{SUBTLE}" text-anchor="middle">no explicit get_goal token snapshots in log</text>')
+        parts.append(f'<text x="{(LEFT + PLOT_RIGHT) / 2:.1f}" y="{TOKEN_Y + TOKEN_H / 2:.1f}" font-family="Arial, sans-serif" font-size="13" fill="{SUBTLE}" text-anchor="middle">no explicit get_goal snapshots or legacy token columns</text>')
 
     for value in linear_ticks(0.0, token_max):
         yy = y_token(value)
@@ -961,6 +1018,7 @@ def main() -> int:
     parser.add_argument("--ylabel", default="Authoritative metric")
     parser.add_argument("--direction", choices=("lower", "higher"), default="lower")
     parser.add_argument("--x-axis", choices=("candidate", "tokens", "active", "wall"), default="candidate", help="Accepted for compatibility; score panel uses candidate number")
+    parser.add_argument("--score-scale", choices=("auto", "log", "linear"), default="auto", help="Score y-axis scale; auto uses log only when all plotted score/target values are positive")
     args = parser.parse_args()
 
     points = read_points(args.input)
@@ -976,6 +1034,7 @@ def main() -> int:
         infer_state_path(args.input, args.state),
         args.target,
         args.hide_before_candidate,
+        args.score_scale,
     )
     print(args.output)
     return 0

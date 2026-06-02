@@ -92,13 +92,21 @@ def summary_cards(points: list[Point], direction: str, usage: TokenSnapshot | No
     tokens_since_promotion = None
     if tokens_total is not None and promotion is not None and promotion.tokens_total is not None:
         tokens_since_promotion = max(0.0, tokens_total - promotion.tokens_total)
+    if tokens_since_promotion is not None:
+        token_sub = f"{fmt_number(tokens_since_promotion)} since promotion"
+    elif usage is not None and usage.total_tokens is not None:
+        token_sub = f"latest {usage.source} snapshot"
+    elif latest.tokens_total is not None:
+        token_sub = "legacy token total"
+    else:
+        token_sub = "since promotion n/a"
     wall_seconds = usage.wall_seconds if usage is not None and usage.wall_seconds is not None else latest.wall_seconds
 
     cards = [
         ("Best", fmt_number(best.score if best else None), best.candidate if best else "no promoted score"),
         ("Latest", latest.candidate, latest.decision or "no decision"),
         ("Candidates", str(len(points)), f"{counts['promoted']} promoted / {counts['rejected']} rejected"),
-        ("Tokens", fmt_number(tokens_total), f"{fmt_number(tokens_since_promotion)} since promotion"),
+        ("Tokens", fmt_number(tokens_total), token_sub),
         ("Active Time", fmt_seconds(latest.active_seconds), "tracked agent time"),
         ("Wall Time", fmt_seconds(wall_seconds), "elapsed from first snapshot/event"),
         ("Bugs/Blocked", str(counts["bug_blocked"]), "needs attention" if counts["bug_blocked"] else "none"),

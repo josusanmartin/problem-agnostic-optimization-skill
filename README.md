@@ -197,14 +197,16 @@ For substantial optimization runs, progress monitoring is on by default. The opt
 
 `work/progress.svg` is a two-panel SVG dashboard:
 
-- Top panel: authoritative score by candidate number, with lower-better log-scale support, measured results, protected-best curve, promoted candidates, rejected candidates, kept ties, correctness failures, optional target line, and the current protected-best label. Candidates 0-2 are hidden by default when later candidates exist so startup work does not visually compress the real search.
-- Bottom panel: token usage snapshots by elapsed wall time, using only explicit `get_goal` snapshots recorded in `work/log.md`. The chart marks the pre-snapshot region as unknown instead of interpolating or fabricating token history. The latest usage snapshot is read from `work/state.json` and shown in the header.
+- Top panel: authoritative score by candidate number, with auto log/linear scale, measured results, protected-best curve, promoted candidates, rejected candidates, kept ties, correctness failures, optional target line, and the current protected-best label. Candidates 0-2 are hidden by default when later candidates exist so startup work does not visually compress the real search.
+- Bottom panel: token usage snapshots by elapsed wall time, using explicit `get_goal` snapshots recorded in `work/log.md`. The chart marks the pre-snapshot region as unknown instead of interpolating or fabricating token history. If an old run has no explicit snapshots but has legacy token columns, the chart may render those as lower-confidence legacy data. The latest usage snapshot is read from `work/state.json` and shown in the header.
 
-Use `work/progress.tsv` as the score ledger. Include at least `timestamp`, `candidate`, one authoritative metric column such as `cycles` or `score`, `status`, and `description`.
+Use `work/progress.tsv` as the score ledger. Include at least `timestamp`, `candidate`, one authoritative metric column such as `cycles` or `score`, `status`, and `description`. If candidate names contain unrelated digits, include `candidate_number` or `candidate_index`.
 
 Use `work/log.md` for token/time snapshots. In Codex, call `get_goal` when available and paste or summarize the snapshot with elapsed wall time and all available token fields: total, input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If an existing run lacks early token snapshots, record only the current cumulative value going forward and mark earlier token history as unknown; do not invent per-candidate token deltas.
 
-`work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read for compatibility only; new token history should come from explicit `get_goal` snapshots.
+`work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read and charted as labeled compatibility data only; new token history should come from explicit `get_goal` snapshots.
+
+Only `baseline`, `promote`, and `promoted` rows update protected best. Use `keep` for retained evidence or ties that did not pass the canonical promotion gate.
 
 The dashboard is diagnostic. It can trigger push/reassess decisions, but it never replaces correctness checks or the authoritative promotion gate.
 
@@ -228,7 +230,7 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progr
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower --target 1000 --ylabel cycles
 ```
 
-The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis. The token panel always uses elapsed wall time from recorded snapshots.
+The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis, with `--score-scale auto|log|linear`. The token panel uses elapsed wall time from recorded snapshots.
 
 If a run has `Progress chart: on` but no progress artifacts, ask the optimizer to backfill `work/progress.tsv` from `work/log.md` and any saved result files, then continue appending `work/progress.tsv` after every measured candidate and explicit `get_goal` snapshots to `work/log.md`. Missing chart files should be treated as a harness bug, not as normal behavior.
 

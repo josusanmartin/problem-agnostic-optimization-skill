@@ -142,9 +142,181 @@ def test_progress_chart_reads_cycles_status_description_tsv(tmp_path: Path) -> N
     assert "Candidate number" in svg
     assert "Recorded Token Usage" in svg
     assert "Cumulative tokens" in svg
+    assert "legacy token columns" in svg
     assert "target &lt;1000" in svg
     assert "Candidates 0-2 hidden for scale" in svg
     assert "screen scalar block placement" in svg
+
+
+def test_progress_chart_uses_legacy_token_columns_when_no_snapshots_exist(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    progress.write_text(
+        "timestamp\tcandidate\tscore\tstatus\ttokens_total\twall_seconds\tdescription\n"
+        "2026-06-01T00:00:00Z\tcand_0000\t1.0\tbaseline\t1000\t0\tbaseline\n"
+        "2026-06-01T00:03:00Z\tcand_0001\t0.9\tpromote\t2400\t180\tlegacy win\n"
+        "2026-06-01T00:05:00Z\tcand_0002\t0.91\treject\t3100\t300\tlegacy reject\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "progress.svg"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--title",
+            "Legacy Tokens",
+            "--ylabel",
+            "Score",
+            "--direction",
+            "lower",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    svg = output.read_text(encoding="utf-8")
+    assert "legacy token columns" in svg
+    assert "no explicit get_goal token snapshots" not in svg
+    assert "legacy win" in svg
+
+
+def test_progress_chart_auto_uses_linear_for_zero_and_negative_scores(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    progress.write_text(
+        "candidate\tscore\tstatus\tdescription\n"
+        "cand_0000\t0.0\tbaseline\tzero baseline\n"
+        "cand_0001\t-0.2\tpromote\tnegative win\n"
+        "cand_0002\t-0.1\treject\tnegative reject\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "progress.svg"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--title",
+            "Signed Score Progress",
+            "--ylabel",
+            "Delta",
+            "--direction",
+            "lower",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    svg = output.read_text(encoding="utf-8")
+    assert "Delta, linear scale" in svg
+    assert "zero baseline" in svg
+    assert "negative win" in svg
+
+
+def test_progress_chart_rejects_log_scale_for_non_positive_scores(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    progress.write_text(
+        "candidate\tscore\tstatus\tdescription\n"
+        "cand_0000\t0.0\tbaseline\tzero baseline\n"
+        "cand_0001\t-0.2\tpromote\tnegative win\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "progress.svg"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--score-scale",
+            "log",
+        ],
+        check=False,
+        text=True,
+        capture_output=True,
+    )
+
+    assert result.returncode != 0
+    assert "log score scale requires" in result.stderr
+
+
+def test_progress_chart_uses_row_index_for_ambiguous_candidate_digits(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    progress.write_text(
+        "candidate\tscore\tstatus\tdescription\n"
+        "baseline-v2\t1.0\tbaseline\tbaseline with version suffix\n"
+        "exp-2026-06-01\t0.9\tpromote\tdate-like candidate id\n"
+        "route4-retry2\t0.91\treject\ttrailing retry id\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "progress.svg"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--title",
+            "Ambiguous Candidates",
+            "--ylabel",
+            "Score",
+            "--direction",
+            "lower",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    svg = output.read_text(encoding="utf-8")
+    assert "displayed candidates 0-2" in svg
+    assert "date-like candidate id" in svg
+
+
+def test_keep_does_not_update_protected_best(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    progress.write_text(
+        "candidate\tscore\tstatus\tdescription\n"
+        "cand_0000\t1.0\tbaseline\tbaseline\n"
+        "cand_0001\t0.9\tpromote\tcanonical promotion\n"
+        "cand_0002\t0.8\tkeep\tkept but not promoted\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "progress.svg"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--title",
+            "Keep Semantics",
+            "--ylabel",
+            "Score",
+            "--direction",
+            "lower",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    svg = output.read_text(encoding="utf-8")
+    assert "protected best: 0.9 Score" in svg
+    assert "protected best: 0.8 Score" not in svg
 
 
 def test_progress_chart_reads_events_jsonl_and_active_axis(tmp_path: Path) -> None:
