@@ -8,7 +8,7 @@ from pathlib import Path
 
 
 def now() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def write_text(path: Path, text: str, force: bool) -> bool:
@@ -235,7 +235,7 @@ def placeholder_dashboard() -> str:
 <main style="max-width:860px;margin:auto;background:#fff;border:1px solid #ded8cc;border-radius:8px;padding:28px">
 <h1>Optimization Dashboard</h1>
 <p>Waiting for the first measurement.</p>
-<p>Append one measured candidate row to <code>work/progress.tsv</code>, record any explicit <code>get_goal</code> snapshot in <code>work/log.md</code>, then regenerate this dashboard.</p>
+<p>Append one measured candidate row to <code>work/progress.tsv</code> with UTC timestamp and token columns, try to record a <code>get_goal</code> snapshot in <code>work/log.md</code>, then regenerate this dashboard.</p>
 </main>
 </body>
 </html>
@@ -267,7 +267,7 @@ def main() -> int:
         work / "plan.md": plan_md(args),
         work / "review.md": review_md(args),
         work / "audit.md": audit_md(),
-        work / "progress.tsv": "timestamp\tcandidate\tscore\tstatus\tdescription\n",
+        work / "progress.tsv": "timestamp\tcandidate\tscore\tdecision\ttokens_total\ttokens_delta\twall_seconds\tlabel\n",
         work / "state.json": json.dumps(state(args), indent=2, sort_keys=True) + "\n",
     }
     if args.progress_chart == "on":

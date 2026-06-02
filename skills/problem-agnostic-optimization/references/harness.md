@@ -108,7 +108,9 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progr
   --target 1000
 ```
 
-Use `--direction higher` for scores where larger is better. The score panel always uses candidate number on the x-axis. The score y-axis defaults to `--score-scale auto`: log scale when all plotted score and target values are positive, otherwise linear scale. The token panel uses elapsed wall time from recorded `get_goal` snapshots.
+Use `--direction higher` for scores where larger is better. The score panel always uses candidate number on the x-axis. The score y-axis defaults to `--score-scale auto`: log scale when all plotted score and target values are positive, otherwise linear scale. The token panel uses elapsed wall time from recorded `get_goal` snapshots. For deterministic artifacts or exact snapshot tests, set `--generated-at <iso timestamp>`, `--no-generated-at`, or `SOURCE_DATE_EPOCH`.
+
+The rendered SVG and static dashboard footer link back to the bundled `problem-agnostic-optimization` skill source.
 
 Render the static dashboard:
 
@@ -128,22 +130,24 @@ python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/p
   --port 8765
 ```
 
+`progress_dashboard.py` passes `--target`, `--hide-before-candidate`, `--score-scale`, `--generated-at`, `--no-generated-at`, and `SOURCE_DATE_EPOCH` through to the embedded SVG renderer.
+
 On a remote server, keep the server bound to `127.0.0.1` and open a tunnel from the local machine:
 
 ```bash
 ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
 ```
 
-`work/progress.tsv` should be tab-separated. Include `timestamp`, `candidate`, one authoritative metric column such as `cycles` or `score`, `status`, and `description`. If candidate names contain unrelated digits, include `candidate_number` or `candidate_index`; otherwise the chart only parses pure numeric IDs and `cand_0001`-style IDs as candidate numbers. Do not put fabricated token deltas into this table.
+`work/progress.tsv` should be tab-separated. New runs must include `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label` in every row. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form. `wall_seconds` is the elapsed wall-time delta from the start of the run or first recorded snapshot. Token/time values may be blank when unavailable, but do not omit the columns. If candidate names contain unrelated digits, include `candidate_number` or `candidate_index`; otherwise the chart only parses pure numeric IDs and `cand_0001`-style IDs as candidate numbers. Do not put fabricated token deltas into this table.
 
 ```text
-timestamp	candidate	cycles	status	description
-2026-06-01T00:00:00Z	0	147734	baseline	scalar starter baseline
-2026-06-01T00:10:00Z	1	3360	promote	vectorized full gather, scratch values and paths
-2026-06-01T00:18:00Z	2	2226	promote	dependency-list scheduled vector kernel
+timestamp	candidate	cycles	decision	tokens_total	tokens_delta	wall_seconds	label
+2026-06-01T00:00:00Z	0	147734	baseline	1200	1200	0	scalar starter baseline
+2026-06-01T00:10:00Z	1	3360	promote	3100	1900	600	vectorized full gather, scratch values and paths
+2026-06-01T00:18:00Z	2	2226	promote	4500	1400	1080	dependency-list scheduled vector kernel
 ```
 
-Token snapshots must be explicit. In Codex, call `get_goal` when available and append the raw or structured snapshot to `work/log.md` with elapsed wall time and all available token fields: total, input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, show it as unknown; do not interpolate or invent per-candidate token usage.
+Token snapshots must be explicit. In Codex, always try to call `get_goal` after each measured candidate and append the raw or structured snapshot to `work/log.md` with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, show it as unknown; do not interpolate or invent per-candidate token usage.
 
 `work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read for compatibility only; they are lower-confidence than explicit `get_goal` snapshots, should be labeled as legacy when charted, and should not be used as new-run doctrine.
 
@@ -156,7 +160,7 @@ To disable chart rendering, record `Progress chart: off` in the `/goal` contract
 After every measured candidate:
 
 - Append or regenerate `work/progress.tsv` with the authoritative metric result.
-- Capture current token/time usage with `get_goal` when available and append the snapshot to `work/log.md`.
+- Always try to capture current token/time usage with `get_goal` and append the UTC snapshot to `work/log.md`.
 - Copy the latest usage snapshot to `work/state.json`.
 - Regenerate `work/progress.svg` and `work/dashboard.html` unless charting is disabled.
 - Update `work/review.md` unless charting is disabled. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
@@ -317,6 +321,10 @@ Append-only experiment ledger. Every candidate, including failures, gets:
 - profile command:
 - result:
 - correctness:
+- usage snapshot UTC:
+- wall_seconds:
+- tokens_total:
+- tokens_delta:
 - profile/counter delta:
 - stability:
 - improved best:
@@ -654,7 +662,7 @@ After running:
 
 - Append `work/log.md`.
 - Append the measured candidate to `work/progress.tsv` if `progress.logging_enabled` is not `false`.
-- Capture current token/time usage with `get_goal` when available, append the snapshot to `work/log.md`, and copy the latest snapshot to `work/state.json`.
+- Always try to capture current token/time usage with `get_goal`; append the UTC snapshot, wall-time delta, `tokens_total`, and `tokens_delta` to `work/log.md`, and copy the latest snapshot to `work/state.json`.
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/state.json`.

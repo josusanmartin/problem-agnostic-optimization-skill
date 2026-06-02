@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -10,6 +11,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 CHART_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "progress_chart.py"
 RUN_DASHBOARD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "progress_dashboard.py"
 RECORD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "record_event.py"
+
+
+def write_minimal_progress(path: Path) -> None:
+    path.write_text(
+        "timestamp\tcandidate\tscore\tdecision\ttokens_total\ttokens_delta\twall_seconds\tlabel\n"
+        "2026-06-01T00:00:00Z\tcand_0000\t1.0\tbaseline\t1000\t1000\t0\tbaseline\n"
+        "2026-06-01T00:05:00Z\tcand_0001\t0.9\tpromote\t2400\t1400\t300\twin\n",
+        encoding="utf-8",
+    )
 
 
 def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
@@ -82,7 +92,109 @@ def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
     assert "current usage snapshot" in svg
     assert "second win" in svg
     assert "dashed token category lines" in svg
+    assert "https://github.com/josusanmartin/problem-agnostic-optimization-skill" in svg
+    assert "problem-agnostic-optimization skill" in svg
     assert ">-" not in svg
+
+
+def test_progress_chart_generated_at_is_fixed_and_normalized(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    write_minimal_progress(progress)
+    output_a = tmp_path / "a.svg"
+    output_b = tmp_path / "b.svg"
+    command = [
+        sys.executable,
+        str(CHART_SCRIPT),
+        str(progress),
+        "--generated-at",
+        "2026-06-01T02:30:10+02:00",
+        "--direction",
+        "lower",
+    ]
+
+    subprocess.run([*command, "-o", str(output_a)], check=True, text=True, capture_output=True)
+    subprocess.run([*command, "-o", str(output_b)], check=True, text=True, capture_output=True)
+
+    svg = output_a.read_text(encoding="utf-8")
+    assert output_a.read_text(encoding="utf-8") == output_b.read_text(encoding="utf-8")
+    assert "generated 2026-06-01T00:30:10Z" in svg
+
+
+def test_progress_chart_can_omit_generated_at(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    write_minimal_progress(progress)
+    output = tmp_path / "progress.svg"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--no-generated-at",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert "generated " not in output.read_text(encoding="utf-8")
+
+
+def test_progress_chart_uses_source_date_epoch(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    write_minimal_progress(progress)
+    output = tmp_path / "progress.svg"
+    env = {**os.environ, "SOURCE_DATE_EPOCH": "0"}
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+        env=env,
+    )
+
+    assert "generated 1970-01-01T00:00:00Z" in output.read_text(encoding="utf-8")
+
+
+def test_progress_chart_parses_get_goal_tokens_used_lines(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    log = tmp_path / "log.md"
+    write_minimal_progress(progress)
+    log.write_text(
+        "Usage snapshot after Candidate 66: get_goal reported tokensUsed=1331162 and timeUsedSeconds=8681.\n"
+        "Usage snapshot after Candidate 67: get_goal reported tokensUsed=1487048 and timeUsedSeconds=9337.\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "progress.svg"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(CHART_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--generated-at",
+            "2026-06-01T00:00:00Z",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    svg = output.read_text(encoding="utf-8")
+    assert "current usage snapshot: 1.49M tokens | at 2h35m" in svg
+    assert "C66" in svg
+    assert "no explicit get_goal snapshots" not in svg
 
 
 def test_progress_chart_reads_cycles_status_description_tsv(tmp_path: Path) -> None:
@@ -421,10 +533,40 @@ def test_record_event_keeps_nullable_token_and_time_fields(tmp_path: Path) -> No
     assert "tokens_delta" in record
     assert "active_seconds" in record
     assert "wall_seconds" in record
+    assert "timestamp" in record
+    assert record["timestamp"].endswith("Z")
+    assert "+00:00" not in record["timestamp"]
     assert record["tokens_total"] is None
     assert record["tokens_delta"] is None
     assert record["active_seconds"] is None
     assert record["wall_seconds"] is None
+
+
+def test_record_event_normalizes_explicit_timestamp_to_utc_z(tmp_path: Path) -> None:
+    events = tmp_path / "events.jsonl"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(RECORD_SCRIPT),
+            "--events",
+            str(events),
+            "--candidate",
+            "cand_0001",
+            "--decision",
+            "promote",
+            "--score",
+            "0.99",
+            "--timestamp",
+            "2026-06-01T02:30:10+02:00",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    record = json.loads(events.read_text(encoding="utf-8"))
+    assert record["timestamp"] == "2026-06-01T00:30:10Z"
 
 
 def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:
@@ -452,6 +594,8 @@ def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:
             "lower",
             "--x-axis",
             "tokens",
+            "--generated-at",
+            "2026-06-01T02:30:10+02:00",
         ],
         check=True,
         text=True,
@@ -463,4 +607,48 @@ def test_progress_dashboard_renders_static_html(tmp_path: Path) -> None:
     assert "Run Dashboard" in html
     assert "dashboard win" in html
     assert "Cumulative tokens" in html
+    assert "generated 2026-06-01T00:30:10Z" in html
     assert "ssh -L" in html
+    assert "https://github.com/josusanmartin/problem-agnostic-optimization-skill" in html
+    assert "problem-agnostic-optimization skill" in html
+
+
+def test_progress_dashboard_uses_log_snapshot_for_summary_cards(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    log = tmp_path / "log.md"
+    progress.write_text(
+        "candidate\tcycles\tdecision\tlabel\n"
+        "0\t147734\tbaseline\tbaseline\n"
+        "1\t3360\tpromote\twin\n",
+        encoding="utf-8",
+    )
+    log.write_text(
+        "Usage snapshot after Candidate 66: get_goal reported tokensUsed=1331162 and timeUsedSeconds=8681.\n"
+        "Usage snapshot after Candidate 67: get_goal reported tokensUsed=1487048 and timeUsedSeconds=9337.\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "dashboard.html"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(RUN_DASHBOARD_SCRIPT),
+            str(progress),
+            "-o",
+            str(output),
+            "--ylabel",
+            "cycles",
+            "--direction",
+            "lower",
+            "--generated-at",
+            "2026-06-01T00:00:00Z",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    html = output.read_text(encoding="utf-8")
+    assert "1,487,048" in html
+    assert "latest get_goal snapshot" in html
+    assert "2.59h" in html
