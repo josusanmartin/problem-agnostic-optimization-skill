@@ -1,0 +1,19 @@
+{
+  "best_stable_candidate": "cand_0022",
+  "best_stable_score": 0.9778,
+  "progress": {
+    "latest_usage_snapshot": {
+      "source": "get_goal",
+      "recorded_at": "2026-06-01T02:24:00Z",
+      "wall_seconds": 8640,
+      "total_tokens": 55600,
+      "input_tokens": 44300,
+      "cached_input_tokens": 29100,
+      "output_tokens": 11300,
+      "reasoning_output_tokens": 6600,
+      "cache_creation_input_tokens": null,
+      "cache_read_input_tokens": null
+    }
+  },
+  "target_score": 0.975
+}

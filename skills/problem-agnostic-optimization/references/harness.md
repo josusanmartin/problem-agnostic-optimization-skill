@@ -20,7 +20,7 @@ python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py
   --validation "<validation command or protocol>"
 ```
 
-Run this from the target repository root so it creates the local `work/` directory for that optimization run. Add `--progress-chart off` only when the contract says `Progress chart: off`. Add `--fresh-run-isolation off` only when the user has allowed prior-run transfer.
+Run this from the target repository root so it creates the local `work/` directory for that optimization run. Add `--progress-chart off` only when the contract says `Progress chart: off`. Add `--fresh-run-isolation off` only when the user has allowed prior-run transfer. Add `--multi-agent-mode on` only when the `/goal` says `Multi-agent mode: on` or the user explicitly asks for parallel workers.
 
 If the initializer is unavailable, create the same files manually before candidate work. Do not wait until after the first result to create the ledger.
 
@@ -33,7 +33,7 @@ work/
   audit.md
   best.md
   dashboard.html             # static dashboard for local or remote review
-  events.jsonl               # canonical progress ledger for long runs
+  events.jsonl               # optional compatibility event ledger
   log.md
   plan.md
   progress.tsv              # small-run table or derived export
@@ -82,17 +82,18 @@ Adapt names to the repository. The important part is that best state, history, a
 
 ## Progress Monitor
 
-For substantial optimization runs, maintain a live progress surface by default. The canonical long-run record is `work/events.jsonl`; `work/progress.tsv` is a small-run format or derived export.
+For substantial optimization runs, maintain a live progress surface by default. The score ledger is `work/progress.tsv`; token history comes from explicit `get_goal` snapshots in `work/log.md`, with the latest snapshot copied into `work/state.json`.
 
 ```text
-work/events.jsonl   # one JSON object per baseline, candidate, failure, blocker, or handoff
+work/log.md          # human log plus explicit get_goal token snapshots
 work/dashboard.html  # static dashboard for review and handoff
-work/progress.tsv   # one row per measured candidate for small/manual runs or exports
+work/progress.tsv   # one row per measured candidate
 work/progress.svg   # chart regenerated after each result unless Progress chart: off
 work/review.md      # short human review snapshot unless Progress chart: off
+work/state.json      # current best and latest usage snapshot
 ```
 
-Render the chart from either ledger:
+Render the two-panel chart from `work/progress.tsv`:
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv \
@@ -100,44 +101,28 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progr
   --ylabel "Authoritative metric" \
   --direction lower
 
-python skills/problem-agnostic-optimization/scripts/progress_chart.py work/events.jsonl \
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv \
   -o work/progress.svg \
-  --ylabel "Authoritative metric" \
+  --ylabel cycles \
   --direction lower \
-  --x-axis tokens
+  --target 1000
 ```
 
-Append an event and refresh the chart in one step:
-
-```bash
-python skills/problem-agnostic-optimization/scripts/record_event.py \
-  --candidate cand_0001 \
-  --decision promote \
-  --score 0.992 \
-  --tokens-total 3100 \
-  --tokens-delta 1900 \
-  --active-seconds 420 \
-  --wall-seconds 900 \
-  --chart work/progress.svg \
-  --direction lower
-```
-
-Use `--direction higher` for scores where larger is better. Use `--x-axis candidate`, `tokens`, `active`, or `wall` to review progress by candidate order, token burn, tracked active time, or wall time. The chart plots all candidates, the running promoted best, and cumulative token usage on the right axis.
+Use `--direction higher` for scores where larger is better. The score panel always uses candidate number on the x-axis. The token panel always uses elapsed wall time from recorded `get_goal` snapshots.
 
 Render the static dashboard:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
   -o work/dashboard.html \
   --ylabel "Authoritative metric" \
-  --direction lower \
-  --x-axis tokens
+  --direction lower
 ```
 
 The static dashboard is the safest remote-server path: regenerate `work/dashboard.html`, then open, download, or attach that file. For live local review, run:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
   --serve \
   --host 127.0.0.1 \
   --port 8765
@@ -149,29 +134,24 @@ On a remote server, keep the server bound to `127.0.0.1` and open a tunnel from 
 ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
 ```
 
-`work/events.jsonl` should append one object after every completed result. Token/time fields are required but nullable: every new event should include `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. In Codex, call `get_goal` when available and persist `tokensUsed` as `tokens_total` and `timeUsedSeconds` as `active_seconds`; compute `tokens_delta` from the previous event when possible. If usage is unavailable, set the field to `null` and note the gap in `work/review.md`. Do not omit token fields from new events, invent historical per-candidate usage, or encode failure as a fake zero score.
-
-```json
-{"candidate":"cand_0000","decision":"baseline","score":1.0,"tokens_total":1200,"tokens_delta":1200,"active_seconds":30,"wall_seconds":60,"label":"baseline"}
-{"candidate":"cand_0001","decision":"promote","score":0.992,"tokens_total":3100,"tokens_delta":1900,"active_seconds":420,"wall_seconds":900,"label":"fused route"}
-{"candidate":"cand_0002","decision":"reject","score":0.996,"tokens_total":4500,"tokens_delta":1400,"active_seconds":680,"wall_seconds":1320,"label":"tile too small"}
-```
-
-`work/progress.tsv` should be tab-separated. Include `timestamp` and cumulative token consumption. For metric-specific runs, the authoritative metric column can be named directly, such as `cycles`; the chart reader also accepts the generic `score` column.
+`work/progress.tsv` should be tab-separated. Include `timestamp`, `candidate`, one authoritative metric column such as `cycles` or `score`, `status`, and `description`. Do not put fabricated token deltas into this table.
 
 ```text
-timestamp	candidate	cycles	status	tokens_total	tokens_delta	description
-2026-06-01T00:00:00Z	0	147734	baseline	1200	1200	scalar starter baseline
-2026-06-01T00:10:00Z	1	3360	promote	3100	1900	vectorized full gather, scratch values and paths
-2026-06-01T00:18:00Z	2	2226	promote	4500	1400	dependency-list scheduled vector kernel
+timestamp	candidate	cycles	status	description
+2026-06-01T00:00:00Z	0	147734	baseline	scalar starter baseline
+2026-06-01T00:10:00Z	1	3360	promote	vectorized full gather, scratch values and paths
+2026-06-01T00:18:00Z	2	2226	promote	dependency-list scheduled vector kernel
 ```
 
-To disable chart rendering, record `Progress chart: off` in the `/goal` contract and set `progress.chart_enabled` to `false` in `work/state.json`. Continue appending `work/events.jsonl` unless the user explicitly disables progress logging too.
+Token snapshots must be explicit. In Codex, call `get_goal` when available and append the raw or structured snapshot to `work/log.md` with elapsed wall time and all available token fields: total, input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, show it as unknown; do not interpolate or invent per-candidate token usage.
+
+To disable chart rendering, record `Progress chart: off` in the `/goal` contract and set `progress.chart_enabled` to `false` in `work/state.json`. Continue appending `work/progress.tsv` and `work/log.md` unless the user explicitly disables progress logging too.
 
 After every measured candidate:
 
-- Capture current token/time usage when the runtime exposes it.
-- Append `work/events.jsonl` with token/time fields; if using TSV, append or regenerate `work/progress.tsv` with `tokens_total` and `tokens_delta` columns.
+- Append or regenerate `work/progress.tsv` with the authoritative metric result.
+- Capture current token/time usage with `get_goal` when available and append the snapshot to `work/log.md`.
+- Copy the latest usage snapshot to `work/state.json`.
 - Regenerate `work/progress.svg` and `work/dashboard.html` unless charting is disabled.
 - Update `work/review.md` unless charting is disabled. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
 - Treat high token burn without authoritative improvement, rising bug/crash rate, or many same-family rejects as evidence for reassessment.
@@ -197,6 +177,39 @@ When isolation is `on`:
 - If prior work appears relevant, ask or log a transfer note instead of silently importing it.
 
 Record the setting in `work/state.json` as `isolation.fresh_run`.
+
+## Multi-Agent Search
+
+Use only when `Multi-agent mode: on` is present in the `/goal` or the user explicitly asks for parallel workers. Use this mode when several independent hypotheses can be tested from the same protected parent. It is a throughput tool, not a promotion shortcut: workers explore in parallel, while the coordinator serializes canonical writes and promotions.
+
+### Canonical Roles
+
+- **Coordinator**: owns the canonical workspace, `work/state.json`, `work/best.md`, `work/log.md`, `work/progress.tsv`, charts, dashboard, and final promotion decisions.
+- **Worker**: operates in an isolated worktree or copied sandbox from a named parent artifact/hash. A worker may run screening and local validation, but cannot mutate the canonical ledger or declare a promotion.
+- **Auditor**: optional read-only reviewer. Use `references/auditor.md` after a batch, a surprising result, repeated bugs, or suspected drift.
+
+### Batch Protocol
+
+1. Freeze a parent: current best path, score, hash, ledger index, and bottleneck model.
+2. Issue one candidate packet per worker: parent, hypothesis, mechanism class, expected signal, kill criterion, smallest edit, validation, screening metric, authoritative metric, budget, editable files, and immutable files.
+3. Workers run only in their isolated sandboxes and save raw outputs under worker-local paths.
+4. Workers return a patch/diff, evidence summary, raw output paths, token/time usage if available, parent hash, and recommendation.
+5. Coordinator triages results, rejects wrong or stale outputs, and applies at most one candidate at a time to the canonical workspace.
+6. Coordinator reruns correctness and the authoritative metric in the canonical environment before any promotion.
+7. Coordinator appends every result to the ledger and refreshes charts/dashboard/review after the batch.
+
+### Worker Restrictions
+
+Workers must not edit canonical `work/state.json`, `work/best.md`, `work/log.md`, `work/events.jsonl`, `work/progress.tsv`, charts, dashboard, benchmark harnesses, immutable files, or final submission files. They must not promote from screening metrics, stale parents, wrong-answer speedups, modified graders, or private leaked results.
+
+### Search Allocation
+
+Use parallelism to reduce duplicate thinking:
+
+- Assign some workers to exploit the active hill only while recent evidence predicts improvement.
+- Assign at least one worker off-hill after plateau evidence: representation, primitive, route/library/config, target split, or contract specialization.
+- Record closed hills and duplicate attempts so future batches do not retry them without a new premise.
+- Near ties still favor the smaller, simpler, less stateful artifact after canonical retest.
 
 ## Audit Surface
 
@@ -364,6 +377,15 @@ Small machine-readable state:
     "fresh_run": true,
     "allowed_prior_sources": []
   },
+  "multi_agent": {
+    "enabled": false,
+    "mode": "off",
+    "coordinator_workspace": "canonical",
+    "worker_isolation": "worktree_or_copied_sandbox",
+    "active_workers": [],
+    "completed_workers": [],
+    "promotion_policy": "coordinator_only_authoritative_gate"
+  },
   "round": 0,
   "iterations": 0,
   "stagnation_count": 0,
@@ -384,8 +406,20 @@ Small machine-readable state:
     "tokens_total": 0,
     "tokens_since_promotion": 0,
     "token_budget": null,
-    "usage_source": "runtime goal usage if available",
-    "usage_gap": null
+    "usage_source": "explicit get_goal snapshots in work/log.md",
+    "usage_gap": null,
+    "latest_usage_snapshot": {
+      "source": "get_goal",
+      "recorded_at": null,
+      "wall_seconds": null,
+      "total_tokens": null,
+      "input_tokens": null,
+      "cached_input_tokens": null,
+      "output_tokens": null,
+      "reasoning_output_tokens": null,
+      "cache_creation_input_tokens": null,
+      "cache_read_input_tokens": null
+    }
   },
   "audit": {
     "enabled": true,
@@ -596,7 +630,7 @@ At the start:
 - Read the tail of `work/log.md`.
 - Read `work/plan.md`.
 - Read `work/state.json`.
-- Read the tail of `work/events.jsonl` if `progress.logging_enabled` is not `false`.
+- Read recent rows from `work/progress.tsv` and the latest token snapshots in `work/log.md` if `progress.logging_enabled` is not `false`.
 - Open `work/dashboard.html`, `work/progress.svg`, and `work/review.md` if `progress.chart_enabled` is not `false`.
 - Check pending jobs if using a remote system.
 
@@ -612,7 +646,8 @@ Before editing:
 After running:
 
 - Append `work/log.md`.
-- Capture current token/time usage and append `work/events.jsonl` with `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds` if `progress.logging_enabled` is not `false`.
+- Append the measured candidate to `work/progress.tsv` if `progress.logging_enabled` is not `false`.
+- Capture current token/time usage with `get_goal` when available, append the snapshot to `work/log.md`, and copy the latest snapshot to `work/state.json`.
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/state.json`.

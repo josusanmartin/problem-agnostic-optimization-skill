@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 import json
 from pathlib import Path
 
-from progress_chart import read_points, render_svg
+from progress_chart import infer_log_path, infer_state_path, read_points, render_svg
 
 
 def json_value(text: str) -> object:
@@ -89,7 +89,16 @@ def main() -> int:
     if args.chart is not None:
         args.chart.parent.mkdir(parents=True, exist_ok=True)
         points = read_points(args.events)
-        render_svg(points, args.chart, args.title, args.ylabel, args.direction, args.x_axis)
+        render_svg(
+            points,
+            args.chart,
+            args.title,
+            args.ylabel,
+            args.direction,
+            args.x_axis,
+            infer_log_path(args.events, None),
+            infer_state_path(args.events, None),
+        )
         print(args.chart)
     else:
         print(args.events)

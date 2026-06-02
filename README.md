@@ -40,6 +40,7 @@ Budget / stopping rule:
 Validation:
 Progress chart: on
 Fresh-run isolation: on
+Multi-agent mode: off
 ```
 
 Use the extended form when the run is noisy, remote, budget-limited, hardware-specific, or stochastic:
@@ -58,6 +59,7 @@ Validation:
 Stopping rule:
 Progress chart: on
 Fresh-run isolation: on
+Multi-agent mode: off
 Notes:
 ```
 
@@ -97,6 +99,7 @@ Budget / stopping rule:
 Validation:
 Progress chart: on
 Fresh-run isolation: on
+Multi-agent mode: off
 ```
 
 ### Field Guide
@@ -111,8 +114,9 @@ Fresh-run isolation: on
 - `Budget` / `Budget / stopping rule`: submissions, GPU minutes, wall time, simulation count, API spend, max candidates, or target exit condition.
 - `Validation`: correctness checks, seed protocol, shape sweep, test command, profiler/counter expectations, or production guardrails.
 - `Stopping rule`: target reached, budget exhausted, blocker, plateau audit, or handoff after N candidates.
-- `Progress chart`: defaults to `on` for substantial optimization runs. When on, Codex should keep `work/events.jsonl`, `work/progress.svg`, `work/dashboard.html`, and `work/review.md` current after each measured candidate. Set `Progress chart: off` to skip chart/dashboard/review rendering.
+- `Progress chart`: defaults to `on` for substantial optimization runs. When on, Codex should keep `work/progress.tsv`, `work/log.md`, `work/state.json`, `work/progress.svg`, `work/dashboard.html`, and `work/review.md` current after each measured candidate. Set `Progress chart: off` to skip chart/dashboard/review rendering.
 - `Fresh-run isolation`: defaults to `on`. In a new assigned workspace, do not inspect sibling workspaces or prior run artifacts unless the user sets `Fresh-run isolation: off`.
+- `Multi-agent mode`: defaults to `off`. Set `Multi-agent mode: on` only when several isolated hypotheses can run in parallel and a coordinator will serialize canonical writes and promotion.
 - `Notes`: known failed attempts, public clues, constraints, tolerances, hidden-test risk, and anything that would make an optimization invalid.
 
 ## Prompt Templates
@@ -133,6 +137,7 @@ Validation: run correctness first when available; compare per-shape/per-case res
 Stopping rule: stop when first place is verified, budget is exhausted, or plateau audit says change hill.
 Progress chart: on.
 Fresh-run isolation: on.
+Multi-agent mode: off.
 Notes: no exploits, no wrong-answer speed, no harness edits.
 ```
 
@@ -152,6 +157,7 @@ Validation: tests, load test, profiling artifacts, p95/p99, error rate, rollback
 Stopping rule: target reached with stable validation, or handoff with bottleneck map.
 Progress chart: on.
 Fresh-run isolation: on.
+Multi-agent mode: off.
 Notes: maintainability and correctness beat benchmark-only tricks.
 ```
 
@@ -171,14 +177,30 @@ Validation: smoke/train/validation/holdout/adversarial scenario sets; report mea
 Stopping rule: public score improves, holdout rejects candidate, budget exhausted, or overfit audit triggers.
 Progress chart: on.
 Fresh-run isolation: on.
+Multi-agent mode: off.
 Notes: compare parent and candidate on matched scenarios when possible.
 ```
 
+## Multi-Agent Mode
+
+Multi-agent mode is opt-in. Use `Multi-agent mode: on` only when the contract, protected best, and durable ledger already exist, and several candidate hypotheses can be tested from isolated parents.
+
+The coordinator owns the canonical workspace, `work/state.json`, `work/best.md`, `work/log.md`, `work/progress.tsv`, charts, dashboard, and promotion gate. Workers run in isolated worktrees or copied sandboxes, receive one candidate packet, and return evidence plus a patch/diff recommendation. Workers must not edit canonical ledgers, immutable files, harnesses, charts, dashboards, or final submissions.
+
+Promotion remains serial: the coordinator applies at most one worker result at a time, checks parent staleness, reruns correctness and the authoritative metric in the canonical workspace, then logs the decision. Parallel workers are for throughput and search diversity, not for bypassing the authoritative promotion gate.
+
 ## Progress Monitoring
 
-For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/events.jsonl` before the first candidate, append one event after every measured candidate, and regenerate `work/progress.svg`, `work/dashboard.html`, and `work/review.md` after each event. Long-running harnesses should treat `work/events.jsonl` as the canonical event ledger and render `work/progress.svg` from either `work/events.jsonl` or `work/progress.tsv`. Use TSV for small/manual runs or as a derived export.
+For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/progress.tsv`, `work/log.md`, and `work/state.json` before the first candidate, append one score row after every measured candidate, and regenerate `work/progress.svg`, `work/dashboard.html`, and `work/review.md` after each row.
 
-Every event should include token/time fields even when the value is not available yet: `tokens_total`, `tokens_delta`, `active_seconds`, and `wall_seconds`. In Codex, the optimizer should call `get_goal` when available and persist `tokensUsed` as `tokens_total` and `timeUsedSeconds` as `active_seconds`. If an existing run lacks token fields, backfill only the current cumulative value going forward and mark earlier per-candidate token usage as unknown; do not invent historical usage. `work/progress.tsv` should include `timestamp`, `tokens_total`, and `tokens_delta`; metric-specific columns such as `cycles` are supported.
+`work/progress.svg` is a two-panel SVG dashboard:
+
+- Top panel: authoritative score by candidate number, with lower-better log-scale support, measured results, protected-best curve, promoted candidates, rejected candidates, kept ties, correctness failures, optional target line, and the current protected-best label. Candidates 0-2 are hidden by default when later candidates exist so startup work does not visually compress the real search.
+- Bottom panel: token usage snapshots by elapsed wall time, using only explicit `get_goal` snapshots recorded in `work/log.md`. The chart marks the pre-snapshot region as unknown instead of interpolating or fabricating token history. The latest usage snapshot is read from `work/state.json` and shown in the header.
+
+Use `work/progress.tsv` as the score ledger. Include at least `timestamp`, `candidate`, one authoritative metric column such as `cycles` or `score`, `status`, and `description`.
+
+Use `work/log.md` for token/time snapshots. In Codex, call `get_goal` when available and paste or summarize the snapshot with elapsed wall time and all available token fields: total, input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If an existing run lacks early token snapshots, record only the current cumulative value going forward and mark earlier token history as unknown; do not invent per-candidate token deltas.
 
 Fast harness bootstrap from an installed skill:
 
@@ -189,38 +211,37 @@ python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py
   --metric "<authoritative metric>" \
   --baseline "<baseline or unknown, reproduce first>" \
   --budget "<budget / stopping rule>" \
-  --validation "<validation command or protocol>"
+  --validation "<validation command or protocol>" \
+  --multi-agent-mode off
 ```
 
 This creates `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, `work/progress.tsv`, `work/progress.svg`, `work/dashboard.html`, `work/review.md`, and `work/audit.md` before candidate work. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower
-python skills/problem-agnostic-optimization/scripts/progress_chart.py work/events.jsonl -o work/progress.svg --direction lower --x-axis tokens
-python skills/problem-agnostic-optimization/scripts/record_event.py --candidate cand_0001 --decision promote --score 0.992 --tokens-total 3100 --tokens-delta 1900 --active-seconds 420 --wall-seconds 900 --chart work/progress.svg
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower --target 1000 --ylabel cycles
 ```
 
-The chart shows all candidates, the running promoted best, and cumulative token usage on a right-side axis. Supported x-axis modes are `candidate`, `tokens`, `active`, and `wall`.
+The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis. The token panel always uses elapsed wall time from recorded snapshots.
 
-If a run has `Progress chart: on` but no progress artifacts, ask the optimizer to backfill them from `work/log.md` and any saved result files, then continue appending `work/events.jsonl` after every measured candidate. Missing chart files should be treated as a harness bug, not as normal behavior.
+If a run has `Progress chart: on` but no progress artifacts, ask the optimizer to backfill `work/progress.tsv` from `work/log.md` and any saved result files, then continue appending `work/progress.tsv` after every measured candidate and explicit `get_goal` snapshots to `work/log.md`. Missing chart files should be treated as a harness bug, not as normal behavior.
 
 ## Progress Dashboard
 
-For a fuller review surface, generate a dependency-free dashboard from `work/events.jsonl`. This creates a static HTML file, so it works even when Codex is running on a remote server:
+For a fuller review surface, generate a dependency-free HTML dashboard from `work/progress.tsv`. This creates a static HTML file, so it works even when Codex is running on a remote server:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
   -o work/dashboard.html \
-  --direction lower \
-  --x-axis tokens
+  --direction lower
 ```
 
-Open `work/dashboard.html` in a browser, download it from the remote host, or attach it to a handoff. The static dashboard includes the chart, current best, latest event, token/time burn, bug/blocker count, and recent candidate table.
+Open `work/dashboard.html` in a browser, download it from the remote host, or attach it to a handoff. The static dashboard includes the two-panel SVG, current best, latest candidate, token/time burn, bug/blocker count, and recent candidate table.
 
 For live refresh on a local machine:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
   --serve \
   --host 127.0.0.1 \
   --port 8765 \
@@ -240,7 +261,13 @@ Then open `http://127.0.0.1:8765` locally. If tunneling is inconvenient, use the
 Mock chart generated with the same script:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_chart.py assets/mock-progress.tsv -o assets/mock-progress.svg --title "Mock Optimization Progress" --ylabel "Validation loss (lower is better)" --direction lower
+python skills/problem-agnostic-optimization/scripts/progress_chart.py assets/mock-progress.tsv \
+  -o assets/mock-progress.svg \
+  --log assets/mock-log.md \
+  --state assets/mock-state.json \
+  --title "Mock Optimization Progress" \
+  --ylabel "Validation loss" \
+  --direction lower
 ```
 
 ![Mock optimization progress chart](assets/mock-progress.svg)

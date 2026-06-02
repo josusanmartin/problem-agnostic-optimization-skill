@@ -14,12 +14,40 @@ RECORD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "script
 
 def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
     progress = tmp_path / "progress.tsv"
+    log = tmp_path / "log.md"
+    state = tmp_path / "state.json"
     progress.write_text(
         "\t".join(["timestamp", "candidate", "score", "decision", "tokens_total", "tokens_delta", "label"]) + "\n"
         + "2026-06-01T00:00:00Z\tcand_0000\t1.000\tbaseline\t1000\t1000\tbaseline\n"
         + "2026-06-01T00:05:00Z\tcand_0001\t0.990\tpromote\t2500\t1500\tfirst win\n"
         + "2026-06-01T00:10:00Z\tcand_0002\t0.995\treject\t3600\t1100\tbad branch\n"
         + "2026-06-01T00:15:00Z\tcand_0003\t0.982\tkeep\t5200\t1600\tsecond win\n",
+        encoding="utf-8",
+    )
+    log.write_text(
+        "# Optimization Log\n\n"
+        "## get_goal usage snapshot C1\n"
+        '{"tokensUsed":2500,"timeUsedSeconds":300,"input_tokens":2000,"cached_input_tokens":1200,"output_tokens":500,"reasoning_output_tokens":300,"best_score":0.990}\n'
+        "## get_goal usage snapshot C3\n"
+        '{"tokensUsed":5200,"timeUsedSeconds":900,"input_tokens":4200,"cached_input_tokens":3000,"output_tokens":1000,"reasoning_output_tokens":600,"best_score":0.982}\n',
+        encoding="utf-8",
+    )
+    state.write_text(
+        json.dumps(
+            {
+                "best_stable_score": 0.982,
+                "progress": {
+                    "latest_usage_snapshot": {
+                        "total_tokens": 5200,
+                        "wall_seconds": 900,
+                        "input_tokens": 4200,
+                        "cached_input_tokens": 3000,
+                        "output_tokens": 1000,
+                        "reasoning_output_tokens": 600,
+                    }
+                },
+            }
+        ),
         encoding="utf-8",
     )
     output = tmp_path / "progress.svg"
@@ -47,10 +75,13 @@ def test_progress_chart_renders_svg_with_tokens_axis(tmp_path: Path) -> None:
     assert "<svg" in svg
     assert "Test Progress" in svg
     assert "Validation loss" in svg
+    assert "Recorded Token Usage" in svg
     assert "Cumulative tokens" in svg
-    assert "Running best" in svg
-    assert "first win" in svg
-    assert ">0k<" in svg
+    assert "Candidate number" in svg
+    assert "protected best" in svg
+    assert "current usage snapshot" in svg
+    assert "second win" in svg
+    assert "dashed token category lines" in svg
     assert ">-" not in svg
 
 
@@ -97,6 +128,8 @@ def test_progress_chart_reads_cycles_status_description_tsv(tmp_path: Path) -> N
             "lower",
             "--x-axis",
             "wall",
+            "--target",
+            "1000",
         ],
         check=True,
         text=True,
@@ -106,8 +139,11 @@ def test_progress_chart_reads_cycles_status_description_tsv(tmp_path: Path) -> N
     svg = output.read_text(encoding="utf-8")
     assert "Cycle Progress" in svg
     assert "Cycles" in svg
-    assert "Wall elapsed time" in svg
+    assert "Candidate number" in svg
+    assert "Recorded Token Usage" in svg
     assert "Cumulative tokens" in svg
+    assert "target &lt;1000" in svg
+    assert "Candidates 0-2 hidden for scale" in svg
     assert "screen scalar block placement" in svg
 
 
@@ -144,7 +180,7 @@ def test_progress_chart_reads_events_jsonl_and_active_axis(tmp_path: Path) -> No
 
     svg = output.read_text(encoding="utf-8")
     assert "JSONL Progress" in svg
-    assert "Tracked active time" in svg
+    assert "Candidate number" in svg
     assert "jsonl win" in svg
     assert "Cumulative tokens" in svg
 
