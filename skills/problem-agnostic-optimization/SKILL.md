@@ -86,7 +86,7 @@ Do not micro-tune below the current floor. Move to work deletion, fusion, specia
 
 ## Candidate
 
-For each candidate, state: parent, parent hash when available, hypothesis, mechanism, duplicate check, expected signal, kill criterion, smallest edit, validation, measurement, and decision. For substantial runs, save a typed candidate result under `work/candidates/`.
+For each candidate, state: parent, parent hash when available, hypothesis, mechanism, duplicate check, expected signal, kill criterion, smallest edit, validation, measurement, and decision. For substantial runs, save a typed candidate result under `work/candidates/`. For tiny/minimal runs, a compact log entry is enough unless the candidate is promoted or risky.
 
 Mechanism class: work deletion | resource transfer | tail/dependency | scheduler/variance | representation/primitive/route change | contract specialization | approximation | forbidden shortcut.
 

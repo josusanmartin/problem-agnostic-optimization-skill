@@ -68,6 +68,7 @@ project/
     candidates/
       _template.result.json
       cand_0001.result.json
+      cand_0001.md
     dashboard.html
     events.jsonl
     log.md
@@ -79,8 +80,6 @@ project/
     verifier.md
     schemas/
       candidate_result.schema.json
-    candidates/
-      cand_0001.md
     profiles/
       baseline.profile.txt
       cand_0001.profile.txt
@@ -101,7 +100,7 @@ Adapt names to the repository. The important part is that best state, history, a
 
 For substantial or high-risk runs, every measured candidate should have a normalized JSON artifact under `work/candidates/`, even when the candidate is rejected. Use `work/candidates/_template.result.json` when the initializer created it.
 
-Minimum fields:
+Recommended normalized shape:
 
 ```json
 {
