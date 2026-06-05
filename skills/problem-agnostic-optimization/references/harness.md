@@ -32,14 +32,22 @@ For small projects, create only:
 work/
   audit.md
   best.md
+  checkpoints/
+    progress.json              # phase/checkpoint state for resume
+  candidates/
+    _template.result.json      # typed candidate result template
   dashboard.html             # static dashboard for local or remote review
   events.jsonl               # optional compatibility event ledger
   log.md
   plan.md
   progress.tsv              # small-run table or derived export
   progress.svg
+  promotion_ladder.md
   review.md
+  schemas/
+    candidate_result.schema.json
   state.json
+  verifier.md
 ```
 
 For longer projects, use:
@@ -55,15 +63,23 @@ project/
   work/
     audit.md
     best.md
+    checkpoints/
+      progress.json
+    candidates/
+      _template.result.json
+      cand_0001.result.json
+      cand_0001.md
     dashboard.html
     events.jsonl
     log.md
     plan.md
     progress.tsv
     progress.svg
+    promotion_ladder.md
     state.json
-    candidates/
-      cand_0001.md
+    verifier.md
+    schemas/
+      candidate_result.schema.json
     profiles/
       baseline.profile.txt
       cand_0001.profile.txt
@@ -79,6 +95,104 @@ project/
 ```
 
 Adapt names to the repository. The important part is that best state, history, active plan, and machine-readable state survive chat compaction and process crashes.
+
+## Typed Candidate Artifacts
+
+For substantial or high-risk runs, every measured candidate should have a normalized JSON artifact under `work/candidates/`, even when the candidate is rejected. Use `work/candidates/_template.result.json` when the initializer created it.
+
+Recommended normalized shape:
+
+```json
+{
+  "schema_version": 1,
+  "candidate": "cand_0007",
+  "parent": "cand_0006",
+  "parent_hash": "git-or-file-hash",
+  "mode": "TUNE",
+  "mechanism_class": "representation/primitive/route change",
+  "duplicate_check": "why this is not the same hill or worker packet as an existing attempt",
+  "hypothesis": "one concrete hypothesis",
+  "artifact_paths": ["candidates/cand_0007.py"],
+  "raw_log_paths": ["work/raw_logs/cand_0007.out"],
+  "commands": {
+    "apply_or_build": "...",
+    "correctness": "...",
+    "authoritative_metric": "...",
+    "regression_or_adversarial": "...",
+    "fresh_verifier": "..."
+  },
+  "correctness": "pass",
+  "authoritative_metric": {
+    "score": 2226,
+    "unit": "cycles",
+    "direction": "lower",
+    "raw_result_path": "work/results/cand_0007.json"
+  },
+  "promotion_ladder": {},
+  "verifier": {},
+  "decision": "REJECT",
+  "learning": ""
+}
+```
+
+Do not use the JSON artifact as a second score ledger. `work/progress.tsv` remains the compact score ledger; candidate JSON preserves the richer evidence, raw paths, verifier verdict, and promotion-ladder state.
+
+## Phase Checkpoints
+
+Use `work/checkpoints/progress.json` to make long runs resumable. It tracks phase status, completed shards, terminal results, and the current phase. Resume should skip only completed terminal phases. Retry failed, blocked, or partial phases after checking their raw logs.
+
+Recommended phases:
+
+```text
+contract -> baseline -> candidate -> validation -> measurement -> fresh_verifier -> promotion -> handoff
+```
+
+For parallel or sharded work, record completed worker/shard ids and their result paths. A shard is terminal only when it has a candidate JSON artifact or an explicit no-result record with evidence. Do not mark a phase complete because a chat message said it finished.
+
+## Fresh Verifier Gate
+
+Promotions should pass a fresh verifier gate whenever the result matters: leaderboard submissions, production changes, security-sensitive code, surprising speedups, exploit-boundary questions, remote/noisy measurements, or any candidate that changes stateful behavior.
+
+Verifier contract:
+
+- Start from a clean checkout, fresh container, reset process, or equivalent independent environment when possible.
+- Transfer only the candidate artifact or diff, the recorded contract, validation command, and measurement command.
+- Rerun correctness before the authoritative metric.
+- Reproduce the authoritative metric with the same official command, submission path, or public result source.
+- Record `PASS`, `FAIL`, `INCONCLUSIVE`, or `SKIPPED_WITH_LIMITATION` in the candidate JSON and summarize limitations in `work/log.md`.
+
+If a true fresh environment is impossible, run the cleanest independent retest available and make the limitation visible. A candidate may be kept as `KEEP VARIANT`; it should not become the stable best unless the user accepts that limitation or the contract explicitly allows it.
+
+## Promotion Ladder
+
+Use `work/promotion_ladder.md` and the candidate JSON `promotion_ladder` object to separate gating evidence from advisory evidence.
+
+Gating steps:
+
+1. `apply_or_build`: patch applies, code builds, or the artifact loads.
+2. `correctness`: required reference, shape, seed, or test checks pass.
+3. `authoritative_metric`: official metric improves outside the recorded noise gate.
+4. `regression_or_adversarial`: targeted regressions, hidden-risk cases, no-exploit audit, or overfit checks pass when applicable.
+5. `fresh_verifier`: independent retest passes or the limitation is explicitly accepted by the contract.
+6. `promote`: update stable best, state, ledgers, chart, and plan.
+
+Advisory steps include profiles, counters, local screening, style, readability, or implementation neatness. Advisory evidence can explain or prioritize work; it cannot promote a candidate by itself.
+
+## Execution Boundary
+
+When executing untrusted/generated target code, attacker-controlled inputs, fuzzing harnesses, or external benchmark artifacts, use a constrained execution boundary when practical:
+
+- clean environment
+- no API keys, wallet keys, tokens, or unrelated credentials
+- no access to unrelated host files
+- restricted egress or no network when the task does not require it
+- fresh process/container for verifier runs
+
+Prompts and immutable-file rules are not a security boundary. If the environment cannot enforce the boundary, record the limitation in `work/state.json.execution_boundary.notes` and in the candidate JSON.
+
+## Draft Patch Mode
+
+For security-sensitive, production-sensitive, or user-requested review-first work, set `work/state.json.execution_boundary.draft_patch_only` to `true`. In draft patch mode, generate inert diffs or patch files under `work/PATCHES/` or `work/candidates/`; do not apply them to the live tree unless the user explicitly asks. Still validate the patch concept where possible in a separate sandbox or copied checkout.
 
 ## Progress Monitor
 
@@ -220,9 +334,9 @@ Use only when `Multi-agent mode: on` is present in the `/goal` or the user expli
 ### Batch Protocol
 
 1. Freeze a parent: current best path, score, hash, ledger index, and bottleneck model.
-2. Issue one candidate packet per worker: parent, hill status (`OPEN`, `NARROWED`, or `CLOSED`), push budget, hypothesis, mechanism class, expected signal, kill criterion, smallest edit, validation, screening metric, authoritative metric, budget, editable files, and immutable files.
+2. Issue one candidate packet per worker: parent, parent hash, hill status (`OPEN`, `NARROWED`, or `CLOSED`), target lane, duplicate check, push budget, hypothesis, mechanism class, expected signal, kill criterion, smallest edit, validation, screening metric, authoritative metric, budget, editable files, and immutable files.
 3. Workers run only in their isolated sandboxes and save raw outputs under worker-local paths.
-4. Workers return a patch/diff, evidence summary, raw output paths, token/time usage if available, parent hash, and recommendation.
+4. Workers return a patch/diff, evidence summary, candidate JSON or enough fields to create it, raw output paths, token/time usage if available, parent hash, duplicate-check result, and recommendation.
 5. Coordinator triages results, rejects wrong or stale outputs, and applies at most one candidate at a time to the canonical workspace.
 6. Coordinator reruns correctness and the authoritative metric in the canonical environment before any promotion.
 7. Coordinator appends every result to the ledger and refreshes charts/dashboard/review after the batch.
@@ -230,6 +344,8 @@ Use only when `Multi-agent mode: on` is present in the `/goal` or the user expli
 ### Worker Restrictions
 
 Workers must not edit canonical `work/state.json`, `work/best.md`, `work/log.md`, `work/events.jsonl`, `work/progress.tsv`, charts, dashboard, benchmark harnesses, immutable files, or final submission files. They must not promote from screening metrics, stale parents, wrong-answer speedups, modified graders, or private leaked results.
+
+Workers also must not mark canonical checkpoints complete. The coordinator alone updates `work/checkpoints/progress.json`, creates canonical candidate result JSON files, and runs the fresh verifier gate.
 
 ### Search Allocation
 
@@ -577,19 +693,28 @@ cand_0003	38.200	0.0	discard	graph wrapper regressed
 
 Use status values like `baseline`, `promote`, `keep`, `discard`, `crash`, `bug`, `blocked`, and `verify`. The score column should be the authoritative metric when available; otherwise label it as a screening metric in the description.
 
-## Normalized Result JSON
+## Extended Candidate JSON
 
-Store raw outputs, plus a small normalized result:
+Use this as an extension of the typed candidate artifact, not a replacement for it. Keep the required fields from `work/schemas/candidate_result.schema.json`, then add domain-specific result blocks as needed:
 
 ```json
 {
+  "schema_version": 1,
   "candidate": "cand_0008",
   "file": "candidates/cand_0008.py",
   "parent": "cand_0007",
+  "parent_hash": "git-or-file-hash",
   "branch": "m16-specialized-reduce",
   "mode": "TUNE",
+  "mechanism_class": "representation/primitive/route change",
+  "duplicate_check": "not the same hill as cand_0007 because it changes the reduction primitive",
   "timestamp": "2026-05-29T00:00:00Z",
   "commands": {
+    "apply_or_build": "...",
+    "correctness": "...",
+    "authoritative_metric": "...",
+    "regression_or_adversarial": "...",
+    "fresh_verifier": "...",
     "validate": "...",
     "benchmark": "...",
     "profile": "...",
@@ -611,6 +736,20 @@ Store raw outputs, plus a small normalized result:
   "ranked": {
     "score": null,
     "status": "not_run"
+  },
+  "promotion_ladder": {
+    "apply_or_build": "pass",
+    "correctness": "pass",
+    "authoritative_metric": "fail",
+    "regression_or_adversarial": "not_run",
+    "fresh_verifier": "not_run",
+    "promote": "fail"
+  },
+  "verifier": {
+    "mode": "fresh_environment_when_possible",
+    "verdict": "SKIPPED_WITH_LIMITATION",
+    "evidence": "",
+    "limitations": ["candidate did not pass authoritative metric"]
   },
   "stochastic_policy": {
     "scenario_set": "validation_v03",
@@ -671,21 +810,27 @@ At the start:
 Before editing:
 
 - State candidate parent.
+- State parent hash when available.
 - State mode.
 - State one hypothesis.
+- State mechanism class and duplicate check.
 - State expected signal.
 - State profiling basis and fallback if no useful profiler is available.
 - State validation and measurement command.
+- Create or plan the candidate JSON path under `work/candidates/`.
 
 After running:
 
 - Append `work/log.md`.
+- Save or update the candidate JSON artifact under `work/candidates/`.
 - Always try to capture current token/time usage with `get_goal`.
 - Append the measured candidate to `work/progress.tsv` with `record_progress.py` if `progress.logging_enabled` is not `false` and the script is available, using token/time fields when available.
 - Append the UTC snapshot, wall time, `tokens_total`, and `tokens_delta` to `work/log.md`, and copy the latest snapshot to `work/state.json`.
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/state.json`.
+- Update `work/checkpoints/progress.json` with the current phase and terminal result when appropriate.
+- Run or record the fresh verifier gate before any stable promotion.
 - If `progress.chart_enabled` is not `false`, regenerate `work/progress.svg`, regenerate `work/dashboard.html`, and refresh `work/review.md`.
 - Update `work/best.md` only if promotion rules pass.
 - Update `work/plan.md` with next branch status.

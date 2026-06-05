@@ -36,20 +36,39 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     expected = [
         "audit.md",
         "best.md",
+        "checkpoints/progress.json",
+        "candidates/_template.result.json",
         "dashboard.html",
         "events.jsonl",
         "log.md",
         "plan.md",
+        "promotion_ladder.md",
         "progress.svg",
         "progress.tsv",
         "review.md",
+        "schemas/candidate_result.schema.json",
         "state.json",
+        "verifier.md",
     ]
     for name in expected:
         assert (work / name).exists()
 
     state = json.loads((work / "state.json").read_text(encoding="utf-8"))
+    assert state["schema_version"] == 2
     assert state["score_unit"] == "cycles"
+    assert state["candidate_artifacts"]["required_for_promotions"] is True
+    assert state["promotion_ladder"]["enabled"] is True
+    assert state["promotion_ladder"]["gating_steps"] == [
+        "apply_or_build",
+        "correctness",
+        "authoritative_metric",
+        "regression_or_adversarial",
+        "fresh_verifier",
+        "promote",
+    ]
+    assert state["verifier"]["mode"] == "fresh_environment_when_possible"
+    assert state["execution_boundary"]["draft_patch_only"] is False
+    assert state["checkpoint"]["path"].endswith("work/checkpoints/progress.json")
     assert state["progress"]["chart_enabled"] is True
     assert state["progress"]["events"].endswith("work/events.jsonl")
     assert state["progress"]["usage_source"] == "explicit get_goal snapshots in work/log.md"
@@ -61,7 +80,20 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     )
     assert "sub 1000 cycles" in (work / "best.md").read_text(encoding="utf-8")
     assert "Multi-agent mode: off" in (work / "best.md").read_text(encoding="utf-8")
+    assert "Draft patch only: no" in (work / "best.md").read_text(encoding="utf-8")
     assert "Token source:" in (work / "review.md").read_text(encoding="utf-8")
+    assert "Fresh Verifier Gate" in (work / "verifier.md").read_text(encoding="utf-8")
+    assert "Promotion Ladder" in (work / "promotion_ladder.md").read_text(encoding="utf-8")
+    checkpoint = json.loads((work / "checkpoints" / "progress.json").read_text(encoding="utf-8"))
+    assert checkpoint["current_phase"] == "harness_boot"
+    assert checkpoint["phase_status"]["fresh_verifier"] == "pending"
+    schema = json.loads((work / "schemas" / "candidate_result.schema.json").read_text(encoding="utf-8"))
+    assert "mechanism_class" in schema["required"]
+    template = json.loads((work / "candidates" / "_template.result.json").read_text(encoding="utf-8"))
+    assert template["promotion_ladder"]["fresh_verifier"] == "pending"
+    assert template["verifier"]["verdict"] is None
+    for dirname in ("raw_logs", "results", "profiles", "PATCHES"):
+        assert (work / dirname).is_dir()
     dashboard = (work / "dashboard.html").read_text(encoding="utf-8").lower()
     assert "waiting for the first measurement" in dashboard
 
@@ -84,6 +116,9 @@ def test_init_harness_can_disable_chart_placeholders(tmp_path: Path) -> None:
     )
 
     assert (work / "events.jsonl").exists()
+    assert (work / "verifier.md").exists()
+    assert (work / "promotion_ladder.md").exists()
+    assert (work / "checkpoints" / "progress.json").exists()
     assert not (work / "progress.svg").exists()
     assert not (work / "dashboard.html").exists()
     state = json.loads((work / "state.json").read_text(encoding="utf-8"))
