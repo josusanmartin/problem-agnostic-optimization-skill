@@ -185,15 +185,15 @@ Notes: compare parent and candidate on matched scenarios when possible.
 
 Multi-agent mode is opt-in. Use `Multi-agent mode: on` only when the contract, protected best, and durable ledger already exist, and several candidate hypotheses can be tested from isolated parents.
 
-The coordinator owns the canonical workspace, `work/state.json`, `work/best.md`, `work/log.md`, `work/progress.tsv`, charts, dashboard, and promotion gate. Workers run in isolated worktrees or copied sandboxes, receive one candidate packet, and return evidence plus a patch/diff recommendation. Workers must not edit canonical ledgers, immutable files, harnesses, charts, dashboards, or final submissions.
+The coordinator owns the canonical workspace, `work/state.json`, `work/checkpoints/progress.json`, `work/best.md`, `work/log.md`, `work/progress.tsv`, candidate result JSON files, charts, dashboard, verifier gate, and promotion gate. Workers run in isolated worktrees or copied sandboxes, receive one candidate packet, and return evidence plus a patch/diff recommendation. Workers must not edit canonical ledgers, immutable files, harnesses, charts, dashboards, checkpoints, or final submissions.
 
 Promotion remains serial: the coordinator applies at most one worker result at a time, checks parent staleness, reruns correctness and the authoritative metric in the canonical workspace, then logs the decision. Parallel workers are for throughput and search diversity, not for bypassing the authoritative promotion gate.
 
-Use workers to diversify search allocation, not to multiply the same local tweak. Worker packets should include hill status (`OPEN`, `NARROWED`, or `CLOSED`) and a push budget before reassessment.
+Use workers to diversify search allocation, not to multiply the same local tweak. Worker packets should include parent hash, mechanism class, target lane, duplicate check, hill status (`OPEN`, `NARROWED`, or `CLOSED`), and a push budget before reassessment.
 
 ## Progress Monitoring
 
-For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/progress.tsv`, `work/log.md`, and `work/state.json` before the first candidate, append one score row after every measured candidate, and regenerate `work/progress.svg`, `work/dashboard.html`, and `work/review.md` after each row.
+For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/progress.tsv`, `work/log.md`, `work/state.json`, `work/checkpoints/progress.json`, and `work/candidates/_template.result.json` before the first candidate, append one score row after every measured candidate, save a typed candidate result JSON, and regenerate `work/progress.svg`, `work/dashboard.html`, and `work/review.md` after each row.
 
 `work/progress.svg` is a two-panel SVG dashboard:
 
@@ -221,7 +221,7 @@ Use `work/log.md` for token/time snapshots. In Codex, always try to call `get_go
 
 `work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read and charted as labeled compatibility data only; new token history should come from explicit `get_goal` snapshots.
 
-Only `baseline`, `promote`, and `promoted` rows update protected best. Use `keep` for retained evidence or ties that did not pass the canonical promotion gate.
+Only `baseline`, `promote`, and `promoted` rows update protected best. Use `keep` for retained evidence or ties that did not pass the canonical promotion gate. Meaningful promotions should pass the promotion ladder in `work/promotion_ladder.md` and run, or explicitly limit, the fresh verifier gate in `work/verifier.md`.
 
 The dashboard is diagnostic. It can trigger push/reassess decisions, but it never replaces correctness checks or the authoritative promotion gate.
 
@@ -238,7 +238,7 @@ python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py
   --multi-agent-mode off
 ```
 
-This creates `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, `work/progress.tsv`, `work/progress.svg`, `work/dashboard.html`, `work/review.md`, and `work/audit.md` before candidate work. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
+This creates `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, `work/progress.tsv`, `work/progress.svg`, `work/dashboard.html`, `work/review.md`, `work/audit.md`, `work/checkpoints/progress.json`, `work/candidates/_template.result.json`, `work/schemas/candidate_result.schema.json`, `work/promotion_ladder.md`, and `work/verifier.md` before candidate work. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower

@@ -258,6 +258,55 @@ timestamp	candidate	cycles	decision	tokens_total	tokens_delta	wall_seconds	label
 2026-06-01T00:18:00Z	2	2226	promote	4500	1400	1080	dependency-list scheduled vector kernel
 ```
 
+### Candidate Result JSON
+
+Use `work/candidates/_template.result.json` when present. Keep this artifact for every measured candidate in substantial runs.
+
+```json
+{
+  "schema_version": 1,
+  "candidate": "cand_0002",
+  "parent": "cand_0001",
+  "parent_hash": null,
+  "mode": "TUNE",
+  "mechanism_class": "representation/primitive/route change",
+  "duplicate_check": "not the same hill as cand_0001",
+  "hypothesis": "one concrete hypothesis",
+  "artifact_paths": ["candidates/cand_0002.py"],
+  "raw_log_paths": ["work/raw_logs/cand_0002.out"],
+  "commands": {
+    "apply_or_build": null,
+    "correctness": null,
+    "authoritative_metric": null,
+    "regression_or_adversarial": null,
+    "fresh_verifier": null
+  },
+  "correctness": null,
+  "authoritative_metric": {
+    "score": null,
+    "unit": null,
+    "direction": null,
+    "raw_result_path": null
+  },
+  "promotion_ladder": {
+    "apply_or_build": "pending",
+    "correctness": "pending",
+    "authoritative_metric": "pending",
+    "regression_or_adversarial": "pending",
+    "fresh_verifier": "pending",
+    "promote": "pending"
+  },
+  "verifier": {
+    "mode": "fresh_environment_when_possible",
+    "verdict": null,
+    "evidence": "",
+    "limitations": []
+  },
+  "decision": "PENDING",
+  "learning": ""
+}
+```
+
 ### `work/review.md`
 
 ```markdown
@@ -282,13 +331,12 @@ timestamp	candidate	cycles	decision	tokens_total	tokens_delta	wall_seconds	label
 
 ### `work/dashboard.html`
 
-Generate this from `work/events.jsonl` for local, remote, or handoff review:
+Generate this from `work/progress.tsv` for local, remote, or handoff review:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/events.jsonl \
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
   -o work/dashboard.html \
-  --direction lower \
-  --x-axis tokens
+  --direction lower
 ```
 
 For live remote review, run the dashboard server on the remote host with `--host 127.0.0.1 --port 8765`, then tunnel from your local machine:

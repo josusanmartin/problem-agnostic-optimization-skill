@@ -30,6 +30,7 @@ def state(args: argparse.Namespace) -> dict[str, object]:
     chart_enabled = args.progress_chart == "on"
     multi_agent_enabled = args.multi_agent_mode == "on"
     return {
+        "schema_version": 2,
         "target_score": None,
         "score_unit": args.metric,
         "mode": args.mode,
@@ -54,6 +55,36 @@ def state(args: argparse.Namespace) -> dict[str, object]:
         },
         "editable_files": [],
         "immutable_files": [],
+        "candidate_artifacts": {
+            "directory": str(args.work_dir / "candidates"),
+            "schema": str(args.work_dir / "schemas" / "candidate_result.schema.json"),
+            "required_for_promotions": True,
+        },
+        "promotion_ladder": {
+            "enabled": True,
+            "gating_steps": [
+                "apply_or_build",
+                "correctness",
+                "authoritative_metric",
+                "regression_or_adversarial",
+                "fresh_verifier",
+                "promote",
+            ],
+            "advisory_steps": ["profile", "style", "local_screening"],
+            "definition": str(args.work_dir / "promotion_ladder.md"),
+        },
+        "verifier": {
+            "enabled": True,
+            "mode": "fresh_environment_when_possible",
+            "definition": str(args.work_dir / "verifier.md"),
+            "last_verdict": None,
+            "last_verified_candidate": None,
+        },
+        "execution_boundary": {
+            "untrusted_code_sandbox": "clean_env_no_credentials_restricted_egress_when_possible",
+            "draft_patch_only": False,
+            "notes": [],
+        },
         "isolation": {
             "fresh_run": args.fresh_run_isolation == "on",
             "allowed_prior_sources": [],
@@ -75,6 +106,13 @@ def state(args: argparse.Namespace) -> dict[str, object]:
         "exhausted_branches": [],
         "rate_limits": {},
         "pending_jobs": [],
+        "checkpoint": {
+            "path": str(args.work_dir / "checkpoints" / "progress.json"),
+            "current_phase": "harness_boot",
+            "completed_phases": [],
+            "completed_shards": [],
+            "resume_policy": "skip_completed_terminal_phases_only",
+        },
         "progress": {
             "logging_enabled": True,
             "chart_enabled": chart_enabled,
@@ -113,6 +151,157 @@ def state(args: argparse.Namespace) -> dict[str, object]:
     }
 
 
+def checkpoint_json(args: argparse.Namespace) -> str:
+    checkpoint = {
+        "schema_version": 1,
+        "objective": args.objective,
+        "current_phase": "harness_boot",
+        "completed_phases": [],
+        "phase_status": {
+            "contract": "pending",
+            "baseline": "pending",
+            "candidate": "pending",
+            "validation": "pending",
+            "measurement": "pending",
+            "fresh_verifier": "pending",
+            "promotion": "pending",
+            "handoff": "pending",
+        },
+        "completed_shards": [],
+        "terminal_results": [],
+        "resume_policy": "skip completed terminal phases; retry failed, blocked, or partial phases",
+        "updated_at": now(),
+    }
+    return json.dumps(checkpoint, indent=2, sort_keys=True) + "\n"
+
+
+def candidate_result_schema() -> str:
+    schema = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "title": "Problem-Agnostic Optimization Candidate Result",
+        "type": "object",
+        "required": [
+            "schema_version",
+            "candidate",
+            "parent",
+            "hypothesis",
+            "mechanism_class",
+            "commands",
+            "promotion_ladder",
+            "verifier",
+            "decision",
+        ],
+        "properties": {
+            "schema_version": {"type": "integer"},
+            "candidate": {"type": "string"},
+            "parent": {"type": ["string", "null"]},
+            "parent_hash": {"type": ["string", "null"]},
+            "mode": {"type": ["string", "null"]},
+            "mechanism_class": {"type": "string"},
+            "duplicate_check": {"type": ["string", "null"]},
+            "hypothesis": {"type": "string"},
+            "artifact_paths": {"type": "array", "items": {"type": "string"}},
+            "raw_log_paths": {"type": "array", "items": {"type": "string"}},
+            "commands": {"type": "object"},
+            "correctness": {"type": ["string", "null"]},
+            "authoritative_metric": {"type": "object"},
+            "promotion_ladder": {"type": "object"},
+            "verifier": {"type": "object"},
+            "decision": {"type": "string"},
+            "learning": {"type": "string"},
+            "created_at": {"type": ["string", "null"]},
+            "updated_at": {"type": ["string", "null"]},
+        },
+        "additionalProperties": True,
+    }
+    return json.dumps(schema, indent=2, sort_keys=True) + "\n"
+
+
+def candidate_result_template() -> str:
+    template = {
+        "schema_version": 1,
+        "candidate": "cand_0001",
+        "parent": None,
+        "parent_hash": None,
+        "mode": None,
+        "mechanism_class": "",
+        "duplicate_check": None,
+        "hypothesis": "",
+        "artifact_paths": [],
+        "raw_log_paths": [],
+        "commands": {
+            "apply_or_build": None,
+            "correctness": None,
+            "authoritative_metric": None,
+            "regression_or_adversarial": None,
+            "fresh_verifier": None,
+        },
+        "correctness": None,
+        "authoritative_metric": {
+            "score": None,
+            "unit": None,
+            "direction": None,
+            "raw_result_path": None,
+        },
+        "promotion_ladder": {
+            "apply_or_build": "pending",
+            "correctness": "pending",
+            "authoritative_metric": "pending",
+            "regression_or_adversarial": "pending",
+            "fresh_verifier": "pending",
+            "promote": "pending",
+            "advisory": {
+                "profile": "not_run",
+                "style": "not_run",
+                "local_screening": "not_run",
+            },
+        },
+        "verifier": {
+            "mode": "fresh_environment_when_possible",
+            "verdict": None,
+            "evidence": "",
+            "limitations": [],
+        },
+        "decision": "PENDING",
+        "learning": "",
+        "created_at": None,
+        "updated_at": None,
+    }
+    return json.dumps(template, indent=2, sort_keys=True) + "\n"
+
+
+def verifier_md() -> str:
+    return """# Fresh Verifier Gate
+
+Use this gate before updating `work/best.md` for any meaningful promotion.
+
+- Recreate or reset the environment when practical.
+- Carry only the candidate artifact or diff, the validation command, and the recorded contract across the boundary.
+- Rerun correctness before the authoritative metric.
+- Treat local screening, profile deltas, and candidate rationale as advisory.
+- If a fresh environment is unavailable, record the limitation in the candidate result and run the cleanest independent retest available.
+- Do not expose credentials or unrelated host files to untrusted/generated target code.
+
+Verdict values: `PASS`, `FAIL`, `INCONCLUSIVE`, or `SKIPPED_WITH_LIMITATION`.
+"""
+
+
+def promotion_ladder_md() -> str:
+    return """# Promotion Ladder
+
+Every promoted candidate should pass the gating steps in order:
+
+1. `apply_or_build`: patch applies, code builds, or the candidate artifact can be loaded.
+2. `correctness`: required correctness/reference/shape/seed checks pass.
+3. `authoritative_metric`: the official metric improves outside the recorded noise or gate.
+4. `regression_or_adversarial`: targeted regressions, hidden-risk cases, or no-exploit checks pass when applicable.
+5. `fresh_verifier`: an independent/fresh retest sees only the artifact, contract, and commands.
+6. `promote`: update `work/best.md`, `work/state.json`, ledgers, and dashboard.
+
+Advisory steps such as profiles, local screening, style, and implementation neatness can explain a candidate but cannot promote it.
+"""
+
+
 def best_md(args: argparse.Namespace) -> str:
     return f"""# Best Known State
 
@@ -136,6 +325,8 @@ Why it wins:
 ## Boundaries
 Editable files:
 Immutable files:
+Draft patch only: no
+Untrusted code execution boundary: clean env, no credentials, restricted egress when possible
 
 ## Bottleneck
 Confirmed bottlenecks:
@@ -172,6 +363,8 @@ def plan_md(args: argparse.Namespace) -> str:
 ## Active Branches
 
 ## Worker Queue
+
+Each worker packet must include parent hash, mechanism class, target lane, duplicate check, expected signal, and immutable files.
 
 ## Closed Branches
 """
@@ -267,6 +460,11 @@ def main() -> int:
         work / "plan.md": plan_md(args),
         work / "review.md": review_md(args),
         work / "audit.md": audit_md(),
+        work / "verifier.md": verifier_md(),
+        work / "promotion_ladder.md": promotion_ladder_md(),
+        work / "checkpoints" / "progress.json": checkpoint_json(args),
+        work / "schemas" / "candidate_result.schema.json": candidate_result_schema(),
+        work / "candidates" / "_template.result.json": candidate_result_template(),
         work / "progress.tsv": "timestamp\tcandidate\tscore\tdecision\ttokens_total\ttokens_delta\twall_seconds\tlabel\n",
         work / "state.json": json.dumps(state(args), indent=2, sort_keys=True) + "\n",
     }
@@ -288,6 +486,10 @@ def main() -> int:
         created.append(str(events_path))
     else:
         skipped.append(str(events_path))
+
+    for dirname in ("raw_logs", "results", "profiles", "PATCHES"):
+        path = work / dirname
+        path.mkdir(parents=True, exist_ok=True)
 
     for path in created:
         print(f"created {path}")

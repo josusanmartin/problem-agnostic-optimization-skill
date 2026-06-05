@@ -44,14 +44,19 @@ Before baseline or candidate work, read `references/harness.md` and initialize t
 ```text
 work/audit.md
 work/best.md
+work/checkpoints/progress.json
+work/candidates/_template.result.json
 work/dashboard.html
 work/events.jsonl
 work/log.md
 work/plan.md
+work/promotion_ladder.md
 work/progress.tsv
 work/progress.svg
 work/review.md
+work/schemas/candidate_result.schema.json
 work/state.json
+work/verifier.md
 ```
 
 Only skip harness deployment when the task is explicitly tiny or the user disables persistence. If you skip it, record the skip reason in your response or notes.
@@ -81,13 +86,13 @@ Do not micro-tune below the current floor. Move to work deletion, fusion, specia
 
 ## Candidate
 
-For each candidate, state: parent, hypothesis, mechanism, expected signal, kill criterion, smallest edit, validation, measurement, and decision.
+For each candidate, state: parent, parent hash when available, hypothesis, mechanism, duplicate check, expected signal, kill criterion, smallest edit, validation, measurement, and decision. For substantial runs, save a typed candidate result under `work/candidates/`.
 
 Mechanism class: work deletion | resource transfer | tail/dependency | scheduler/variance | representation/primitive/route change | contract specialization | approximation | forbidden shortcut.
 
 Decision: `PROMOTE` | `KEEP VARIANT` | `REJECT` | `BUG` | `BLOCKED`.
 
-Never promote from a screening metric. Near ties favor the simpler, smaller, less stateful artifact. After a promotion or surprising regression, update the bottleneck model before choosing the next candidate.
+Never promote from a screening metric. Promotion should pass the ladder in `work/promotion_ladder.md`; meaningful promotions should also run or explicitly limit the fresh verifier gate in `work/verifier.md`. Near ties favor the simpler, smaller, less stateful artifact. After a promotion or surprising regression, update the bottleneck model before choosing the next candidate.
 
 ## Multi-Agent Mode
 
