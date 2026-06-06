@@ -225,3 +225,4 @@ Different-hill examples:
 Rule:
 
 - After the audit, the next candidate should be off-hill by default. Return to micro-tuning only if the off-hill probe fails or the user explicitly asks to keep grinding.
+- A plateau closes a hill, not the problem. "Every hill I tried tied" is evidence to change hills or intake an external mechanism, never a proof that the target is unreachable. Only a lower-bound proof (a Resource Floor at or above target) closes the problem.

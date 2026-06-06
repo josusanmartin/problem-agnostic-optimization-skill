@@ -84,6 +84,8 @@ Classify the gap before choosing a candidate:
 
 Do not micro-tune below the current floor. Move to work deletion, fusion, specialization, representation change, primitive change, route change, or valid approximation inside tolerance.
 
+A gap classification is a revisable hypothesis, not a fact, especially when inherited from a prior session, handoff, or ledger. `floor gap` means "no known path reaches target," not "the target is unreachable": that verdict needs a lower-bound proof (a resource floor at or above target), never a plateau of failed candidates. Re-test an inherited negative conclusion when a new premise appears: a user hint, an external writeup, a new tool, compiler, or hardware.
+
 ## Candidate
 
 For each candidate, state: parent, parent hash when available, hypothesis, mechanism, duplicate check, expected signal, kill criterion, smallest edit, validation, measurement, and decision. For substantial runs, save a typed candidate result under `work/candidates/`. For tiny/minimal runs, a compact log entry is enough unless the candidate is promoted or risky.
@@ -132,6 +134,8 @@ After repeated ties, regressions, same-knob failures, or a lower-bound proof aga
 After reassessment, mark exhausted hills `CLOSED` until a new premise appears. Spend the next candidate off-hill by default: representation, primitive, route/library/config, target split, or contract specialization.
 
 Invert the primitive when compact work counts hide a target-specific bottleneck. Use negative audits to kill seductive shortcuts before implementing them.
+
+A `CLOSED` hill is a local verdict, not a global one: closing every known hill does not prove the target unreachable. When the search has exhausted self-generated ideas, intake an external mechanism (a competitor writeup, public source, or paper) and port it before concluding a floor. See "External Technique Intake" in `references/evidence-loop.md`.
 
 ## Integrity
 

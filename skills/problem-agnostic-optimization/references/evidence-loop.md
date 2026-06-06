@@ -27,6 +27,17 @@ Set the objective before candidate work:
 - Record the objective source and uncertainty. If the source may be stale and internet access is available, refresh it.
 - Do not choose a soft "improve a bit" target unless the user asks for a small cleanup. Optimization needs a concrete ambitious threshold.
 
+## External Technique Intake
+
+Objective Evidence finds the best known *result*. Also seek the best known *method*: competitor writeups, public source, talks, issue threads, or papers for the same contract. Treat these as mechanisms to port, not just numbers to chase. Optimizing only within self-generated ideas (closed-world search) is a common reason a real win is missed; when the search has plateaued, importing a known-better mechanism is often higher leverage than another local sweep.
+
+When porting an external mechanism:
+
+- Decompose it into named sub-techniques and port them faithfully before tuning.
+- Verify each sub-technique transferred with a counter, ablation, or microbenchmark, not just the end-to-end score.
+- A faithful-looking reconstruction that regresses usually means one mis-transferred parameter (window size, stride, ordering, alignment, block count), not a refuted technique. Isolate the mis-transfer before discarding the mechanism.
+- Re-derive and cite the mechanism; do not copy locked or proprietary source as your own, and never use leaked outputs or hidden-test constants.
+
 ## Measurement Hierarchy
 
 Promotion uses the authoritative metric:
@@ -106,7 +117,21 @@ Fallback discipline:
 - Promote only by the authoritative metric, even if a weak profiler says the candidate should win.
 - Use weak evidence to choose the next candidate, not to claim the bottleneck is proven.
 - If weak evidence repeatedly mispredicts the authoritative score, downgrade or discard that screening model.
+- A weak screen produces false negatives, not just false positives: it can veto a real win. Once you have downgraded a screen, do not let it reject a candidate; let the authoritative metric decide that candidate.
+- When local screening is non-predictive, the authoritative metric becomes the screen. Budget exploratory authoritative evaluations for screening instead of throttling exploration to conserve them; an unspent submission or eval budget is worth less than a discovered improvement.
 - If no profiler exists and candidates keep tying, run a local-optimum audit sooner than usual and switch to structural probes.
+
+## Weak Evidence Cannot Prove A Floor
+
+Weak evidence may justify "I have not found a faster path." It can never justify "no faster path exists." Keep optimizing under weak evidence, but do not record a floor, impossibility, or "unreachable" verdict from it.
+
+If you are about to declare a target unreachable and your evidence is weak, that is the signal to *acquire* target-class measurement, not to conclude:
+
+- Get representative hardware, hardware counters, or a target-system trace.
+- Spend oracle or submission budget to measure directly.
+- Ask the user for access, a hint, or the known method.
+
+A floor claim is valid only from a lower-bound proof or strong target-class evidence. Until then the correct recorded state is "best known so far," and the search stays open.
 
 ## Candidate Ledger
 
