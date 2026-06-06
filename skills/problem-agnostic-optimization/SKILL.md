@@ -124,6 +124,8 @@ After reassessment, either continue with a narrower hypothesis and kill criterio
 
 For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep and preserve the map in `work/breakthroughs.md`. Read "Breakthrough Mining" in `references/evidence-loop.md`.
 
+Exception, on a noisy metric with a `best-of-N` scoreboard: a *budgeted* distribution sweep (written plan + falsifiable stop, see `references/evidence-loop.md`) is sanctioned rather than churn — it either banks a best-of-N gain or supplies the distribution evidence to declare a floor and stop. It must self-terminate by its stop rule, not run open-ended.
+
 ## Escape
 
 After repeated ties, regressions, same-knob failures, or a lower-bound proof against the current family, run a local-optimum audit:

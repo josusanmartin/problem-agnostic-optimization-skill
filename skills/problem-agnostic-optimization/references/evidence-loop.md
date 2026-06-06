@@ -13,6 +13,7 @@ Build this before coding:
 - Target hardware, compiler/runtime, flags, source limits, language limits, and sandbox constraints.
 - Budget: submissions, API calls, GPU minutes, wall-clock, or production risk.
 - Editable files and immutable reference, harness, evaluation, data, or scoring files.
+- Scoreboard semantics and metric noise: is the recorded result single-shot, an aggregate, or `best-of-N` over submissions (the board keeps your best ever)? Is the metric deterministic or noisy (record the measured run-to-run spread)? These decide whether a variance sweep can ever help — see Variance Handling.
 
 If the score is aggregate, split it. A geomean hides shape-specific bottlenecks.
 
@@ -273,15 +274,36 @@ Convert each failure into a search rule:
 
 ## Variance Handling
 
-Use variance pushes only after structural improvement is exhausted or when the target gap is within normal noise.
+Use variance pushes only after structural improvement is exhausted or when the target gap is within normal noise. The default is that aimless resubmission is churn, not optimization.
 
 Rules:
 
 - State that the run is a variance call.
-- Keep the artifact unchanged.
+- Keep the artifact unchanged (or, if the platform dedups submissions, the smallest distinct artifact per draw).
 - Record sample count, min, median, max, and dispersion when possible.
 - Do not describe same-file reruns as code improvement.
 - Stop variance calls when the distribution shows the target is implausible or the budget is no longer justified.
+
+### When A Sweep Is Warranted
+
+A budgeted distribution/variance sweep is sometimes the correct tool, not a rules exception. It is the mechanism that reconciles "do not claim a floor from a plateau" with "stop variance pushes": a bounded sweep either banks a real gain or produces the measured distribution that licenses the floor claim and a clean stop. Run one only when all hold:
+
+- Structural levers are exhausted, or the open question is purely reachable-or-not on a noisy metric.
+- The metric's measured run-to-run spread is comparable to or larger than the remaining gap, so single samples cannot decide.
+- At least one of:
+  - `best-of-N scoreboard`: the board records your min/max over submissions, so each genuinely-distinct draw can lower (raise) the recorded result even with no better artifact; or
+  - `distribution-for-decision`: you need the reachable distribution to declare a floor/stop rigorously, and a sweep that places the target several dispersion units outside the measured distribution is the empirical floor evidence the plateau rule otherwise lacks.
+
+It is churn (the default-discouraged case) when the metric is deterministic (resampling is identical), the board takes latest/mean (no best-of-N benefit), structural levers remain, or there is no plan and no stop.
+
+Write the sweep plan before sampling:
+
+- Pilot: >= 5 distinct samples -> min, median, spread.
+- Per-sample cost (submissions, rate-limit time, eval budget) and the distinctness constraint: if the platform dedups, each draw needs a structurally-distinct artifact, which bounds the achievable sample count.
+- Objective: lower the recorded best-of-N / characterize the distribution / detect a sub-region effect above noise.
+- Falsifiable stop, whichever fires first: recorded best stalls for `K` draws; the distribution places the target outside by the chosen margin (then declare unreachable and stop); or the budget is spent.
+
+Order statistics give the stop teeth: expected gain from the next draw shrinks toward the distribution's lower tail as samples accumulate, so stop when marginal expected gain is below the per-sample cost. A converged sweep is a result: it ends by banking a best-of-N gain or by supplying the distribution that declares the floor.
 
 ## Platform Blockers
 
