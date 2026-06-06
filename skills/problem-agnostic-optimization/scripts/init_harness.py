@@ -72,10 +72,16 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "status": "tracking",
             "stuck_signal": None,
             "closed_hills": [],
+            "basin_memory": [],
+            "diversity_map": [],
+            "operator_credit": {},
+            "anti_revisit_rules": [],
             "divergence_budget": None,
             "active_burst": [],
             "committed_hill": None,
             "commitment_budget": None,
+            "controlled_regression_allowed": False,
+            "aspiration_rule": None,
             "kill_criterion": None,
         },
         "promotion_ladder": {
@@ -298,11 +304,19 @@ def candidate_result_template() -> str:
         "escape": {
             "status": "tracking",
             "stuck_signal": None,
+            "escape_operator": None,
+            "hill_id": None,
+            "feature_cell": None,
             "closed_hill": None,
             "divergence_probe": None,
             "new_hill": None,
             "mechanism_signal": "",
+            "stepping_stone_signal": None,
             "commitment_budget": None,
+            "controlled_regression_allowed": False,
+            "anti_revisit_rule": None,
+            "aspiration_rule": None,
+            "operator_credit_signal": None,
             "kill_criterion": None,
         },
         "promotion_ladder": {
@@ -433,9 +447,16 @@ Each worker packet must include parent hash, mechanism class, target lane, dupli
 ## Escape Ladder
 
 Stuck signal:
+Escape operator:
 Divergence budget:
 Divergence probes:
+Basin memory:
+Diversity map:
+Operator credit:
 New-hill commitment:
+Controlled regression allowed:
+Anti-revisit rule:
+Aspiration rule:
 Kill criterion:
 """
 
@@ -509,6 +530,16 @@ Keep it compact and durable; detailed raw logs belong under `work/raw_logs/`.
 | candidate | selector/seed/route | contract-allowed reason | invalidated prior island | full validation |
 |---|---|---|---|---|
 
+## Diversity Map / Feature Cells
+
+| feature cell | best artifact | best score | operator | signal | status |
+|---|---|---:|---|---|---|
+
+## Escape Operator Credit
+
+| operator | attempts | positive signals | mixed signals | negative signals | last evidence | next allocation |
+|---|---:|---:|---:|---:|---|---|
+
 ## Negative Breakthroughs
 
 | idea | why tempting | measured blocker | resource trade | reopen condition |
@@ -516,8 +547,8 @@ Keep it compact and durable; detailed raw logs belong under `work/raw_logs/`.
 
 ## Closed Hills / New-Hill Commitments
 
-| hill | status | stuck signal | divergence probe | commitment budget | kill criterion | next action |
-|---|---|---|---|---|---|---|
+| hill | feature cell | status | stuck signal | operator | divergence probe | commitment budget | anti-revisit rule | aspiration rule | kill criterion | next action |
+|---|---|---|---|---|---|---|---|---|---|---|
 """
 
 

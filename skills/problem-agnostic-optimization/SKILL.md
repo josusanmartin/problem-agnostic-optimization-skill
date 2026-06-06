@@ -138,7 +138,7 @@ After repeated ties, regressions, same-knob failures, or a lower-bound proof aga
 
 After reassessment, mark exhausted hills `CLOSED` until a new premise appears. Spend the next candidate off-hill by default: representation, primitive, route/library/config, target split, or contract specialization.
 
-If the audit says the run is stuck, use the escape ladder in `references/resource-models.md`: recognize the stuck signal, run a bounded divergence burst across genuinely different hills, then commit a short budget to any hill with a real mechanism signal before abandoning it.
+If the audit says the run is stuck, use the escape ladder in `references/resource-models.md`: recognize the stuck signal, choose an escape operator, run a bounded divergence burst across genuinely different hills, then commit a short budget to any hill with a real mechanism signal before abandoning it. Preserve basin memory, operator credit, and anti-revisit rules in the harness.
 
 Invert the primitive when compact work counts hide a target-specific bottleneck. Use negative audits to kill seductive shortcuts before implementing them.
 

@@ -157,17 +157,27 @@ Next off-hill probe:
 - Closed or narrowed branch:
 - Divergence budget:
 - Budget owner: candidates | workers | submissions | wall time | spend
+- Controlled regression allowed: yes | no
+- Anti-revisit rule:
+- Aspiration rule:
 
 Probe packets:
 
-| probe | new hill | active floor/resource axis | mechanism class | cheapest falsifiable signal | kill criterion | result |
-|---|---|---|---|---|---|---|
-| E1 |  |  |  |  |  |  |
-| E2 |  |  |  |  |  |  |
-| E3 |  |  |  |  |  |  |
+| probe | operator | hill id | feature cell | new hill | active floor/resource axis | cheapest falsifiable signal | kill criterion | result |
+|---|---|---|---|---|---|---|---|---|
+| E1 |  |  |  |  |  |  |  |  |
+| E2 |  |  |  |  |  |  |  |  |
+| E3 |  |  |  |  |  |  |  |  |
+
+Diversity map:
+
+| feature cell | best artifact | best score | operator | signal | status |
+|---|---|---:|---|---|---|
+|  |  |  |  |  |  |
 
 - Selected new hill:
 - Why the signal is real:
+- Operator credit update:
 - Next action:
 ```
 
@@ -179,15 +189,52 @@ Probe packets:
 - Source probe:
 - Parent:
 - New hill:
+- Escape operator:
+- Hill id:
+- Feature cell:
 - Mechanism signal:
+- Stepping-stone evidence:
 - Current loss or rough edge:
 - Commitment budget:
 - Follow-up 1:
 - Follow-up 2:
 - Follow-up 3:
 - Kill criterion:
+- Anti-revisit rule if closed:
+- Operator credit update:
 - Promotion gate:
 - Reopen condition after closure:
+```
+
+### Closed-Hill Memory
+
+```markdown
+## Closed Hill: hill-id
+
+- Feature cell:
+- Best artifact:
+- Best score:
+- Why closed:
+- Anti-revisit rule:
+- Aspiration rule:
+- Reopen condition:
+```
+
+### Escape Operator Credit
+
+```markdown
+| operator | attempts | positive signals | mixed signals | negative signals | last evidence | next allocation |
+|---|---:|---:|---:|---:|---|---|
+| perturb_reoptimize |  |  |  |  |  |  |
+| neighborhood_shift |  |  |  |  |  |  |
+| destroy_repair |  |  |  |  |  |  |
+| annealed_regression |  |  |  |  |  |  |
+| tabu_anti_revisit |  |  |  |  |  |  |
+| surrogate_uncertainty |  |  |  |  |  |  |
+| diversity_archive |  |  |  |  |  |  |
+| adaptive_operator |  |  |  |  |  |  |
+| external_intake |  |  |  |  |  |  |
+| negative_proof |  |  |  |  |  |  |
 ```
 
 ## Extended Templates
@@ -392,11 +439,19 @@ Use `work/candidates/_template.result.json` when present. Keep this artifact for
   "escape": {
     "status": "tracking",
     "stuck_signal": null,
+    "escape_operator": null,
+    "hill_id": null,
+    "feature_cell": null,
     "closed_hill": null,
     "divergence_probe": null,
     "new_hill": null,
     "mechanism_signal": "",
+    "stepping_stone_signal": null,
     "commitment_budget": null,
+    "controlled_regression_allowed": false,
+    "anti_revisit_rule": null,
+    "aspiration_rule": null,
+    "operator_credit_signal": null,
     "kill_criterion": null
   },
   "promotion_ladder": {
@@ -581,9 +636,16 @@ Stagnation:
 ## Escape Ladder
 
 - Stuck signal:
+- Escape operator:
 - Divergence budget:
 - Divergence probes:
+- Basin memory:
+- Diversity map:
+- Operator credit:
 - New-hill commitment:
+- Controlled regression allowed:
+- Anti-revisit rule:
+- Aspiration rule:
 - Kill criterion:
 
 ## Escalation Rule

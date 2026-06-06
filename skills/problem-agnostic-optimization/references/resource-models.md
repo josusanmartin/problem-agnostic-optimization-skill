@@ -278,6 +278,30 @@ Declare `STUCK` when several of these are true:
 
 Write the stuck signal into `work/plan.md` and, for harnessed runs, mark the hill `CLOSED` or `NARROWED` with the evidence.
 
+Record the closed basin, not just the failed candidate:
+
+- Hill id:
+- Feature cell: resource axis, route, representation, primitive, target split, or selector family.
+- Best result in basin:
+- Why closed:
+- Anti-revisit rule:
+- Aspiration rule: what evidence is strong enough to reopen it.
+
+### Escape Operators
+
+Choose one explicit operator for each divergence probe:
+
+- `perturb_reoptimize`: make a disruptive but contract-valid perturbation, then locally re-optimize the new artifact before judging the hill.
+- `neighborhood_shift`: change representation, primitive, route, target split, or edit neighborhood so nearby moves are no longer the old knob family.
+- `destroy_repair`: remove or relax a binding structure, then repair correctness or resource damage inside a fixed budget.
+- `annealed_regression`: allow a temporary authoritative regression only when it opens a named new hill, with a cooling/stop budget and no stable promotion.
+- `tabu_anti_revisit`: forbid recently closed hills, duplicate worker packets, or exhausted draw families unless an aspiration rule fires.
+- `surrogate_uncertainty`: spend a cheap model, screen, microbenchmark, or uncertainty probe where evidence is weakest, then verify authoritatively.
+- `diversity_archive`: keep the best artifact per feature cell instead of collapsing everything to one global incumbent.
+- `adaptive_operator`: allocate future probes toward operators that previously produced mechanism signals, not only score wins.
+- `external_intake`: port a known better public method, paper, or competitor mechanism before inventing more local variants.
+- `negative_proof`: close a tempting basin by proof, counterexample, or measured resource tradeoff before implementation.
+
 ### 2. Divergence Burst
 
 Spend a bounded novelty budget before returning to tuning. A normal burst is 5-10 cheap probes or worker packets, but the contract budget controls the exact size.
@@ -285,11 +309,17 @@ Spend a bounded novelty budget before returning to tuning. A normal burst is 5-1
 Each probe must name:
 
 - New hill:
+- Escape operator:
+- Hill id:
+- Feature cell:
 - New active floor or resource axis:
 - Mechanism class:
 - Why this is not the current hill:
+- Controlled regression allowed: yes/no and why.
 - Cheapest falsifiable signal:
 - Validation and measurement path:
+- Anti-revisit rule:
+- Aspiration rule:
 - Kill criterion:
 
 Probe across different axes, not many versions of one axis:
@@ -305,6 +335,14 @@ Probe across different axes, not many versions of one axis:
 
 Variance here means diversity of hypotheses. Draw or distribution sweeps count only when they satisfy `Variance Handling` in `references/evidence-loop.md`; otherwise they are churn.
 
+Use a small diversity map during the burst:
+
+```text
+feature cell | best artifact | best score | operator | signal | status
+```
+
+Feature cells should separate mechanisms that can plausibly climb different hills: resource axis, primitive, representation, target split, selector family, search tool, external route, or proof family.
+
 ### 3. Commit To A New Hill
 
 When a divergence probe opens a credible new hill, stop scattering and allocate a short commitment budget. A normal commitment is 2-4 follow-up candidates, enough to fix first-pass implementation errors, retune co-binders, calibrate the screen, and reclaim slack that was spent to land the structural route.
@@ -316,8 +354,17 @@ Commit when at least one is true:
 - A diagnostic signal improves a proven bottleneck and the remaining gap is plausibly reclaimable.
 - The probe regresses globally but wins a lane, shape, seed regime, target split, or product-metric axis that can be routed or composed.
 - The probe faithfully ports an external mechanism but one transfer parameter is still suspect.
+- The probe is a stepping stone: it enters a new feature cell, exposes a new validator/search tool, or creates a path to a co-binder teardown that the old basin could not access.
 
 Do not abandon a new hill after the first rough result if the mechanism signal is real. Abandon it when the written kill criterion fires, the route fails correctness for intrinsic reasons, the resource trade cannot cross the next floor, or the authoritative metric and diagnostics both refute the mechanism after the commitment budget.
+
+After the commitment, update operator credit:
+
+- `positive`: improved the stable best or opened a new hill with a verified mechanism signal.
+- `mixed`: produced a useful screen, proof, feature-cell elite, or negative result but no climbable hill.
+- `negative`: duplicated a closed basin, failed its own signal, or consumed budget without new information.
+
+Use operator credit to bias the next divergence burst. It is advisory search allocation, not promotion evidence.
 
 Commitment packet:
 
@@ -327,13 +374,19 @@ Commitment packet:
 - Source probe:
 - Parent:
 - New hill:
+- Escape operator:
+- Hill id:
+- Feature cell:
 - Mechanism signal:
+- Stepping-stone evidence:
 - Current loss or rough edge:
 - Commitment budget:
 - Follow-up 1:
 - Follow-up 2:
 - Follow-up 3:
 - Kill criterion:
+- Anti-revisit rule if closed:
+- Operator credit update:
 - Promotion gate:
 - Reopen condition after closure:
 ```

@@ -62,6 +62,10 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["breakthrough_mining"]["enabled"] is True
     assert state["escape"]["status"] == "tracking"
     assert state["escape"]["active_burst"] == []
+    assert state["escape"]["basin_memory"] == []
+    assert state["escape"]["diversity_map"] == []
+    assert state["escape"]["operator_credit"] == {}
+    assert state["escape"]["controlled_regression_allowed"] is False
     assert state["promotion_ladder"]["enabled"] is True
     assert state["promotion_ladder"]["gating_steps"] == [
         "apply_or_build",
@@ -91,8 +95,13 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert "Promotion Ladder" in (work / "promotion_ladder.md").read_text(encoding="utf-8")
     breakthroughs = (work / "breakthroughs.md").read_text(encoding="utf-8")
     assert "Breakthrough Rows" in breakthroughs
+    assert "Diversity Map / Feature Cells" in breakthroughs
+    assert "Escape Operator Credit" in breakthroughs
     assert "Closed Hills / New-Hill Commitments" in breakthroughs
-    assert "Escape Ladder" in (work / "plan.md").read_text(encoding="utf-8")
+    plan = (work / "plan.md").read_text(encoding="utf-8")
+    assert "Escape Ladder" in plan
+    assert "Escape operator:" in plan
+    assert "Basin memory:" in plan
     checkpoint = json.loads((work / "checkpoints" / "progress.json").read_text(encoding="utf-8"))
     assert checkpoint["current_phase"] == "harness_boot"
     assert checkpoint["phase_status"]["fresh_verifier"] == "pending"
@@ -106,6 +115,9 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert template["validation_island"]["contract_allowed"] is False
     assert template["phase_owners"] == []
     assert template["escape"]["status"] == "tracking"
+    assert template["escape"]["escape_operator"] is None
+    assert template["escape"]["controlled_regression_allowed"] is False
+    assert template["escape"]["operator_credit_signal"] is None
     for dirname in ("raw_logs", "results", "profiles", "PATCHES"):
         assert (work / dirname).is_dir()
     dashboard = (work / "dashboard.html").read_text(encoding="utf-8").lower()
