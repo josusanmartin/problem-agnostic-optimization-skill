@@ -121,6 +121,8 @@ Reassess before the next candidate when any is true:
 
 After reassessment, either continue with a narrower hypothesis and kill criterion, or mark the hill `CLOSED` and spend the next candidate off-hill.
 
+For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep. Read "Breakthrough Mining" in `references/evidence-loop.md`.
+
 ## Escape
 
 After repeated ties, regressions, same-knob failures, or a lower-bound proof against the current family, run a local-optimum audit:

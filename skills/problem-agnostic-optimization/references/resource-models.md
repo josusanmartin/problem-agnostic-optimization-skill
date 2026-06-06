@@ -82,6 +82,29 @@ For near-frontier systems, write the expected floor delta before coding. A usefu
 
 If either is false, the candidate is a pressure transfer, not a likely breakthrough.
 
+## Product Metrics And Co-Binders
+
+For product metrics such as `resource_a * resource_b`, a candidate can win while spending one resource back to reduce the other. Compute the break-even before rejecting it:
+
+```text
+new_a * new_b < old_a * old_b
+```
+
+For a minimizing `count * peak` metric, spending `delta_count` is worthwhile when the peak drop is large enough:
+
+```text
+(count + delta_count) * (peak - delta_peak) < count * peak
+```
+
+This matters near peak or memory walls: a higher operation count can be a real breakthrough if it crosses a resource tier.
+
+Co-binder rule:
+
+- List the top resource owners at the current peak, tail, memory high-water mark, or latency endpoint.
+- If several owners are within a small band, the first fix may appear to do nothing because another owner immediately rebinds the metric.
+- Plan a stack that sinks all co-binders below the next floor, then validate the composed route.
+- After the tier drop, spend the new slack carefully: re-tighten knobs that were relaxed to find the structural route.
+
 ## Primitive Inversion Audit
 
 When local tuning repeatedly improves counts but not time, audit whether the chosen primitive family is itself the bottleneck. A "better" operation graph can be worse on a specific target if it uses a microcoded, narrow, serialized, or frontend-heavy primitive.

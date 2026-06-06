@@ -38,6 +38,44 @@ When porting an external mechanism:
 - A faithful-looking reconstruction that regresses usually means one mis-transferred parameter (window size, stride, ordering, alignment, block count), not a refuted technique. Isolate the mis-transfer before discarding the mechanism.
 - Re-derive and cite the mechanism; do not copy locked or proprietary source as your own, and never use leaked outputs or hidden-test constants.
 
+## Breakthrough Mining
+
+Use this when a run is plateaued, public-leaderboard driven, or expensive enough that another same-family sweep is unlikely to matter. A breakthrough is a mechanism that changes an active floor, exposes a new resource axis, imports a better route, or creates a cheaper way to search. It is not merely a large score delta.
+
+Mine public history and local ledgers into a small table:
+
+```text
+row | parent -> candidate | score/resources | delta | mechanism | proof or invariant | search tool | validation | slack left behind
+```
+
+Prioritize rows that changed a tier, not only rows with the largest percent drop:
+
+- first drop below a resource wall, latency tier, memory tier, or leaderboard frontier
+- large product-metric movement on one axis even when another axis regressed
+- repeated tags, constants, or comments that become a family of wins
+- "reverted", "relaxed", "margin", "island", "reroll", or "fallback" notes that imply recoverable slack, when those mechanisms are contract-allowed
+- failed or rejected submissions whose notes name a mechanism, blocker, or missing validator
+
+For each major row, answer:
+
+- What exactly was binding before: operation count, peak lifetime, tail phase, validation island, hidden distribution, or search throughput?
+- What license made the change valid: algebraic identity, contract specialization, reachable-support invariant, temporarily clean storage, cheaper primitive, or external route?
+- Which resource moved and which resource was spent back?
+- What cheap screen or model made the candidate searchable, and what authoritative check still promoted it?
+- What knobs were loosened to land the structural win, and which can be re-tightened afterward?
+
+Turn mined mechanisms into candidates by class:
+
+- **Co-binder teardown**: if several phases tie the peak or tail within a small band, a single local cut may not move the metric. Instrument phase labels or resource owners, then sink all co-binders in one route or in a planned stack.
+- **Invariant-based omission or hosting**: prove some work, state, lane, buffer, carry, branch bit, or history slot is zero, dead, redundant, or unobserved under the contract. Then remove it, host it on a temporarily clean lane, or recompute it around the peak.
+- **Algebraic fusion**: look for adjacent operations with no intervening reader, inverse pairs, duplicated predicates, or equivalent branch decisions. Fuse only after proving the intermediate state is not required.
+- **Primitive swap**: replace an expensive cleanup, branch, conversion, allocation, or synchronization primitive with a contract-valid cheaper primitive. Check that the new primitive preserves correctness state, not just counts.
+- **Reachable-support truncation**: a worst-case width, bound, search space, or iteration count may be loose for the contract-declared scored distribution. Treat the truncated path as a hypothesis requiring full validation, not as a proof from sampled cleanliness or hidden-test leakage.
+- **Search-tool breakthrough**: if the authoritative run is too slow for the needed sweep, build a cheaper bit-exact or conservative screen for the dirty condition. The screen proposes candidates; the authoritative metric still decides.
+- **Post-breakthrough slack reclamation**: structural wins often relax guards, margins, windows, seeds, or conservative knobs to find a clean route quickly. After promotion, revisit those relaxed knobs on the new base before declaring the route exhausted.
+
+Do not copy a winning artifact blindly. Extract the mechanism, parent assumptions, knobs, and validator, then rebuild the candidate against the current protected best.
+
 ## Measurement Hierarchy
 
 Promotion uses the authoritative metric:

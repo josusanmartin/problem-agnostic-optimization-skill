@@ -89,6 +89,14 @@ Next off-hill probe:
 - Kill criterion:
 ```
 
+### Breakthrough Mining Table
+
+```markdown
+| row | parent -> candidate | score/resources | delta | mechanism | proof/invariant | search tool | validation | slack left behind |
+|---:|---|---:|---:|---|---|---|---|---|
+| 001 | base -> cand |  |  |  |  |  |  |  |
+```
+
 ## Extended Templates
 
 Use the per-case table when aggregate metrics hide important differences.
