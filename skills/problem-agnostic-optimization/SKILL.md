@@ -44,6 +44,7 @@ Before baseline or candidate work, read `references/harness.md` and initialize t
 ```text
 work/audit.md
 work/best.md
+work/breakthroughs.md
 work/checkpoints/progress.json
 work/candidates/_template.result.json
 work/dashboard.html
@@ -121,7 +122,7 @@ Reassess before the next candidate when any is true:
 
 After reassessment, either continue with a narrower hypothesis and kill criterion, or mark the hill `CLOSED` and spend the next candidate off-hill.
 
-For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep. Read "Breakthrough Mining" in `references/evidence-loop.md`.
+For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep and preserve the map in `work/breakthroughs.md`. Read "Breakthrough Mining" in `references/evidence-loop.md`.
 
 ## Escape
 

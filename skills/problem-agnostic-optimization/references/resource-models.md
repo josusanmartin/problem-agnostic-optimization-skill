@@ -105,6 +105,16 @@ Co-binder rule:
 - Plan a stack that sinks all co-binders below the next floor, then validate the composed route.
 - After the tier drop, spend the new slack carefully: re-tighten knobs that were relaxed to find the structural route.
 
+Use a phase-owner table when the metric is blocked by peak, tail, memory, or live-state width:
+
+```text
+phase/resource owner | height/cost | next floor | evidence | proposed stack
+```
+
+The table should name the useful work that owns the floor, not just the final store, free, or return. If the next floor is close, the winning candidate may need to spend extra work to cross the peak tier and then reclaim operation count afterward.
+
+Negative resource trades are also useful. If a deeper route saves operation count but grows transcript, memory, live width, latency tail, or synchronization enough to lose the product metric, log it as a negative breakthrough and state what would make it worth reopening.
+
 ## Primitive Inversion Audit
 
 When local tuning repeatedly improves counts but not time, audit whether the chosen primitive family is itself the bottleneck. A "better" operation graph can be worse on a specific target if it uses a microcoded, narrow, serialized, or frontend-heavy primitive.

@@ -42,10 +42,10 @@ When porting an external mechanism:
 
 Use this when a run is plateaued, public-leaderboard driven, or expensive enough that another same-family sweep is unlikely to matter. A breakthrough is a mechanism that changes an active floor, exposes a new resource axis, imports a better route, or creates a cheaper way to search. It is not merely a large score delta.
 
-Mine public history and local ledgers into a small table:
+Mine public history and local ledgers into a small durable table. In harnessed runs, keep it in `work/breakthroughs.md`; do not leave it only in chat.
 
 ```text
-row | parent -> candidate | score/resources | delta | mechanism | proof or invariant | search tool | validation | slack left behind
+row | parent -> candidate | score/resources | active floor | delta | mechanism | proof or invariant | search tool | validation | slack/dependency
 ```
 
 Prioritize rows that changed a tier, not only rows with the largest percent drop:
@@ -63,18 +63,41 @@ For each major row, answer:
 - Which resource moved and which resource was spent back?
 - What cheap screen or model made the candidate searchable, and what authoritative check still promoted it?
 - What knobs were loosened to land the structural win, and which can be re-tightened afterward?
+- Which prior clean island, cached route, tuned seed, or local conclusion became stale after the change?
 
 Turn mined mechanisms into candidates by class:
 
 - **Co-binder teardown**: if several phases tie the peak or tail within a small band, a single local cut may not move the metric. Instrument phase labels or resource owners, then sink all co-binders in one route or in a planned stack.
 - **Invariant-based omission or hosting**: prove some work, state, lane, buffer, carry, branch bit, or history slot is zero, dead, redundant, or unobserved under the contract. Then remove it, host it on a temporarily clean lane, or recompute it around the peak.
 - **Algebraic fusion**: look for adjacent operations with no intervening reader, inverse pairs, duplicated predicates, or equivalent branch decisions. Fuse only after proving the intermediate state is not required.
+- **Paired-phase fusion**: when a forward phase and its reverse/apply mirror both pay a similar carry, cleanup, synchronization, or materialization cost, check whether the reverse controls can be recovered from the output state and both phases can share one primitive. This is higher risk than local fusion; prove phase cleanliness, not just value equality.
 - **Primitive swap**: replace an expensive cleanup, branch, conversion, allocation, or synchronization primitive with a contract-valid cheaper primitive. Check that the new primitive preserves correctness state, not just counts.
 - **Reachable-support truncation**: a worst-case width, bound, search space, or iteration count may be loose for the contract-declared scored distribution. Treat the truncated path as a hypothesis requiring full validation, not as a proof from sampled cleanliness or hidden-test leakage.
 - **Search-tool breakthrough**: if the authoritative run is too slow for the needed sweep, build a cheaper bit-exact or conservative screen for the dirty condition. The screen proposes candidates; the authoritative metric still decides.
 - **Post-breakthrough slack reclamation**: structural wins often relax guards, margins, windows, seeds, or conservative knobs to find a clean route quickly. After promotion, revisit those relaxed knobs on the new base before declaring the route exhausted.
+- **Negative breakthrough**: an attractive route can be ruled out by measured resource tradeoff, not just correctness failure. Record why it looked promising, the blocker, and the condition that would reopen it.
 
 Do not copy a winning artifact blindly. Extract the mechanism, parent assumptions, knobs, and validator, then rebuild the candidate against the current protected best.
+
+### Screen Calibration
+
+A cheap screen is a breakthrough only after calibration. Before it filters large search spaces:
+
+- Reproduce known-clean and known-dirty cases from the same contract when they exist.
+- Model every scored factor, shape, seed family, or hidden/public split that can cause a false clean.
+- Record what the screen can reject, what it cannot prove, and whether false negatives are acceptable.
+- Measure stacked knobs directly. Individual dirty counts, break sets, or error rates can cancel, compose, or become worse when combined; do not extrapolate from single-knob screens alone.
+- Use the screen to propose candidates, not to promote them. The authoritative metric remains the promotion gate.
+- When a screen repeatedly mispredicts the authoritative result, downgrade it and stop using it as a veto.
+
+### Validation Islands
+
+Some contracts allow neutral selectors, seeds, nonces, route choices, or rerolls that change the validation stream without changing the computed function or counted work. Treat these as first-class candidate state:
+
+- Record why the selector is contract-allowed and what it changes.
+- After any serialized work, route, or op-order change, assume the previous clean island is stale until full validation proves otherwise.
+- Do not describe an island search as a correctness proof; it is a way to find a candidate that still must pass the full validator.
+- Keep old and new selector values in the candidate artifact so a surprising result can be audited.
 
 ## Measurement Hierarchy
 

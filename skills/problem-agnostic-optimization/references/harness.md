@@ -32,6 +32,7 @@ For small projects, create only:
 work/
   audit.md
   best.md
+  breakthroughs.md            # frontier mechanisms, co-binders, calibrated screens
   checkpoints/
     progress.json              # phase/checkpoint state for resume
   candidates/
@@ -63,6 +64,7 @@ project/
   work/
     audit.md
     best.md
+    breakthroughs.md
     checkpoints/
       progress.json
     candidates/
@@ -136,6 +138,31 @@ Recommended normalized shape:
 ```
 
 Do not use the JSON artifact as a second score ledger. `work/progress.tsv` remains the compact score ledger; candidate JSON preserves the richer evidence, raw paths, verifier verdict, and promotion-ladder state.
+
+## Breakthrough Ledger
+
+Use `work/breakthroughs.md` for plateaued, high-stakes, public-leaderboard, or multi-agent runs. It is the durable frontier map: public breakthroughs, local breakthrough rows, phase owners, calibrated screens, validation islands, and negative breakthroughs. Keep it compact; raw outputs still belong under `work/raw_logs/`, `work/results/`, or `work/profiles/`.
+
+Minimum sections:
+
+```text
+Frontier Sources
+Breakthrough Rows
+Phase Owners / Co-Binders
+Screen Calibration
+Validation Islands / Selectors
+Negative Breakthroughs
+```
+
+Update it when any of these happen:
+
+- A public result or local candidate changes a resource tier or active floor.
+- A profile, trace, or phase label identifies the peak/tail owner.
+- A cheap screen is created, calibrated, downgraded, or retired.
+- A selector, seed, nonce, validation island, or route choice is used to land a candidate.
+- A tempting route is ruled out by measured resource tradeoff.
+
+Do not promote from `work/breakthroughs.md`; it explains search direction. Candidate JSON plus the promotion ladder still hold promotion evidence.
 
 ## Phase Checkpoints
 
@@ -327,7 +354,7 @@ Use only when `Multi-agent mode: on` is present in the `/goal` or the user expli
 
 ### Canonical Roles
 
-- **Coordinator**: owns the canonical workspace, `work/state.json`, `work/best.md`, `work/log.md`, `work/progress.tsv`, charts, dashboard, and final promotion decisions.
+- **Coordinator**: owns the canonical workspace, `work/state.json`, `work/best.md`, `work/breakthroughs.md`, `work/log.md`, `work/progress.tsv`, charts, dashboard, and final promotion decisions.
 - **Worker**: operates in an isolated worktree or copied sandbox from a named parent artifact/hash. A worker may run screening and local validation, but cannot mutate the canonical ledger or declare a promotion.
 - **Auditor**: optional read-only reviewer. Use `references/auditor.md` after a batch, a surprising result, repeated bugs, or suspected drift.
 
@@ -343,7 +370,7 @@ Use only when `Multi-agent mode: on` is present in the `/goal` or the user expli
 
 ### Worker Restrictions
 
-Workers must not edit canonical `work/state.json`, `work/best.md`, `work/log.md`, `work/events.jsonl`, `work/progress.tsv`, charts, dashboard, benchmark harnesses, immutable files, or final submission files. They must not promote from screening metrics, stale parents, wrong-answer speedups, modified graders, or private leaked results.
+Workers must not edit canonical `work/state.json`, `work/best.md`, `work/breakthroughs.md`, `work/log.md`, `work/events.jsonl`, `work/progress.tsv`, charts, dashboard, benchmark harnesses, immutable files, or final submission files. They must not promote from screening metrics, stale parents, wrong-answer speedups, modified graders, or private leaked results.
 
 Workers also must not mark canonical checkpoints complete. The coordinator alone updates `work/checkpoints/progress.json`, creates canonical candidate result JSON files, and runs the fresh verifier gate.
 
@@ -800,6 +827,7 @@ Use this as an extension of the typed candidate artifact, not a replacement for 
 At the start:
 
 - Read `work/best.md`.
+- Read `work/breakthroughs.md` if it exists and the run is plateaued, public-leaderboard driven, multi-agent, or near a resource tier.
 - Read the tail of `work/log.md`.
 - Read `work/plan.md`.
 - Read `work/state.json`.
@@ -828,6 +856,7 @@ After running:
 - Append the UTC snapshot, wall time, `tokens_total`, and `tokens_delta` to `work/log.md`, and copy the latest snapshot to `work/state.json`.
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
+- Update `work/breakthroughs.md` when the result changes a tier, identifies a co-binder, calibrates a screen, uses a validation island, or rules out a tempting route.
 - Update `work/state.json`.
 - Update `work/checkpoints/progress.json` with the current phase and terminal result when appropriate.
 - Run or record the fresh verifier gate before any stable promotion.

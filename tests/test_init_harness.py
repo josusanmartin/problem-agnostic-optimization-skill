@@ -36,6 +36,7 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     expected = [
         "audit.md",
         "best.md",
+        "breakthroughs.md",
         "checkpoints/progress.json",
         "candidates/_template.result.json",
         "dashboard.html",
@@ -57,6 +58,8 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["schema_version"] == 2
     assert state["score_unit"] == "cycles"
     assert state["candidate_artifacts"]["required_for_promotions"] is True
+    assert state["breakthrough_mining"]["path"].endswith("work/breakthroughs.md")
+    assert state["breakthrough_mining"]["enabled"] is True
     assert state["promotion_ladder"]["enabled"] is True
     assert state["promotion_ladder"]["gating_steps"] == [
         "apply_or_build",
@@ -84,6 +87,7 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert "Token source:" in (work / "review.md").read_text(encoding="utf-8")
     assert "Fresh Verifier Gate" in (work / "verifier.md").read_text(encoding="utf-8")
     assert "Promotion Ladder" in (work / "promotion_ladder.md").read_text(encoding="utf-8")
+    assert "Breakthrough Rows" in (work / "breakthroughs.md").read_text(encoding="utf-8")
     checkpoint = json.loads((work / "checkpoints" / "progress.json").read_text(encoding="utf-8"))
     assert checkpoint["current_phase"] == "harness_boot"
     assert checkpoint["phase_status"]["fresh_verifier"] == "pending"
@@ -92,6 +96,10 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     template = json.loads((work / "candidates" / "_template.result.json").read_text(encoding="utf-8"))
     assert template["promotion_ladder"]["fresh_verifier"] == "pending"
     assert template["verifier"]["verdict"] is None
+    assert template["screening"]["promotion_allowed"] is False
+    assert template["screening"]["calibration"]["stacked_knob_cases"] == []
+    assert template["validation_island"]["contract_allowed"] is False
+    assert template["phase_owners"] == []
     for dirname in ("raw_logs", "results", "profiles", "PATCHES"):
         assert (work / dirname).is_dir()
     dashboard = (work / "dashboard.html").read_text(encoding="utf-8").lower()

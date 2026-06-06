@@ -60,6 +60,14 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "schema": str(args.work_dir / "schemas" / "candidate_result.schema.json"),
             "required_for_promotions": True,
         },
+        "breakthrough_mining": {
+            "enabled": True,
+            "path": str(args.work_dir / "breakthroughs.md"),
+            "frontier_sources": [],
+            "last_mined_at": None,
+            "current_active_floor": None,
+            "calibrated_screens": [],
+        },
         "promotion_ladder": {
             "enabled": True,
             "gating_steps": [
@@ -205,6 +213,10 @@ def candidate_result_schema() -> str:
             "commands": {"type": "object"},
             "correctness": {"type": ["string", "null"]},
             "authoritative_metric": {"type": "object"},
+            "breakthrough": {"type": "object"},
+            "screening": {"type": "object"},
+            "validation_island": {"type": "object"},
+            "phase_owners": {"type": "array", "items": {"type": "object"}},
             "promotion_ladder": {"type": "object"},
             "verifier": {"type": "object"},
             "decision": {"type": "string"},
@@ -243,6 +255,35 @@ def candidate_result_template() -> str:
             "direction": None,
             "raw_result_path": None,
         },
+        "breakthrough": {
+            "frontier_row": None,
+            "active_floor": None,
+            "mechanism": "",
+            "resource_trade": "",
+            "dependency": "",
+            "slack_left_behind": [],
+            "negative_result": False,
+        },
+        "screening": {
+            "screen_metric": None,
+            "calibration": {
+                "known_clean_cases": [],
+                "known_dirty_cases": [],
+                "stacked_knob_cases": [],
+                "false_clean_risk": None,
+                "false_dirty_risk": None,
+                "verdict": None,
+            },
+            "promotion_allowed": False,
+        },
+        "validation_island": {
+            "contract_allowed": False,
+            "selector": None,
+            "old_island_invalidated_by": None,
+            "search_space": None,
+            "full_validation": None,
+        },
+        "phase_owners": [],
         "promotion_ladder": {
             "apply_or_build": "pending",
             "correctness": "pending",
@@ -408,6 +449,44 @@ def audit_md() -> str:
 """
 
 
+def breakthroughs_md() -> str:
+    return """# Breakthrough Mining
+
+Use this file for plateaued, high-stakes, public-leaderboard, or multi-agent runs.
+Keep it compact and durable; detailed raw logs belong under `work/raw_logs/`.
+
+## Frontier Sources
+
+| source | snapshot/time | contract match | notes |
+|---|---|---|---|
+
+## Breakthrough Rows
+
+| row | parent -> candidate | score/resources | active floor | delta | mechanism | proof/invariant | search tool | validation | slack/dependency |
+|---:|---|---:|---|---:|---|---|---|---|---|
+
+## Phase Owners / Co-Binders
+
+| phase/resource owner | height/cost | next floor | evidence | proposed stack |
+|---|---:|---:|---|---|
+
+## Screen Calibration
+
+| screen | predicts | known-clean reproduced | known-dirty rejected | stacked-knob calibration | false-clean risk | false-dirty risk | promotion use |
+|---|---|---|---|---|---|---|---|
+
+## Validation Islands / Selectors
+
+| candidate | selector/seed/route | contract-allowed reason | invalidated prior island | full validation |
+|---|---|---|---|---|
+
+## Negative Breakthroughs
+
+| idea | why tempting | measured blocker | resource trade | reopen condition |
+|---|---|---|---|---|
+"""
+
+
 def placeholder_svg() -> str:
     return """<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="720" viewBox="0 0 1120 720">
 <rect width="100%" height="100%" fill="#fbfbf7"/>
@@ -456,6 +535,7 @@ def main() -> int:
 
     files = {
         work / "best.md": best_md(args),
+        work / "breakthroughs.md": breakthroughs_md(),
         work / "log.md": log_md(args),
         work / "plan.md": plan_md(args),
         work / "review.md": review_md(args),

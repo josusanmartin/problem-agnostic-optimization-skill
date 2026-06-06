@@ -92,9 +92,58 @@ Next off-hill probe:
 ### Breakthrough Mining Table
 
 ```markdown
-| row | parent -> candidate | score/resources | delta | mechanism | proof/invariant | search tool | validation | slack left behind |
-|---:|---|---:|---:|---|---|---|---|---|
-| 001 | base -> cand |  |  |  |  |  |  |  |
+| row | parent -> candidate | score/resources | active floor | delta | mechanism | proof/invariant | search tool | validation | slack/dependency |
+|---:|---|---:|---|---:|---|---|---|---|---|
+| 001 | base -> cand |  |  |  |  |  |  |  |  |
+```
+
+### Phase-Owner / Co-Binder Table
+
+```markdown
+| phase/resource owner | height/cost | next floor | evidence | proposed stack |
+|---|---:|---:|---|---|
+|  |  |  |  |  |
+```
+
+### Screen Calibration Card
+
+```markdown
+## Screen: name
+
+- Predicts:
+- Known-clean cases reproduced:
+- Known-dirty cases rejected:
+- Coverage: cases/shapes/seeds/factors modeled
+- Stacked-knob calibration:
+- False-clean risk:
+- False-dirty risk:
+- Promotion use: advisory only
+- Calibration command/artifact:
+```
+
+### Validation Island Card
+
+```markdown
+## Island: candidate/selector
+
+- Contract-allowed reason:
+- Selector/seed/nonce/route:
+- Prior island invalidated by:
+- Search command/artifact:
+- Full validation command:
+- Full validation result:
+```
+
+### Negative Breakthrough Card
+
+```markdown
+## Negative Breakthrough: idea
+
+- Why it looked promising:
+- Measured blocker:
+- Resource trade:
+- Validation result:
+- Reopen condition:
 ```
 
 ## Extended Templates
