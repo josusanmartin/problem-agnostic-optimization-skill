@@ -124,7 +124,7 @@ After reassessment, either continue with a narrower hypothesis and kill criterio
 
 For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep and preserve the map in `work/breakthroughs.md`. Read "Breakthrough Mining" in `references/evidence-loop.md`.
 
-Exception, on a noisy metric with a `best-of-N` scoreboard: a *budgeted* distribution sweep (written plan + falsifiable stop, see `references/evidence-loop.md`) is sanctioned rather than churn — it either banks a best-of-N gain or supplies the distribution evidence to declare a floor and stop. It must self-terminate by its stop rule, not run open-ended.
+Exception: when a `best-of-N` scoreboard or contract-allowed draw distribution can vary the recorded result, a *budgeted* distribution sweep (written plan + falsifiable stop, see `references/evidence-loop.md`) is sanctioned rather than churn. It either banks a best-of-N gain or supplies family-specific distribution evidence to close that draw family. It must self-terminate by its stop rule, not run open-ended.
 
 ## Escape
 

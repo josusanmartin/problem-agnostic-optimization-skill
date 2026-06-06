@@ -13,7 +13,7 @@ Build this before coding:
 - Target hardware, compiler/runtime, flags, source limits, language limits, and sandbox constraints.
 - Budget: submissions, API calls, GPU minutes, wall-clock, or production risk.
 - Editable files and immutable reference, harness, evaluation, data, or scoring files.
-- Scoreboard semantics and metric noise: is the recorded result single-shot, an aggregate, or `best-of-N` over submissions (the board keeps your best ever)? Is the metric deterministic or noisy (record the measured run-to-run spread)? These decide whether a variance sweep can ever help — see Variance Handling.
+- Scoreboard semantics and draw/noise model: is the recorded result single-shot, an aggregate, or `best-of-N` over submissions (the board keeps your best ever)? What varies between samples: rerun noise, seed/nonce/route selector, hidden queue state, or structurally distinct artifact? Record measured spread across draws or reruns. These decide whether a sweep can ever help; see Variance Handling.
 
 If the score is aggregate, split it. A geomean hides shape-specific bottlenecks.
 
@@ -274,7 +274,7 @@ Convert each failure into a search rule:
 
 ## Variance Handling
 
-Use variance pushes only after structural improvement is exhausted or when the target gap is within normal noise. The default is that aimless resubmission is churn, not optimization.
+Use variance or draw pushes only after structural improvement is exhausted or when the target gap is within normal noise or selector spread. The default is that aimless resubmission is churn, not optimization.
 
 Rules:
 
@@ -286,24 +286,25 @@ Rules:
 
 ### When A Sweep Is Warranted
 
-A budgeted distribution/variance sweep is sometimes the correct tool, not a rules exception. It is the mechanism that reconciles "do not claim a floor from a plateau" with "stop variance pushes": a bounded sweep either banks a real gain or produces the measured distribution that licenses the floor claim and a clean stop. Run one only when all hold:
+A budgeted distribution/variance sweep is sometimes the correct tool, not a rules exception. It is the mechanism that reconciles "do not claim a floor from a plateau" with "stop variance pushes": a bounded sweep either banks a real gain or produces the measured distribution that closes the current draw family and forces a clean stop or hill change. Run one only when all hold:
 
-- Structural levers are exhausted, or the open question is purely reachable-or-not on a noisy metric.
-- The metric's measured run-to-run spread is comparable to or larger than the remaining gap, so single samples cannot decide.
+- Structural levers are exhausted, or the open question is purely whether the target is reachable under a defined noisy or contract-allowed draw family.
+- The measured draw-to-draw or run-to-run spread is comparable to or larger than the remaining gap, so single samples cannot decide.
 - At least one of:
   - `best-of-N scoreboard`: the board records your min/max over submissions, so each genuinely-distinct draw can lower (raise) the recorded result even with no better artifact; or
-  - `distribution-for-decision`: you need the reachable distribution to declare a floor/stop rigorously, and a sweep that places the target several dispersion units outside the measured distribution is the empirical floor evidence the plateau rule otherwise lacks.
+  - `contract-allowed draw distribution`: seeds, nonces, route selectors, or structurally-distinct artifacts change the scored draw without changing the intended computation or violating the contract; or
+  - `distribution-for-decision`: you need the reachable distribution to close the current draw family rigorously, and a sweep that places the target several dispersion units outside the measured distribution is the family-specific evidence the plateau rule otherwise lacks.
 
-It is churn (the default-discouraged case) when the metric is deterministic (resampling is identical), the board takes latest/mean (no best-of-N benefit), structural levers remain, or there is no plan and no stop.
+It is churn (the default-discouraged case) when the metric is deterministic and no distinct draw/selector exists, the board takes latest/mean (no best-of-N benefit), structural levers remain, or there is no plan and no stop.
 
 Write the sweep plan before sampling:
 
 - Pilot: >= 5 distinct samples -> min, median, spread.
-- Per-sample cost (submissions, rate-limit time, eval budget) and the distinctness constraint: if the platform dedups, each draw needs a structurally-distinct artifact, which bounds the achievable sample count.
-- Objective: lower the recorded best-of-N / characterize the distribution / detect a sub-region effect above noise.
-- Falsifiable stop, whichever fires first: recorded best stalls for `K` draws; the distribution places the target outside by the chosen margin (then declare unreachable and stop); or the budget is spent.
+- Per-sample cost (submissions, rate-limit time, eval budget) and the distinctness constraint: if the platform dedups, each draw needs the smallest contract-valid distinct artifact, which bounds the achievable sample count.
+- Objective: lower the recorded best-of-N / characterize the current draw family / detect a sub-region effect above noise.
+- Falsifiable stop, whichever fires first: recorded best stalls for `K` draws; the distribution places the target outside by the chosen margin (then close the current draw family and return to structural search); or the budget is spent.
 
-Order statistics give the stop teeth: expected gain from the next draw shrinks toward the distribution's lower tail as samples accumulate, so stop when marginal expected gain is below the per-sample cost. A converged sweep is a result: it ends by banking a best-of-N gain or by supplying the distribution that declares the floor.
+Order statistics give the stop teeth: expected gain from the next draw shrinks toward the distribution's lower tail as samples accumulate, so stop when marginal expected gain is below the per-sample cost. A converged sweep is a result: it ends by banking a best-of-N gain or by supplying the distribution that closes the current draw family, not the whole problem.
 
 ## Platform Blockers
 
