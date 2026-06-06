@@ -138,6 +138,8 @@ After repeated ties, regressions, same-knob failures, or a lower-bound proof aga
 
 After reassessment, mark exhausted hills `CLOSED` until a new premise appears. Spend the next candidate off-hill by default: representation, primitive, route/library/config, target split, or contract specialization.
 
+If the audit says the run is stuck, use the escape ladder in `references/resource-models.md`: recognize the stuck signal, run a bounded divergence burst across genuinely different hills, then commit a short budget to any hill with a real mechanism signal before abandoning it.
+
 Invert the primitive when compact work counts hide a target-specific bottleneck. Use negative audits to kill seductive shortcuts before implementing them.
 
 A `CLOSED` hill is a local verdict, not a global one: closing every known hill does not prove the target unreachable. When the search has exhausted self-generated ideas, intake an external mechanism (a competitor writeup, public source, or paper) and port it before concluding a floor. See "External Technique Intake" in `references/evidence-loop.md`.

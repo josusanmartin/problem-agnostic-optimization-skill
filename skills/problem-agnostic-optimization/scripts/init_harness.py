@@ -68,6 +68,16 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "current_active_floor": None,
             "calibrated_screens": [],
         },
+        "escape": {
+            "status": "tracking",
+            "stuck_signal": None,
+            "closed_hills": [],
+            "divergence_budget": None,
+            "active_burst": [],
+            "committed_hill": None,
+            "commitment_budget": None,
+            "kill_criterion": None,
+        },
         "promotion_ladder": {
             "enabled": True,
             "gating_steps": [
@@ -217,6 +227,7 @@ def candidate_result_schema() -> str:
             "screening": {"type": "object"},
             "validation_island": {"type": "object"},
             "phase_owners": {"type": "array", "items": {"type": "object"}},
+            "escape": {"type": "object"},
             "promotion_ladder": {"type": "object"},
             "verifier": {"type": "object"},
             "decision": {"type": "string"},
@@ -284,6 +295,16 @@ def candidate_result_template() -> str:
             "full_validation": None,
         },
         "phase_owners": [],
+        "escape": {
+            "status": "tracking",
+            "stuck_signal": None,
+            "closed_hill": None,
+            "divergence_probe": None,
+            "new_hill": None,
+            "mechanism_signal": "",
+            "commitment_budget": None,
+            "kill_criterion": None,
+        },
         "promotion_ladder": {
             "apply_or_build": "pending",
             "correctness": "pending",
@@ -408,6 +429,14 @@ def plan_md(args: argparse.Namespace) -> str:
 Each worker packet must include parent hash, mechanism class, target lane, duplicate check, expected signal, and immutable files.
 
 ## Closed Branches
+
+## Escape Ladder
+
+Stuck signal:
+Divergence budget:
+Divergence probes:
+New-hill commitment:
+Kill criterion:
 """
 
 
@@ -484,6 +513,11 @@ Keep it compact and durable; detailed raw logs belong under `work/raw_logs/`.
 
 | idea | why tempting | measured blocker | resource trade | reopen condition |
 |---|---|---|---|---|
+
+## Closed Hills / New-Hill Commitments
+
+| hill | status | stuck signal | divergence probe | commitment budget | kill criterion | next action |
+|---|---|---|---|---|---|---|
 """
 
 

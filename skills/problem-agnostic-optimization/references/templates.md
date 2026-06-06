@@ -146,6 +146,50 @@ Next off-hill probe:
 - Reopen condition:
 ```
 
+### Escape Ladder
+
+```markdown
+## Escape Ladder
+
+- Current hill:
+- Stuck signal: promotion drought | same-family failures | model mismatch | low novelty | residual-only work | frontier mismatch | floor proof
+- Plateau evidence:
+- Closed or narrowed branch:
+- Divergence budget:
+- Budget owner: candidates | workers | submissions | wall time | spend
+
+Probe packets:
+
+| probe | new hill | active floor/resource axis | mechanism class | cheapest falsifiable signal | kill criterion | result |
+|---|---|---|---|---|---|---|
+| E1 |  |  |  |  |  |  |
+| E2 |  |  |  |  |  |  |
+| E3 |  |  |  |  |  |  |
+
+- Selected new hill:
+- Why the signal is real:
+- Next action:
+```
+
+### New-Hill Commitment
+
+```markdown
+## New-Hill Commitment
+
+- Source probe:
+- Parent:
+- New hill:
+- Mechanism signal:
+- Current loss or rough edge:
+- Commitment budget:
+- Follow-up 1:
+- Follow-up 2:
+- Follow-up 3:
+- Kill criterion:
+- Promotion gate:
+- Reopen condition after closure:
+```
+
 ## Extended Templates
 
 Use the per-case table when aggregate metrics hide important differences.
@@ -345,6 +389,16 @@ Use `work/candidates/_template.result.json` when present. Keep this artifact for
     "direction": null,
     "raw_result_path": null
   },
+  "escape": {
+    "status": "tracking",
+    "stuck_signal": null,
+    "closed_hill": null,
+    "divergence_probe": null,
+    "new_hill": null,
+    "mechanism_signal": "",
+    "commitment_budget": null,
+    "kill_criterion": null
+  },
   "promotion_ladder": {
     "apply_or_build": "pending",
     "correctness": "pending",
@@ -523,6 +577,14 @@ Stagnation:
 ## Frozen Branches
 
 - 
+
+## Escape Ladder
+
+- Stuck signal:
+- Divergence budget:
+- Divergence probes:
+- New-hill commitment:
+- Kill criterion:
 
 ## Escalation Rule
 

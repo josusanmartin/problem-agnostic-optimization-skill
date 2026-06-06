@@ -130,6 +130,16 @@ Recommended normalized shape:
     "direction": "lower",
     "raw_result_path": "work/results/cand_0007.json"
   },
+  "escape": {
+    "status": "tracking",
+    "stuck_signal": null,
+    "closed_hill": null,
+    "divergence_probe": null,
+    "new_hill": null,
+    "mechanism_signal": "",
+    "commitment_budget": null,
+    "kill_criterion": null
+  },
   "promotion_ladder": {},
   "verifier": {},
   "decision": "REJECT",
@@ -141,7 +151,7 @@ Do not use the JSON artifact as a second score ledger. `work/progress.tsv` remai
 
 ## Breakthrough Ledger
 
-Use `work/breakthroughs.md` for plateaued, high-stakes, public-leaderboard, or multi-agent runs. It is the durable frontier map: public breakthroughs, local breakthrough rows, phase owners, calibrated screens, validation islands, and negative breakthroughs. Keep it compact; raw outputs still belong under `work/raw_logs/`, `work/results/`, or `work/profiles/`.
+Use `work/breakthroughs.md` for plateaued, high-stakes, public-leaderboard, or multi-agent runs. It is the durable frontier map: public breakthroughs, local breakthrough rows, phase owners, calibrated screens, validation islands, closed hills, new-hill commitments, and negative breakthroughs. Keep it compact; raw outputs still belong under `work/raw_logs/`, `work/results/`, or `work/profiles/`.
 
 Minimum sections:
 
@@ -151,6 +161,7 @@ Breakthrough Rows
 Phase Owners / Co-Binders
 Screen Calibration
 Validation Islands / Selectors
+Closed Hills / New-Hill Commitments
 Negative Breakthroughs
 ```
 
@@ -160,6 +171,7 @@ Update it when any of these happen:
 - A profile, trace, or phase label identifies the peak/tail owner.
 - A cheap screen is created, calibrated, downgraded, or retired.
 - A selector, seed, nonce, validation island, or route choice is used to land a candidate.
+- A local-optimum audit closes or narrows a hill, opens a divergence burst, or commits a short budget to a new hill.
 - A tempting route is ruled out by measured resource tradeoff.
 
 Do not promote from `work/breakthroughs.md`; it explains search direction. Candidate JSON plus the promotion ladder still hold promotion evidence.
@@ -505,6 +517,7 @@ Mutable active strategy:
 - Stagnation count.
 - Active branches with hypothesis, next probe, expected signal, and budget.
 - Frozen/closed branches with reasons.
+- Escape ladder state: stuck signal, divergence burst, and active new-hill commitment.
 - Escalation rule for local-optimum audit or structural reset.
 
 ### `work/audit.md`
@@ -553,6 +566,16 @@ Small machine-readable state:
   "isolation": {
     "fresh_run": true,
     "allowed_prior_sources": []
+  },
+  "escape": {
+    "status": "tracking",
+    "stuck_signal": null,
+    "closed_hills": [],
+    "divergence_budget": null,
+    "active_burst": [],
+    "committed_hill": null,
+    "commitment_budget": null,
+    "kill_criterion": null
   },
   "multi_agent": {
     "enabled": false,
@@ -760,6 +783,16 @@ Use this as an extension of the typed candidate artifact, not a replacement for 
     "interpretation": "",
     "fallback_evidence": []
   },
+  "escape": {
+    "status": "tracking",
+    "stuck_signal": null,
+    "closed_hill": null,
+    "divergence_probe": null,
+    "new_hill": null,
+    "mechanism_signal": "",
+    "commitment_budget": null,
+    "kill_criterion": null
+  },
   "ranked": {
     "score": null,
     "status": "not_run"
@@ -857,6 +890,7 @@ After running:
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
 - Update `work/breakthroughs.md` when the result changes a tier, identifies a co-binder, calibrates a screen, uses a validation island, or rules out a tempting route.
+- Update `work/plan.md` and `work/breakthroughs.md` when a hill is closed, an escape burst starts, or a divergence probe earns a new-hill commitment budget.
 - Update `work/state.json`.
 - Update `work/checkpoints/progress.json` with the current phase and terminal result when appropriate.
 - Run or record the fresh verifier gate before any stable promotion.
@@ -878,5 +912,6 @@ Do a topology refresh:
 4. Mark exhausted branches as CLOSED.
 5. Propose 3 structural alternatives that replace the primitive or route.
 6. Create only one probe per alternative.
-7. Preserve the current best unchanged.
+7. If one probe opens a new hill, commit a short follow-up budget before scattering again.
+8. Preserve the current best unchanged.
 ```

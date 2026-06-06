@@ -259,3 +259,81 @@ Rule:
 
 - After the audit, the next candidate should be off-hill by default. Return to micro-tuning only if the off-hill probe fails or the user explicitly asks to keep grinding.
 - A plateau closes a hill, not the problem. "Every hill I tried tied" is evidence to change hills or intake an external mechanism, never a proof that the target is unreachable. Only a lower-bound proof (a Resource Floor at or above target) closes the problem.
+
+## Escape Ladder
+
+Use this when the local-optimum audit says the current hill is closed or nearly closed. The goal is not random mutation. It is to create enough hypothesis variance to find a new climbable hill, then stop scattering effort and climb it.
+
+### 1. Recognize Stuck
+
+Declare `STUCK` when several of these are true:
+
+- Promotion drought: no stable-best improvement after the recorded stagnation threshold.
+- Same-family failures: candidates keep changing only knobs, order, constants, seeds, tile sizes, or selectors around the same mechanism.
+- Model mismatch: the bottleneck model stops predicting results, or better floors/counters repeatedly fail to improve the authoritative metric.
+- Low novelty: new candidates duplicate an existing branch, parent, worker packet, or draw family.
+- Residual-only work: only variance pushes, selector notches, cleanup, or polish remain on the active hill.
+- Frontier mismatch: public or local breakthrough rows improve through mechanisms you are not testing.
+- Floor proof: the target is below the current hill's resource, tail, or statistical floor.
+
+Write the stuck signal into `work/plan.md` and, for harnessed runs, mark the hill `CLOSED` or `NARROWED` with the evidence.
+
+### 2. Divergence Burst
+
+Spend a bounded novelty budget before returning to tuning. A normal burst is 5-10 cheap probes or worker packets, but the contract budget controls the exact size.
+
+Each probe must name:
+
+- New hill:
+- New active floor or resource axis:
+- Mechanism class:
+- Why this is not the current hill:
+- Cheapest falsifiable signal:
+- Validation and measurement path:
+- Kill criterion:
+
+Probe across different axes, not many versions of one axis:
+
+- Representation: data layout, state encoding, precomputation, compression, scratch/live-state shape.
+- Primitive: library route, hardware primitive, decomposed primitive, algorithm family, exact versus residual route.
+- Work graph: omission, fusion, split, recompute, delayed materialization, paired-phase sharing.
+- Schedule/route: target split, per-shape policy, per-seed route, compiler/config, placement, worker batch shape.
+- Evidence tool: calibrated screen, simulator, lower-bound model, microbenchmark, phase-owner instrumentation.
+- Contract specialization: fixed shape, distribution support, unobserved output, tolerance, allowed selector or reroll.
+- External intake: public source, competitor writeup, paper, or known better method ported as a mechanism.
+- Negative proof: a proof or counterexample that closes a tempting shortcut before implementation.
+
+Variance here means diversity of hypotheses. Draw or distribution sweeps count only when they satisfy `Variance Handling` in `references/evidence-loop.md`; otherwise they are churn.
+
+### 3. Commit To A New Hill
+
+When a divergence probe opens a credible new hill, stop scattering and allocate a short commitment budget. A normal commitment is 2-4 follow-up candidates, enough to fix first-pass implementation errors, retune co-binders, calibrate the screen, and reclaim slack that was spent to land the structural route.
+
+Commit when at least one is true:
+
+- The probe changes an active floor, peak owner, tail owner, validation island, or searchable region.
+- The authoritative metric improves, even if the implementation is rough.
+- A diagnostic signal improves a proven bottleneck and the remaining gap is plausibly reclaimable.
+- The probe regresses globally but wins a lane, shape, seed regime, target split, or product-metric axis that can be routed or composed.
+- The probe faithfully ports an external mechanism but one transfer parameter is still suspect.
+
+Do not abandon a new hill after the first rough result if the mechanism signal is real. Abandon it when the written kill criterion fires, the route fails correctness for intrinsic reasons, the resource trade cannot cross the next floor, or the authoritative metric and diagnostics both refute the mechanism after the commitment budget.
+
+Commitment packet:
+
+```markdown
+## New-Hill Commitment
+
+- Source probe:
+- Parent:
+- New hill:
+- Mechanism signal:
+- Current loss or rough edge:
+- Commitment budget:
+- Follow-up 1:
+- Follow-up 2:
+- Follow-up 3:
+- Kill criterion:
+- Promotion gate:
+- Reopen condition after closure:
+```
