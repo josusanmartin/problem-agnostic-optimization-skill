@@ -60,6 +60,30 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "schema": str(args.work_dir / "schemas" / "candidate_result.schema.json"),
             "required_for_promotions": True,
         },
+        "breakthrough_mining": {
+            "enabled": True,
+            "path": str(args.work_dir / "breakthroughs.md"),
+            "frontier_sources": [],
+            "last_mined_at": None,
+            "current_active_floor": None,
+            "calibrated_screens": [],
+        },
+        "escape": {
+            "status": "tracking",
+            "stuck_signal": None,
+            "closed_hills": [],
+            "basin_memory": [],
+            "diversity_map": [],
+            "operator_credit": {},
+            "anti_revisit_rules": [],
+            "divergence_budget": None,
+            "active_burst": [],
+            "committed_hill": None,
+            "commitment_budget": None,
+            "controlled_regression_allowed": False,
+            "aspiration_rule": None,
+            "kill_criterion": None,
+        },
         "promotion_ladder": {
             "enabled": True,
             "gating_steps": [
@@ -205,6 +229,11 @@ def candidate_result_schema() -> str:
             "commands": {"type": "object"},
             "correctness": {"type": ["string", "null"]},
             "authoritative_metric": {"type": "object"},
+            "breakthrough": {"type": "object"},
+            "screening": {"type": "object"},
+            "validation_island": {"type": "object"},
+            "phase_owners": {"type": "array", "items": {"type": "object"}},
+            "escape": {"type": "object"},
             "promotion_ladder": {"type": "object"},
             "verifier": {"type": "object"},
             "decision": {"type": "string"},
@@ -242,6 +271,53 @@ def candidate_result_template() -> str:
             "unit": None,
             "direction": None,
             "raw_result_path": None,
+        },
+        "breakthrough": {
+            "frontier_row": None,
+            "active_floor": None,
+            "mechanism": "",
+            "resource_trade": "",
+            "dependency": "",
+            "slack_left_behind": [],
+            "negative_result": False,
+        },
+        "screening": {
+            "screen_metric": None,
+            "calibration": {
+                "known_clean_cases": [],
+                "known_dirty_cases": [],
+                "stacked_knob_cases": [],
+                "false_clean_risk": None,
+                "false_dirty_risk": None,
+                "verdict": None,
+            },
+            "promotion_allowed": False,
+        },
+        "validation_island": {
+            "contract_allowed": False,
+            "selector": None,
+            "old_island_invalidated_by": None,
+            "search_space": None,
+            "full_validation": None,
+        },
+        "phase_owners": [],
+        "escape": {
+            "status": "tracking",
+            "stuck_signal": None,
+            "escape_operator": None,
+            "hill_id": None,
+            "feature_cell": None,
+            "closed_hill": None,
+            "divergence_probe": None,
+            "new_hill": None,
+            "mechanism_signal": "",
+            "stepping_stone_signal": None,
+            "commitment_budget": None,
+            "controlled_regression_allowed": False,
+            "anti_revisit_rule": None,
+            "aspiration_rule": None,
+            "operator_credit_signal": None,
+            "kill_criterion": None,
         },
         "promotion_ladder": {
             "apply_or_build": "pending",
@@ -367,6 +443,21 @@ def plan_md(args: argparse.Namespace) -> str:
 Each worker packet must include parent hash, mechanism class, target lane, duplicate check, expected signal, and immutable files.
 
 ## Closed Branches
+
+## Escape Ladder
+
+Stuck signal:
+Escape operator:
+Divergence budget:
+Divergence probes:
+Basin memory:
+Diversity map:
+Operator credit:
+New-hill commitment:
+Controlled regression allowed:
+Anti-revisit rule:
+Aspiration rule:
+Kill criterion:
 """
 
 
@@ -405,6 +496,59 @@ def audit_md() -> str:
 - Search-health issues:
 - Blockers:
 - Recommended next action:
+"""
+
+
+def breakthroughs_md() -> str:
+    return """# Breakthrough Mining
+
+Use this file for plateaued, high-stakes, public-leaderboard, or multi-agent runs.
+Keep it compact and durable; detailed raw logs belong under `work/raw_logs/`.
+
+## Frontier Sources
+
+| source | snapshot/time | contract match | notes |
+|---|---|---|---|
+
+## Breakthrough Rows
+
+| row | parent -> candidate | score/resources | active floor | delta | mechanism | proof/invariant | search tool | validation | slack/dependency |
+|---:|---|---:|---|---:|---|---|---|---|---|
+
+## Phase Owners / Co-Binders
+
+| phase/resource owner | height/cost | next floor | evidence | proposed stack |
+|---|---:|---:|---|---|
+
+## Screen Calibration
+
+| screen | predicts | known-clean reproduced | known-dirty rejected | stacked-knob calibration | false-clean risk | false-dirty risk | promotion use |
+|---|---|---|---|---|---|---|---|
+
+## Validation Islands / Selectors
+
+| candidate | selector/seed/route | contract-allowed reason | invalidated prior island | full validation |
+|---|---|---|---|---|
+
+## Diversity Map / Feature Cells
+
+| feature cell | best artifact | best score | operator | signal | status |
+|---|---|---:|---|---|---|
+
+## Escape Operator Credit
+
+| operator | attempts | positive signals | mixed signals | negative signals | last evidence | next allocation |
+|---|---:|---:|---:|---:|---|---|
+
+## Negative Breakthroughs
+
+| idea | why tempting | measured blocker | resource trade | reopen condition |
+|---|---|---|---|---|
+
+## Closed Hills / New-Hill Commitments
+
+| hill | feature cell | status | stuck signal | operator | divergence probe | commitment budget | anti-revisit rule | aspiration rule | kill criterion | next action |
+|---|---|---|---|---|---|---|---|---|---|---|
 """
 
 
@@ -456,6 +600,7 @@ def main() -> int:
 
     files = {
         work / "best.md": best_md(args),
+        work / "breakthroughs.md": breakthroughs_md(),
         work / "log.md": log_md(args),
         work / "plan.md": plan_md(args),
         work / "review.md": review_md(args),

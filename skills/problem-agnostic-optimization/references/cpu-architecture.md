@@ -142,7 +142,7 @@ For services, pair server-side counters with a load generator and confirm the cl
 
 ## Public Clues And Harnesses
 
-Mine public source, crate names, papers, benchmark writeups, leaderboard diffs, and flamegraphs for hypotheses, not conclusions.
+Mine public source, crate names, papers, benchmark writeups, leaderboard diffs, and flamegraphs for hypotheses, not conclusions. This includes a competitor's *winning technique*, not only the contract clues below; to port an external mechanism faithfully and verify each sub-technique transferred, see "External Technique Intake" in `references/evidence-loop.md`.
 
 Clean examples:
 

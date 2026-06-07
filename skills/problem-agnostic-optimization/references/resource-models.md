@@ -82,6 +82,39 @@ For near-frontier systems, write the expected floor delta before coding. A usefu
 
 If either is false, the candidate is a pressure transfer, not a likely breakthrough.
 
+## Product Metrics And Co-Binders
+
+For product metrics such as `resource_a * resource_b`, a candidate can win while spending one resource back to reduce the other. Compute the break-even before rejecting it:
+
+```text
+new_a * new_b < old_a * old_b
+```
+
+For a minimizing `count * peak` metric, spending `delta_count` is worthwhile when the peak drop is large enough:
+
+```text
+(count + delta_count) * (peak - delta_peak) < count * peak
+```
+
+This matters near peak or memory walls: a higher operation count can be a real breakthrough if it crosses a resource tier.
+
+Co-binder rule:
+
+- List the top resource owners at the current peak, tail, memory high-water mark, or latency endpoint.
+- If several owners are within a small band, the first fix may appear to do nothing because another owner immediately rebinds the metric.
+- Plan a stack that sinks all co-binders below the next floor, then validate the composed route.
+- After the tier drop, spend the new slack carefully: re-tighten knobs that were relaxed to find the structural route.
+
+Use a phase-owner table when the metric is blocked by peak, tail, memory, or live-state width:
+
+```text
+phase/resource owner | height/cost | next floor | evidence | proposed stack
+```
+
+The table should name the useful work that owns the floor, not just the final store, free, or return. If the next floor is close, the winning candidate may need to spend extra work to cross the peak tier and then reclaim operation count afterward.
+
+Negative resource trades are also useful. If a deeper route saves operation count but grows transcript, memory, live width, latency tail, or synchronization enough to lose the product metric, log it as a negative breakthrough and state what would make it worth reopening.
+
 ## Primitive Inversion Audit
 
 When local tuning repeatedly improves counts but not time, audit whether the chosen primitive family is itself the bottleneck. A "better" operation graph can be worse on a specific target if it uses a microcoded, narrow, serialized, or frontend-heavy primitive.
@@ -225,3 +258,135 @@ Different-hill examples:
 Rule:
 
 - After the audit, the next candidate should be off-hill by default. Return to micro-tuning only if the off-hill probe fails or the user explicitly asks to keep grinding.
+- A plateau closes a hill, not the problem. "Every hill I tried tied" is evidence to change hills or intake an external mechanism, never a proof that the target is unreachable. Only a lower-bound proof (a Resource Floor at or above target) closes the problem.
+
+## Escape Ladder
+
+Use this when the local-optimum audit says the current hill is closed or nearly closed. The goal is not random mutation. It is to create enough hypothesis variance to find a new climbable hill, then stop scattering effort and climb it.
+
+### 1. Recognize Stuck
+
+Declare `STUCK` when several of these are true:
+
+- Promotion drought: no stable-best improvement after the recorded stagnation threshold.
+- Same-family failures: candidates keep changing only knobs, order, constants, seeds, tile sizes, or selectors around the same mechanism.
+- Model mismatch: the bottleneck model stops predicting results, or better floors/counters repeatedly fail to improve the authoritative metric.
+- Low novelty: new candidates duplicate an existing branch, parent, worker packet, or draw family.
+- Residual-only work: only variance pushes, selector notches, cleanup, or polish remain on the active hill.
+- Frontier mismatch: public or local breakthrough rows improve through mechanisms you are not testing.
+- Floor proof: the target is below the current hill's resource, tail, or statistical floor.
+
+Write the stuck signal into `work/plan.md` and, for harnessed runs, mark the hill `CLOSED` or `NARROWED` with the evidence.
+
+Record the closed basin, not just the failed candidate:
+
+- Hill id:
+- Feature cell: resource axis, route, representation, primitive, target split, or selector family.
+- Best result in basin:
+- Why closed:
+- Anti-revisit rule:
+- Aspiration rule: what evidence is strong enough to reopen it.
+
+### Escape Operators
+
+Choose one explicit operator for each divergence probe:
+
+- `perturb_reoptimize`: make a disruptive but contract-valid perturbation, then locally re-optimize the new artifact before judging the hill.
+- `neighborhood_shift`: change representation, primitive, route, target split, or edit neighborhood so nearby moves are no longer the old knob family.
+- `destroy_repair`: remove or relax a binding structure, then repair correctness or resource damage inside a fixed budget.
+- `annealed_regression`: allow a temporary authoritative regression only when it opens a named new hill, with a cooling/stop budget and no stable promotion.
+- `tabu_anti_revisit`: forbid recently closed hills, duplicate worker packets, or exhausted draw families unless an aspiration rule fires.
+- `surrogate_uncertainty`: spend a cheap model, screen, microbenchmark, or uncertainty probe where evidence is weakest, then verify authoritatively.
+- `diversity_archive`: keep the best artifact per feature cell instead of collapsing everything to one global incumbent.
+- `adaptive_operator`: allocate future probes toward operators that previously produced mechanism signals, not only score wins.
+- `external_intake`: port a known better public method, paper, or competitor mechanism before inventing more local variants.
+- `negative_proof`: close a tempting basin by proof, counterexample, or measured resource tradeoff before implementation.
+
+### 2. Divergence Burst
+
+Spend a bounded novelty budget before returning to tuning. A normal burst is 5-10 cheap probes or worker packets, but the contract budget controls the exact size.
+
+Each probe must name:
+
+- New hill:
+- Escape operator:
+- Hill id:
+- Feature cell:
+- New active floor or resource axis:
+- Mechanism class:
+- Why this is not the current hill:
+- Controlled regression allowed: yes/no and why.
+- Cheapest falsifiable signal:
+- Validation and measurement path:
+- Anti-revisit rule:
+- Aspiration rule:
+- Kill criterion:
+
+Probe across different axes, not many versions of one axis:
+
+- Representation: data layout, state encoding, precomputation, compression, scratch/live-state shape.
+- Primitive: library route, hardware primitive, decomposed primitive, algorithm family, exact versus residual route.
+- Work graph: omission, fusion, split, recompute, delayed materialization, paired-phase sharing.
+- Schedule/route: target split, per-shape policy, per-seed route, compiler/config, placement, worker batch shape.
+- Evidence tool: calibrated screen, simulator, lower-bound model, microbenchmark, phase-owner instrumentation.
+- Contract specialization: fixed shape, distribution support, unobserved output, tolerance, allowed selector or reroll.
+- External intake: public source, competitor writeup, paper, or known better method ported as a mechanism.
+- Negative proof: a proof or counterexample that closes a tempting shortcut before implementation.
+
+Variance here means diversity of hypotheses. Draw or distribution sweeps count only when they satisfy `Variance Handling` in `references/evidence-loop.md`; otherwise they are churn.
+
+Use a small diversity map during the burst:
+
+```text
+feature cell | best artifact | best score | operator | signal | status
+```
+
+Feature cells should separate mechanisms that can plausibly climb different hills: resource axis, primitive, representation, target split, selector family, search tool, external route, or proof family.
+
+### 3. Commit To A New Hill
+
+When a divergence probe opens a credible new hill, stop scattering and allocate a short commitment budget. A normal commitment is 2-4 follow-up candidates, enough to fix first-pass implementation errors, retune co-binders, calibrate the screen, and reclaim slack that was spent to land the structural route.
+
+Commit when at least one is true:
+
+- The probe changes an active floor, peak owner, tail owner, validation island, or searchable region.
+- The authoritative metric improves, even if the implementation is rough.
+- A diagnostic signal improves a proven bottleneck and the remaining gap is plausibly reclaimable.
+- The probe regresses globally but wins a lane, shape, seed regime, target split, or product-metric axis that can be routed or composed.
+- The probe faithfully ports an external mechanism but one transfer parameter is still suspect.
+- The probe is a stepping stone: it enters a new feature cell, exposes a new validator/search tool, or creates a path to a co-binder teardown that the old basin could not access.
+
+Do not abandon a new hill after the first rough result if the mechanism signal is real. Abandon it when the written kill criterion fires, the route fails correctness for intrinsic reasons, the resource trade cannot cross the next floor, or the authoritative metric and diagnostics both refute the mechanism after the commitment budget.
+
+After the commitment, update operator credit:
+
+- `positive`: improved the stable best or opened a new hill with a verified mechanism signal.
+- `mixed`: produced a useful screen, proof, feature-cell elite, or negative result but no climbable hill.
+- `negative`: duplicated a closed basin, failed its own signal, or consumed budget without new information.
+
+Use operator credit to bias the next divergence burst. It is advisory search allocation, not promotion evidence.
+
+Commitment packet:
+
+```markdown
+## New-Hill Commitment
+
+- Source probe:
+- Parent:
+- New hill:
+- Escape operator:
+- Hill id:
+- Feature cell:
+- Mechanism signal:
+- Stepping-stone evidence:
+- Current loss or rough edge:
+- Commitment budget:
+- Follow-up 1:
+- Follow-up 2:
+- Follow-up 3:
+- Kill criterion:
+- Anti-revisit rule if closed:
+- Operator credit update:
+- Promotion gate:
+- Reopen condition after closure:
+```

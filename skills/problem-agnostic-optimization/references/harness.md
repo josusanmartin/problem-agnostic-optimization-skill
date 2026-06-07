@@ -32,6 +32,7 @@ For small projects, create only:
 work/
   audit.md
   best.md
+  breakthroughs.md            # frontier mechanisms, co-binders, calibrated screens
   checkpoints/
     progress.json              # phase/checkpoint state for resume
   candidates/
@@ -63,6 +64,7 @@ project/
   work/
     audit.md
     best.md
+    breakthroughs.md
     checkpoints/
       progress.json
     candidates/
@@ -128,6 +130,24 @@ Recommended normalized shape:
     "direction": "lower",
     "raw_result_path": "work/results/cand_0007.json"
   },
+  "escape": {
+    "status": "tracking",
+    "stuck_signal": null,
+    "escape_operator": null,
+    "hill_id": null,
+    "feature_cell": null,
+    "closed_hill": null,
+    "divergence_probe": null,
+    "new_hill": null,
+    "mechanism_signal": "",
+    "stepping_stone_signal": null,
+    "commitment_budget": null,
+    "controlled_regression_allowed": false,
+    "anti_revisit_rule": null,
+    "aspiration_rule": null,
+    "operator_credit_signal": null,
+    "kill_criterion": null
+  },
   "promotion_ladder": {},
   "verifier": {},
   "decision": "REJECT",
@@ -136,6 +156,35 @@ Recommended normalized shape:
 ```
 
 Do not use the JSON artifact as a second score ledger. `work/progress.tsv` remains the compact score ledger; candidate JSON preserves the richer evidence, raw paths, verifier verdict, and promotion-ladder state.
+
+## Breakthrough Ledger
+
+Use `work/breakthroughs.md` for plateaued, high-stakes, public-leaderboard, or multi-agent runs. It is the durable frontier map: public breakthroughs, local breakthrough rows, phase owners, calibrated screens, validation islands, diversity-map feature cells, escape-operator credit, closed hills, new-hill commitments, and negative breakthroughs. Keep it compact; raw outputs still belong under `work/raw_logs/`, `work/results/`, or `work/profiles/`.
+
+Minimum sections:
+
+```text
+Frontier Sources
+Breakthrough Rows
+Phase Owners / Co-Binders
+Screen Calibration
+Validation Islands / Selectors
+Diversity Map / Feature Cells
+Escape Operator Credit
+Closed Hills / New-Hill Commitments
+Negative Breakthroughs
+```
+
+Update it when any of these happen:
+
+- A public result or local candidate changes a resource tier or active floor.
+- A profile, trace, or phase label identifies the peak/tail owner.
+- A cheap screen is created, calibrated, downgraded, or retired.
+- A selector, seed, nonce, validation island, or route choice is used to land a candidate.
+- A local-optimum audit closes or narrows a hill, opens a divergence burst, assigns operator credit, updates the diversity map, or commits a short budget to a new hill.
+- A tempting route is ruled out by measured resource tradeoff.
+
+Do not promote from `work/breakthroughs.md`; it explains search direction. Candidate JSON plus the promotion ladder still hold promotion evidence.
 
 ## Phase Checkpoints
 
@@ -327,7 +376,7 @@ Use only when `Multi-agent mode: on` is present in the `/goal` or the user expli
 
 ### Canonical Roles
 
-- **Coordinator**: owns the canonical workspace, `work/state.json`, `work/best.md`, `work/log.md`, `work/progress.tsv`, charts, dashboard, and final promotion decisions.
+- **Coordinator**: owns the canonical workspace, `work/state.json`, `work/best.md`, `work/breakthroughs.md`, `work/log.md`, `work/progress.tsv`, charts, dashboard, and final promotion decisions.
 - **Worker**: operates in an isolated worktree or copied sandbox from a named parent artifact/hash. A worker may run screening and local validation, but cannot mutate the canonical ledger or declare a promotion.
 - **Auditor**: optional read-only reviewer. Use `references/auditor.md` after a batch, a surprising result, repeated bugs, or suspected drift.
 
@@ -343,7 +392,7 @@ Use only when `Multi-agent mode: on` is present in the `/goal` or the user expli
 
 ### Worker Restrictions
 
-Workers must not edit canonical `work/state.json`, `work/best.md`, `work/log.md`, `work/events.jsonl`, `work/progress.tsv`, charts, dashboard, benchmark harnesses, immutable files, or final submission files. They must not promote from screening metrics, stale parents, wrong-answer speedups, modified graders, or private leaked results.
+Workers must not edit canonical `work/state.json`, `work/best.md`, `work/breakthroughs.md`, `work/log.md`, `work/events.jsonl`, `work/progress.tsv`, charts, dashboard, benchmark harnesses, immutable files, or final submission files. They must not promote from screening metrics, stale parents, wrong-answer speedups, modified graders, or private leaked results.
 
 Workers also must not mark canonical checkpoints complete. The coordinator alone updates `work/checkpoints/progress.json`, creates canonical candidate result JSON files, and runs the fresh verifier gate.
 
@@ -478,6 +527,7 @@ Mutable active strategy:
 - Stagnation count.
 - Active branches with hypothesis, next probe, expected signal, and budget.
 - Frozen/closed branches with reasons.
+- Escape ladder state: stuck signal, escape operator, basin memory, diversity map, operator credit, anti-revisit rules, divergence burst, and active new-hill commitment.
 - Escalation rule for local-optimum audit or structural reset.
 
 ### `work/audit.md`
@@ -526,6 +576,22 @@ Small machine-readable state:
   "isolation": {
     "fresh_run": true,
     "allowed_prior_sources": []
+  },
+  "escape": {
+    "status": "tracking",
+    "stuck_signal": null,
+    "closed_hills": [],
+    "basin_memory": [],
+    "diversity_map": [],
+    "operator_credit": {},
+    "anti_revisit_rules": [],
+    "divergence_budget": null,
+    "active_burst": [],
+    "committed_hill": null,
+    "commitment_budget": null,
+    "controlled_regression_allowed": false,
+    "aspiration_rule": null,
+    "kill_criterion": null
   },
   "multi_agent": {
     "enabled": false,
@@ -733,6 +799,24 @@ Use this as an extension of the typed candidate artifact, not a replacement for 
     "interpretation": "",
     "fallback_evidence": []
   },
+  "escape": {
+    "status": "tracking",
+    "stuck_signal": null,
+    "escape_operator": null,
+    "hill_id": null,
+    "feature_cell": null,
+    "closed_hill": null,
+    "divergence_probe": null,
+    "new_hill": null,
+    "mechanism_signal": "",
+    "stepping_stone_signal": null,
+    "commitment_budget": null,
+    "controlled_regression_allowed": false,
+    "anti_revisit_rule": null,
+    "aspiration_rule": null,
+    "operator_credit_signal": null,
+    "kill_criterion": null
+  },
   "ranked": {
     "score": null,
     "status": "not_run"
@@ -800,6 +884,7 @@ Use this as an extension of the typed candidate artifact, not a replacement for 
 At the start:
 
 - Read `work/best.md`.
+- Read `work/breakthroughs.md` if it exists and the run is plateaued, public-leaderboard driven, multi-agent, or near a resource tier.
 - Read the tail of `work/log.md`.
 - Read `work/plan.md`.
 - Read `work/state.json`.
@@ -828,6 +913,8 @@ After running:
 - Append the UTC snapshot, wall time, `tokens_total`, and `tokens_delta` to `work/log.md`, and copy the latest snapshot to `work/state.json`.
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
+- Update `work/breakthroughs.md` when the result changes a tier, identifies a co-binder, calibrates a screen, uses a validation island, or rules out a tempting route.
+- Update `work/plan.md` and `work/breakthroughs.md` when a hill is closed, an escape burst starts, a feature-cell elite changes, an escape operator earns credit, or a divergence probe earns a new-hill commitment budget.
 - Update `work/state.json`.
 - Update `work/checkpoints/progress.json` with the current phase and terminal result when appropriate.
 - Run or record the fresh verifier gate before any stable promotion.
@@ -847,7 +934,9 @@ Do a topology refresh:
 2. List the last 10 failed candidates and what they prove.
 3. Identify the hot primitive or bottleneck shape that still dominates.
 4. Mark exhausted branches as CLOSED.
-5. Propose 3 structural alternatives that replace the primitive or route.
-6. Create only one probe per alternative.
-7. Preserve the current best unchanged.
+5. Write the anti-revisit rule and aspiration rule for each closed hill.
+6. Propose 3 structural alternatives that replace the primitive or route, each with a different escape operator or feature cell.
+7. Create only one probe per alternative.
+8. If one probe opens a new hill, commit a short follow-up budget before scattering again.
+9. Preserve the current best unchanged.
 ```

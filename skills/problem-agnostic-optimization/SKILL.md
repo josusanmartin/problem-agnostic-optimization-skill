@@ -44,6 +44,7 @@ Before baseline or candidate work, read `references/harness.md` and initialize t
 ```text
 work/audit.md
 work/best.md
+work/breakthroughs.md
 work/checkpoints/progress.json
 work/candidates/_template.result.json
 work/dashboard.html
@@ -84,6 +85,8 @@ Classify the gap before choosing a candidate:
 
 Do not micro-tune below the current floor. Move to work deletion, fusion, specialization, representation change, primitive change, route change, or valid approximation inside tolerance.
 
+A gap classification is a revisable hypothesis, not a fact, especially when inherited from a prior session, handoff, or ledger. `floor gap` means "no known path reaches target," not "the target is unreachable": that verdict needs a lower-bound proof (a resource floor at or above target), never a plateau of failed candidates. Re-test an inherited negative conclusion when a new premise appears: a user hint, an external writeup, a new tool, compiler, or hardware.
+
 ## Candidate
 
 For each candidate, state: parent, parent hash when available, hypothesis, mechanism, duplicate check, expected signal, kill criterion, smallest edit, validation, measurement, and decision. For substantial runs, save a typed candidate result under `work/candidates/`. For tiny/minimal runs, a compact log entry is enough unless the candidate is promoted or risky.
@@ -119,6 +122,10 @@ Reassess before the next candidate when any is true:
 
 After reassessment, either continue with a narrower hypothesis and kill criterion, or mark the hill `CLOSED` and spend the next candidate off-hill.
 
+For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep and preserve the map in `work/breakthroughs.md`. Read "Breakthrough Mining" in `references/evidence-loop.md`.
+
+Exception: when a `best-of-N` scoreboard or contract-allowed draw distribution can vary the recorded result, a *budgeted* distribution sweep (written plan + falsifiable stop, see `references/evidence-loop.md`) is sanctioned rather than churn. It either banks a best-of-N gain or supplies family-specific distribution evidence to close that draw family. It must self-terminate by its stop rule, not run open-ended.
+
 ## Escape
 
 After repeated ties, regressions, same-knob failures, or a lower-bound proof against the current family, run a local-optimum audit:
@@ -131,7 +138,11 @@ After repeated ties, regressions, same-knob failures, or a lower-bound proof aga
 
 After reassessment, mark exhausted hills `CLOSED` until a new premise appears. Spend the next candidate off-hill by default: representation, primitive, route/library/config, target split, or contract specialization.
 
+If the audit says the run is stuck, use the escape ladder in `references/resource-models.md`: recognize the stuck signal, choose an escape operator, run a bounded divergence burst across genuinely different hills, then commit a short budget to any hill with a real mechanism signal before abandoning it. Preserve basin memory, operator credit, and anti-revisit rules in the harness.
+
 Invert the primitive when compact work counts hide a target-specific bottleneck. Use negative audits to kill seductive shortcuts before implementing them.
+
+A `CLOSED` hill is a local verdict, not a global one: closing every known hill does not prove the target unreachable. When the search has exhausted self-generated ideas, intake an external mechanism (a competitor writeup, public source, or paper) and port it before concluding a floor. See "External Technique Intake" in `references/evidence-loop.md`.
 
 ## Integrity
 

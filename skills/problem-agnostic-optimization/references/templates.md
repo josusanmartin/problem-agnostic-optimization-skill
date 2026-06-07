@@ -89,6 +89,154 @@ Next off-hill probe:
 - Kill criterion:
 ```
 
+### Breakthrough Mining Table
+
+```markdown
+| row | parent -> candidate | score/resources | active floor | delta | mechanism | proof/invariant | search tool | validation | slack/dependency |
+|---:|---|---:|---|---:|---|---|---|---|---|
+| 001 | base -> cand |  |  |  |  |  |  |  |  |
+```
+
+### Phase-Owner / Co-Binder Table
+
+```markdown
+| phase/resource owner | height/cost | next floor | evidence | proposed stack |
+|---|---:|---:|---|---|
+|  |  |  |  |  |
+```
+
+### Screen Calibration Card
+
+```markdown
+## Screen: name
+
+- Predicts:
+- Known-clean cases reproduced:
+- Known-dirty cases rejected:
+- Coverage: cases/shapes/seeds/factors modeled
+- Stacked-knob calibration:
+- False-clean risk:
+- False-dirty risk:
+- Promotion use: advisory only
+- Calibration command/artifact:
+```
+
+### Validation Island Card
+
+```markdown
+## Island: candidate/selector
+
+- Contract-allowed reason:
+- Selector/seed/nonce/route:
+- Prior island invalidated by:
+- Search command/artifact:
+- Full validation command:
+- Full validation result:
+```
+
+### Negative Breakthrough Card
+
+```markdown
+## Negative Breakthrough: idea
+
+- Why it looked promising:
+- Measured blocker:
+- Resource trade:
+- Validation result:
+- Reopen condition:
+```
+
+### Escape Ladder
+
+```markdown
+## Escape Ladder
+
+- Current hill:
+- Stuck signal: promotion drought | same-family failures | model mismatch | low novelty | residual-only work | frontier mismatch | floor proof
+- Plateau evidence:
+- Closed or narrowed branch:
+- Divergence budget:
+- Budget owner: candidates | workers | submissions | wall time | spend
+- Controlled regression allowed: yes | no
+- Anti-revisit rule:
+- Aspiration rule:
+
+Probe packets:
+
+| probe | operator | hill id | feature cell | new hill | active floor/resource axis | cheapest falsifiable signal | kill criterion | result |
+|---|---|---|---|---|---|---|---|---|
+| E1 |  |  |  |  |  |  |  |  |
+| E2 |  |  |  |  |  |  |  |  |
+| E3 |  |  |  |  |  |  |  |  |
+
+Diversity map:
+
+| feature cell | best artifact | best score | operator | signal | status |
+|---|---|---:|---|---|---|
+|  |  |  |  |  |  |
+
+- Selected new hill:
+- Why the signal is real:
+- Operator credit update:
+- Next action:
+```
+
+### New-Hill Commitment
+
+```markdown
+## New-Hill Commitment
+
+- Source probe:
+- Parent:
+- New hill:
+- Escape operator:
+- Hill id:
+- Feature cell:
+- Mechanism signal:
+- Stepping-stone evidence:
+- Current loss or rough edge:
+- Commitment budget:
+- Follow-up 1:
+- Follow-up 2:
+- Follow-up 3:
+- Kill criterion:
+- Anti-revisit rule if closed:
+- Operator credit update:
+- Promotion gate:
+- Reopen condition after closure:
+```
+
+### Closed-Hill Memory
+
+```markdown
+## Closed Hill: hill-id
+
+- Feature cell:
+- Best artifact:
+- Best score:
+- Why closed:
+- Anti-revisit rule:
+- Aspiration rule:
+- Reopen condition:
+```
+
+### Escape Operator Credit
+
+```markdown
+| operator | attempts | positive signals | mixed signals | negative signals | last evidence | next allocation |
+|---|---:|---:|---:|---:|---|---|
+| perturb_reoptimize |  |  |  |  |  |  |
+| neighborhood_shift |  |  |  |  |  |  |
+| destroy_repair |  |  |  |  |  |  |
+| annealed_regression |  |  |  |  |  |  |
+| tabu_anti_revisit |  |  |  |  |  |  |
+| surrogate_uncertainty |  |  |  |  |  |  |
+| diversity_archive |  |  |  |  |  |  |
+| adaptive_operator |  |  |  |  |  |  |
+| external_intake |  |  |  |  |  |  |
+| negative_proof |  |  |  |  |  |  |
+```
+
 ## Extended Templates
 
 Use the per-case table when aggregate metrics hide important differences.
@@ -288,6 +436,24 @@ Use `work/candidates/_template.result.json` when present. Keep this artifact for
     "direction": null,
     "raw_result_path": null
   },
+  "escape": {
+    "status": "tracking",
+    "stuck_signal": null,
+    "escape_operator": null,
+    "hill_id": null,
+    "feature_cell": null,
+    "closed_hill": null,
+    "divergence_probe": null,
+    "new_hill": null,
+    "mechanism_signal": "",
+    "stepping_stone_signal": null,
+    "commitment_budget": null,
+    "controlled_regression_allowed": false,
+    "anti_revisit_rule": null,
+    "aspiration_rule": null,
+    "operator_credit_signal": null,
+    "kill_criterion": null
+  },
   "promotion_ladder": {
     "apply_or_build": "pending",
     "correctness": "pending",
@@ -466,6 +632,21 @@ Stagnation:
 ## Frozen Branches
 
 - 
+
+## Escape Ladder
+
+- Stuck signal:
+- Escape operator:
+- Divergence budget:
+- Divergence probes:
+- Basin memory:
+- Diversity map:
+- Operator credit:
+- New-hill commitment:
+- Controlled regression allowed:
+- Anti-revisit rule:
+- Aspiration rule:
+- Kill criterion:
 
 ## Escalation Rule
 
