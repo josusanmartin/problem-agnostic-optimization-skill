@@ -381,7 +381,7 @@ raw_result_path
 
 ### Progress TSV
 
-Use this for small/manual `work/progress.tsv` runs or as a derived export from `work/events.jsonl`. Progress charting is on by default for substantial optimization runs. Use `scripts/record_progress.py` when available, then regenerate `work/progress.svg` after appending rows unless `/goal` says `Progress chart: off`.
+Use this for small/manual `work/progress.tsv` runs or as a derived export from `work/events.jsonl`. Progress charting is on by default for substantial optimization runs. Use `scripts/record_progress.py` when available, then regenerate `work/progress.svg` and `work/dashboard.html` with `scripts/render_progress.py` unless `/goal` says `Progress chart: off`.
 
 Required columns: `timestamp`, `candidate`, an authoritative metric column such as `score` or `cycles`, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form.
 
@@ -500,8 +500,9 @@ Use `work/candidates/_template.result.json` when present. Keep this artifact for
 Generate this from `work/progress.tsv` for local, remote, or handoff review:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
-  -o work/dashboard.html \
+python skills/problem-agnostic-optimization/scripts/render_progress.py work/progress.tsv \
+  --chart-output work/progress.svg \
+  --dashboard-output work/dashboard.html \
   --direction lower
 ```
 

@@ -256,7 +256,17 @@ work/review.md      # short human review snapshot unless Progress chart: off
 work/state.json      # current best and latest usage snapshot
 ```
 
-Render the two-panel chart from `work/progress.tsv`:
+Regenerate both progress artifacts from `work/progress.tsv` in one step:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/render_progress.py work/progress.tsv \
+  --chart-output work/progress.svg \
+  --dashboard-output work/dashboard.html \
+  --ylabel "Authoritative metric" \
+  --direction lower
+```
+
+Use the separate chart renderer when you only need `work/progress.svg` or need a focused chart test:
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv \
@@ -275,7 +285,7 @@ Use `--direction higher` for scores where larger is better. The score panel alwa
 
 The rendered SVG and static dashboard footer show the full URL for the bundled `problem-agnostic-optimization` skill source.
 
-Render the static dashboard:
+Use the separate dashboard renderer when you only need `work/dashboard.html`:
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
@@ -293,7 +303,7 @@ python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/p
   --port 8765
 ```
 
-`progress_dashboard.py` passes `--target`, `--hide-before-candidate`, `--score-scale`, `--generated-at`, `--no-generated-at`, and `SOURCE_DATE_EPOCH` through to the embedded SVG renderer.
+`render_progress.py` and `progress_dashboard.py` pass `--target`, `--hide-before-candidate`, `--score-scale`, `--generated-at`, `--no-generated-at`, and `SOURCE_DATE_EPOCH` through to the SVG renderer.
 
 On a remote server, keep the server bound to `127.0.0.1` and open a tunnel from the local machine:
 
@@ -344,7 +354,7 @@ After every measured candidate:
 - Append `work/progress.tsv` with `record_progress.py` when available, using the authoritative metric result and token/time fields when available.
 - Append the raw or structured UTC usage snapshot to `work/log.md`.
 - Copy the latest usage snapshot to `work/state.json`.
-- Regenerate `work/progress.svg` and `work/dashboard.html` unless charting is disabled.
+- Regenerate `work/progress.svg` and `work/dashboard.html` with `render_progress.py` unless charting is disabled; if the wrapper is missing, run `progress_chart.py` and `progress_dashboard.py` separately.
 - Update `work/review.md` unless charting is disabled. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
 - Treat high token burn without authoritative improvement, rising bug/crash rate, or many same-family rejects as evidence for reassessment.
 

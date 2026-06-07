@@ -558,7 +558,7 @@ def placeholder_svg() -> str:
 <rect x="92" y="72" width="943" height="318" fill="#f9fafb" stroke="#e5e7eb"/>
 <rect x="92" y="475" width="943" height="165" fill="#fffbeb" stroke="#fde68a"/>
 <text x="560" y="170" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#17202a">Progress chart waiting for first measurement</text>
-<text x="560" y="205" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#697386">Append measured rows with scripts/record_progress.py when available.</text>
+<text x="560" y="205" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#697386">Append measured rows with scripts/record_progress.py, then refresh with scripts/render_progress.py.</text>
 <text x="560" y="555" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#92400e">Record explicit get_goal snapshots in work/log.md for token history.</text>
 </svg>
 """
@@ -572,7 +572,7 @@ def placeholder_dashboard() -> str:
 <main style="max-width:860px;margin:auto;background:#fff;border:1px solid #ded8cc;border-radius:8px;padding:28px">
 <h1>Optimization Dashboard</h1>
 <p>Waiting for the first measurement.</p>
-<p>Append one measured candidate row with <code>scripts/record_progress.py</code>, try to record a <code>get_goal</code> snapshot in <code>work/log.md</code>, then regenerate this dashboard.</p>
+<p>Append one measured candidate row with <code>scripts/record_progress.py</code>, try to record a <code>get_goal</code> snapshot in <code>work/log.md</code>, then refresh the chart and dashboard with <code>scripts/render_progress.py</code>.</p>
 </main>
 </body>
 </html>

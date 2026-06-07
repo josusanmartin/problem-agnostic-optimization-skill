@@ -217,6 +217,15 @@ python skills/problem-agnostic-optimization/scripts/record_progress.py \
 
 Add `--candidate-number 7` when the candidate name has unrelated digits and the TSV has a `candidate_number` column.
 
+Refresh both the SVG chart and static dashboard with one command:
+
+```bash
+python skills/problem-agnostic-optimization/scripts/render_progress.py work/progress.tsv \
+  --chart-output work/progress.svg \
+  --dashboard-output work/dashboard.html \
+  --direction lower
+```
+
 Use `work/log.md` for token/time snapshots. In Codex, always try to call `get_goal` after each measured candidate and paste or summarize the snapshot with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If an existing run lacks early token snapshots, record only the current cumulative value going forward and mark earlier token history as unknown; do not invent per-candidate token deltas.
 
 `work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read and charted as labeled compatibility data only; new token history should come from explicit `get_goal` snapshots.
@@ -241,11 +250,12 @@ python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py
 This creates `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, `work/progress.tsv`, `work/progress.svg`, `work/dashboard.html`, `work/review.md`, `work/audit.md`, `work/checkpoints/progress.json`, `work/candidates/_template.result.json`, `work/schemas/candidate_result.schema.json`, `work/promotion_ladder.md`, and `work/verifier.md` before candidate work. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
 
 ```bash
+python skills/problem-agnostic-optimization/scripts/render_progress.py work/progress.tsv --direction lower
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv -o work/progress.svg --direction lower --target 1000 --ylabel cycles
 ```
 
-The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis, with `--score-scale auto|log|linear`. The token panel uses elapsed wall time from recorded snapshots. For exact golden tests or stable artifacts, set `--generated-at <iso timestamp>`, `--no-generated-at`, or `SOURCE_DATE_EPOCH`.
+`render_progress.py` refreshes both `work/progress.svg` and `work/dashboard.html`. The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis, with `--score-scale auto|log|linear`. The token panel uses elapsed wall time from recorded snapshots. For exact golden tests or stable artifacts, set `--generated-at <iso timestamp>`, `--no-generated-at`, or `SOURCE_DATE_EPOCH`.
 
 If a run has `Progress chart: on` but no progress artifacts, ask the optimizer to backfill `work/progress.tsv` from `work/log.md` and any saved result files, then continue appending `work/progress.tsv` after every measured candidate and explicit `get_goal` snapshots to `work/log.md`. Missing chart files should be treated as a harness bug, not as normal behavior.
 
@@ -347,6 +357,7 @@ test -f "$CODEX_HOME/skills/problem-agnostic-optimization/agents/openai.yaml"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/progress_chart.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/progress_dashboard.py"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/render_progress.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/record_event.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/record_progress.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/references/auditor.md"
@@ -363,6 +374,7 @@ $CODEX_HOME/skills/problem-agnostic-optimization/
     init_harness.py
     progress_chart.py
     progress_dashboard.py
+    render_progress.py
     record_event.py
     record_progress.py
   references/
