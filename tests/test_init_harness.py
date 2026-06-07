@@ -57,6 +57,7 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     state = json.loads((work / "state.json").read_text(encoding="utf-8"))
     assert state["schema_version"] == 2
     assert state["score_unit"] == "cycles"
+    assert state["harness_mode"] == "standard"
     assert state["candidate_artifacts"]["required_for_promotions"] is True
     assert state["breakthrough_mining"]["path"].endswith("work/breakthroughs.md")
     assert state["breakthrough_mining"]["enabled"] is True
@@ -79,6 +80,21 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["execution_boundary"]["draft_patch_only"] is False
     assert state["checkpoint"]["path"].endswith("work/checkpoints/progress.json")
     assert state["progress"]["chart_enabled"] is True
+    assert state["progress"]["critical_path_required"] == [
+        "correctness",
+        "authoritative_metric",
+        "progress_row",
+        "raw_evidence_path",
+        "decision",
+    ]
+    assert state["progress"]["sidecar"]["enabled"] is True
+    assert state["progress"]["sidecar"]["policy"] == "defer_advisory_artifacts_without_blocking_candidate_iteration"
+    assert "render_progress.py" in state["progress"]["sidecar"]["refresh_command"]
+    assert state["progress"]["sidecar"]["must_not_mutate"] == [
+        str(work / "best.md"),
+        "canonical promotion state",
+        "final submission state",
+    ]
     assert state["progress"]["events"].endswith("work/events.jsonl")
     assert state["progress"]["usage_source"] == "explicit get_goal snapshots in work/log.md"
     assert "latest_usage_snapshot" in state["progress"]
@@ -89,7 +105,9 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     )
     assert "sub 1000 cycles" in (work / "best.md").read_text(encoding="utf-8")
     assert "Multi-agent mode: off" in (work / "best.md").read_text(encoding="utf-8")
+    assert "Harness mode: standard" in (work / "best.md").read_text(encoding="utf-8")
     assert "Draft patch only: no" in (work / "best.md").read_text(encoding="utf-8")
+    assert "- harness mode: standard" in (work / "log.md").read_text(encoding="utf-8")
     assert "Token source:" in (work / "review.md").read_text(encoding="utf-8")
     assert "Fresh Verifier Gate" in (work / "verifier.md").read_text(encoding="utf-8")
     assert "Promotion Ladder" in (work / "promotion_ladder.md").read_text(encoding="utf-8")
@@ -102,6 +120,8 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert "Escape Ladder" in plan
     assert "Escape operator:" in plan
     assert "Basin memory:" in plan
+    assert "Critical Path" in plan
+    assert "Sidecar Queue" in plan
     checkpoint = json.loads((work / "checkpoints" / "progress.json").read_text(encoding="utf-8"))
     assert checkpoint["current_phase"] == "harness_boot"
     assert checkpoint["phase_status"]["fresh_verifier"] == "pending"
@@ -149,6 +169,37 @@ def test_init_harness_can_disable_chart_placeholders(tmp_path: Path) -> None:
     assert not (work / "dashboard.html").exists()
     state = json.loads((work / "state.json").read_text(encoding="utf-8"))
     assert state["progress"]["chart_enabled"] is False
+    assert state["progress"]["sidecar"]["enabled"] is False
+
+
+def test_init_harness_can_use_minimal_harness_mode(tmp_path: Path) -> None:
+    work = tmp_path / "work"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(INIT_SCRIPT),
+            "--work-dir",
+            str(work),
+            "--harness-mode",
+            "minimal",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    state = json.loads((work / "state.json").read_text(encoding="utf-8"))
+    assert state["harness_mode"] == "minimal"
+    assert state["progress"]["critical_path_required"] == [
+        "correctness",
+        "authoritative_metric",
+        "progress_row",
+        "raw_evidence_path",
+        "decision",
+    ]
+    assert state["progress"]["sidecar"]["enabled"] is False
+    assert "Harness mode: minimal" in (work / "best.md").read_text(encoding="utf-8")
 
 
 def test_init_harness_can_enable_multi_agent_mode(tmp_path: Path) -> None:

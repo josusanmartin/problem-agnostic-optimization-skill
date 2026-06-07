@@ -621,6 +621,7 @@ Complexity:
 Target:
 Current best:
 Stagnation:
+Harness mode: minimal | standard | audit
 
 ## Active Branches
 
@@ -629,6 +630,21 @@ Stagnation:
   - next probe:
   - expected signal:
   - budget:
+
+## Critical Path
+
+- correctness:
+- authoritative metric:
+- progress row:
+- raw evidence path:
+- decision:
+
+## Sidecar Queue
+
+- deferred artifacts:
+- refresh command:
+- next checkpoint:
+- must not mutate:
 
 ## Frozen Branches
 

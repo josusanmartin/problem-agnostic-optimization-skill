@@ -28,6 +28,7 @@ def touch(path: Path) -> bool:
 
 def state(args: argparse.Namespace) -> dict[str, object]:
     chart_enabled = args.progress_chart == "on"
+    sidecar_enabled = chart_enabled and args.harness_mode != "minimal"
     multi_agent_enabled = args.multi_agent_mode == "on"
     return {
         "schema_version": 2,
@@ -41,6 +42,7 @@ def state(args: argparse.Namespace) -> dict[str, object]:
         "best_benchmark_candidate": None,
         "best_benchmark_score": None,
         "fixed_budget": args.budget,
+        "harness_mode": args.harness_mode,
         "seed_protocol": {},
         "scenario_sets": {},
         "statistical_gate": None,
@@ -140,6 +142,33 @@ def state(args: argparse.Namespace) -> dict[str, object]:
         "progress": {
             "logging_enabled": True,
             "chart_enabled": chart_enabled,
+            "critical_path_required": [
+                "correctness",
+                "authoritative_metric",
+                "progress_row",
+                "raw_evidence_path",
+                "decision",
+            ],
+            "sidecar": {
+                "enabled": sidecar_enabled,
+                "policy": "defer_advisory_artifacts_without_blocking_candidate_iteration",
+                "refresh_command": (
+                    "python skills/problem-agnostic-optimization/scripts/render_progress.py "
+                    "work/progress.tsv --chart-output work/progress.svg "
+                    "--dashboard-output work/dashboard.html"
+                ),
+                "safe_parallel_outputs": [
+                    str(args.work_dir / "progress.svg"),
+                    str(args.work_dir / "dashboard.html"),
+                    str(args.work_dir / "review.md"),
+                ],
+                "must_not_mutate": [
+                    str(args.work_dir / "best.md"),
+                    "canonical promotion state",
+                    "final submission state",
+                ],
+                "last_refreshed_at": None,
+            },
             "events": str(args.work_dir / "events.jsonl"),
             "dashboard": str(args.work_dir / "dashboard.html"),
             "table": str(args.work_dir / "progress.tsv"),
@@ -390,6 +419,7 @@ Baseline: {args.baseline}
 Budget / stopping rule: {args.budget}
 Validation: {args.validation}
 Progress chart: {args.progress_chart}
+Harness mode: {args.harness_mode}
 Fresh-run isolation: {args.fresh_run_isolation}
 Multi-agent mode: {args.multi_agent_mode}
 
@@ -421,6 +451,7 @@ def log_md(args: argparse.Namespace) -> str:
 - baseline: {args.baseline}
 - validation: {args.validation}
 - progress chart: {args.progress_chart}
+- harness mode: {args.harness_mode}
 - multi-agent mode: {args.multi_agent_mode}
 - decision: BOOTSTRAP
 - learning: harness initialized before candidate work
@@ -433,10 +464,24 @@ def plan_md(args: argparse.Namespace) -> str:
 - Target: {args.objective}
 - Current best: {args.baseline}
 - Stagnation count: 0
+- Harness mode: {args.harness_mode}
 - Multi-agent mode: {args.multi_agent_mode}
 - Next candidate: reproduce or establish baseline before optimization
 
 ## Active Branches
+
+## Critical Path
+
+- correctness:
+- authoritative metric:
+- progress row:
+- raw evidence path:
+- decision:
+
+## Sidecar Queue
+
+Safe to defer: progress.svg, dashboard.html, review.md, rejected-candidate JSON cleanup, breakthrough summaries.
+Do not mutate from sidecar: best.md, canonical promotion state, final submission state.
 
 ## Worker Queue
 
@@ -588,6 +633,7 @@ def main() -> int:
     parser.add_argument("--budget", default="not recorded")
     parser.add_argument("--validation", default="not recorded")
     parser.add_argument("--mode", default="clean leaderboard")
+    parser.add_argument("--harness-mode", choices=("minimal", "standard", "audit"), default="standard")
     parser.add_argument("--progress-chart", choices=("on", "off"), default="on")
     parser.add_argument("--fresh-run-isolation", choices=("on", "off"), default="on")
     parser.add_argument("--multi-agent-mode", choices=("on", "off"), default="off")

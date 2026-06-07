@@ -226,6 +226,8 @@ python skills/problem-agnostic-optimization/scripts/render_progress.py work/prog
   --direction lower
 ```
 
+For fast iteration, keep the critical path small: correctness, authoritative metric, one progress row, raw evidence path, and decision. Run chart/dashboard/review refresh as sidecar work when possible. Sidecar work may refresh derived artifacts in parallel, but it must not mutate `work/best.md`, canonical promotion state, or final submission state.
+
 Use `work/log.md` for token/time snapshots. In Codex, always try to call `get_goal` after each measured candidate and paste or summarize the snapshot with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If an existing run lacks early token snapshots, record only the current cumulative value going forward and mark earlier token history as unknown; do not invent per-candidate token deltas.
 
 `work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read and charted as labeled compatibility data only; new token history should come from explicit `get_goal` snapshots.
@@ -244,10 +246,11 @@ python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py
   --baseline "<baseline or unknown, reproduce first>" \
   --budget "<budget / stopping rule>" \
   --validation "<validation command or protocol>" \
+  --harness-mode standard \
   --multi-agent-mode off
 ```
 
-This creates `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, `work/progress.tsv`, `work/progress.svg`, `work/dashboard.html`, `work/review.md`, `work/audit.md`, `work/checkpoints/progress.json`, `work/candidates/_template.result.json`, `work/schemas/candidate_result.schema.json`, `work/promotion_ladder.md`, and `work/verifier.md` before candidate work. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
+This creates `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, `work/progress.tsv`, `work/progress.svg`, `work/dashboard.html`, `work/review.md`, `work/audit.md`, `work/checkpoints/progress.json`, `work/candidates/_template.result.json`, `work/schemas/candidate_result.schema.json`, `work/promotion_ladder.md`, and `work/verifier.md` before candidate work. `--harness-mode minimal|standard|audit` controls how much advisory sidecar work is expected. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/render_progress.py work/progress.tsv --direction lower

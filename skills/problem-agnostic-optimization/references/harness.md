@@ -256,6 +256,19 @@ work/review.md      # short human review snapshot unless Progress chart: off
 work/state.json      # current best and latest usage snapshot
 ```
 
+Keep progress work split into two lanes:
+
+- Critical path: correctness verdict, authoritative metric, one `work/progress.tsv` row, raw evidence path, usage snapshot when available, and decision.
+- Sidecar path: `work/progress.svg`, `work/dashboard.html`, `work/review.md`, rejected-candidate JSON cleanup, breakthrough summaries, and other derived/advisory artifacts.
+
+Do not block candidate iteration on sidecar refresh when the critical path is complete. Sidecar work may run after the next candidate starts, every `N` candidates, at promotion, at reassessment, or before handoff. Promotion remains serial: never update `work/best.md`, canonical promotion state, or final submission state from a background sidecar.
+
+Harness modes:
+
+- `minimal`: critical-path ledger only unless the user asks for review artifacts.
+- `standard`: critical path after each measured candidate, sidecar refresh at natural checkpoints or when cheap.
+- `audit`: full candidate JSON, verifier, dashboard, review, and breakthrough state before important decisions.
+
 Regenerate both progress artifacts from `work/progress.tsv` in one step:
 
 ```bash
@@ -354,8 +367,10 @@ After every measured candidate:
 - Append `work/progress.tsv` with `record_progress.py` when available, using the authoritative metric result and token/time fields when available.
 - Append the raw or structured UTC usage snapshot to `work/log.md`.
 - Copy the latest usage snapshot to `work/state.json`.
-- Regenerate `work/progress.svg` and `work/dashboard.html` with `render_progress.py` unless charting is disabled; if the wrapper is missing, run `progress_chart.py` and `progress_dashboard.py` separately.
-- Update `work/review.md` unless charting is disabled. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
+- Save raw evidence paths and the decision before starting another candidate.
+- If the run is in `audit` mode, or this candidate is promoted, risky, surprising, or a reassessment trigger, refresh sidecar artifacts before the next important decision.
+- Otherwise, regenerate `work/progress.svg` and `work/dashboard.html` with `render_progress.py` as sidecar work unless charting is disabled; if the wrapper is missing, run `progress_chart.py` and `progress_dashboard.py` separately.
+- Update `work/review.md` at sidecar checkpoints. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
 - Treat high token burn without authoritative improvement, rising bug/crash rate, or many same-family rejects as evidence for reassessment.
 
 ## Edit Surface
@@ -569,6 +584,7 @@ Small machine-readable state:
   "best_benchmark_candidate": null,
   "best_benchmark_score": null,
   "fixed_budget": null,
+  "harness_mode": "standard",
   "seed_protocol": {},
   "scenario_sets": {},
   "statistical_gate": null,
@@ -623,6 +639,21 @@ Small machine-readable state:
   "progress": {
     "logging_enabled": true,
     "chart_enabled": true,
+    "critical_path_required": [
+      "correctness",
+      "authoritative_metric",
+      "progress_row",
+      "raw_evidence_path",
+      "decision"
+    ],
+    "sidecar": {
+      "enabled": true,
+      "policy": "defer_advisory_artifacts_without_blocking_candidate_iteration",
+      "refresh_command": "python skills/problem-agnostic-optimization/scripts/render_progress.py work/progress.tsv --chart-output work/progress.svg --dashboard-output work/dashboard.html",
+      "safe_parallel_outputs": ["work/progress.svg", "work/dashboard.html", "work/review.md"],
+      "must_not_mutate": ["work/best.md", "canonical promotion state", "final submission state"],
+      "last_refreshed_at": null
+    },
     "events": "work/events.jsonl",
     "dashboard": "work/dashboard.html",
     "table": "work/progress.tsv",
