@@ -193,7 +193,7 @@ Use workers to diversify search allocation, not to multiply the same local tweak
 
 ## Progress Monitoring
 
-For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/optimization_harness/progress.tsv`, `work/optimization_harness/log.md`, `work/optimization_harness/state.json`, `work/optimization_harness/checkpoints/progress.json`, and `work/optimization_harness/candidates/_template.result.json` before the first candidate, append one score row after every measured candidate, save a typed candidate result JSON, and regenerate `work/optimization_harness/progress.svg`, `work/optimization_harness/dashboard.html`, and `work/optimization_harness/review.md` after each row. Problem-local scratch files may still live elsewhere under `work/`; harness-created files should stay under the isolated harness directory unless `--work-dir` explicitly selects another dedicated path.
+For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/optimization_harness/progress.tsv`, `work/optimization_harness/log.md`, `work/optimization_harness/state.json`, `work/optimization_harness/checkpoints/progress.json`, and `work/optimization_harness/candidates/_template.result.json` before the first candidate. During active search, append one score row after every measured candidate, record the decision and next direction, and keep moving. Typed candidate result JSON is required for promotions, risky/surprising candidates, audit mode, handoff, or search-model-changing results, not for ordinary fast-mode rejects. Regenerate `work/optimization_harness/progress.svg`, `work/optimization_harness/dashboard.html`, and `work/optimization_harness/review.md` at sidecar checkpoints rather than after every row. Problem-local scratch files may still live elsewhere under `work/`; harness-created files should stay under the isolated harness directory unless `--work-dir` explicitly selects another dedicated path.
 
 `work/optimization_harness/progress.svg` is a two-panel SVG dashboard:
 
@@ -217,7 +217,7 @@ python skills/problem-agnostic-optimization/scripts/record_progress.py \
 
 Add `--candidate-number 7` when the candidate name has unrelated digits and the TSV has a `candidate_number` column.
 
-Refresh both the SVG chart and static dashboard with one command:
+Refresh both the SVG chart and static dashboard with one checkpoint command:
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv \
@@ -226,9 +226,9 @@ python skills/problem-agnostic-optimization/scripts/render_progress.py work/opti
   --direction lower
 ```
 
-For fast iteration, keep the critical path small: correctness, authoritative metric, one progress row, raw evidence path, and decision. Run chart/dashboard/review refresh as sidecar work when possible. Sidecar work may refresh derived artifacts in parallel, but it must not mutate `work/optimization_harness/best.md`, canonical promotion state, or final submission state.
+For fast iteration, keep the critical path small: authoritative result or blocker, one progress row, decision, and next direction. Token snapshots, raw evidence paths, and compact log notes are best-effort. Chart/dashboard/review refresh, rejected-candidate JSON, promotion-ladder details, verifier details, and breakthrough summaries are checkpoint/audit work. In a single-agent run, sidecar work is deferred; in a multi-agent run, an explicit sidecar or auditor session may refresh derived artifacts. Sidecar work must not mutate `work/optimization_harness/best.md`, canonical promotion state, or final submission state.
 
-Use `work/optimization_harness/log.md` for token/time snapshots. In Codex, always try to call `get_goal` after each measured candidate and paste or summarize the snapshot with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/optimization_harness/state.json` under `progress.latest_usage_snapshot`. If an existing run lacks early token snapshots, record only the current cumulative value going forward and mark earlier token history as unknown; do not invent per-candidate token deltas.
+Use `work/optimization_harness/log.md` for token/time snapshots. In Codex, call `get_goal` after a measured candidate only when it is immediately available and does not slow the loop, then paste or summarize the snapshot with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/optimization_harness/state.json` under `progress.latest_usage_snapshot`. If an existing run lacks early token snapshots, record only the current cumulative value going forward and mark earlier token history as unknown; do not invent per-candidate token deltas.
 
 `work/optimization_harness/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/optimization_harness/progress.tsv` for score rows and `work/optimization_harness/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read and charted as labeled compatibility data only; new token history should come from explicit `get_goal` snapshots.
 
@@ -246,11 +246,11 @@ python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py
   --baseline "<baseline or unknown, reproduce first>" \
   --budget "<budget / stopping rule>" \
   --validation "<validation command or protocol>" \
-  --harness-mode standard \
+  --harness-mode fast \
   --multi-agent-mode off
 ```
 
-This creates `work/optimization_harness/best.md`, `work/optimization_harness/log.md`, `work/optimization_harness/plan.md`, `work/optimization_harness/state.json`, `work/optimization_harness/events.jsonl`, `work/optimization_harness/progress.tsv`, `work/optimization_harness/progress.svg`, `work/optimization_harness/dashboard.html`, `work/optimization_harness/review.md`, `work/optimization_harness/audit.md`, `work/optimization_harness/checkpoints/progress.json`, `work/optimization_harness/candidates/_template.result.json`, `work/optimization_harness/schemas/candidate_result.schema.json`, `work/optimization_harness/promotion_ladder.md`, and `work/optimization_harness/verifier.md` before candidate work. `--harness-mode minimal|standard|audit` controls how much advisory sidecar work is expected. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
+This creates `work/optimization_harness/best.md`, `work/optimization_harness/log.md`, `work/optimization_harness/plan.md`, `work/optimization_harness/state.json`, `work/optimization_harness/events.jsonl`, `work/optimization_harness/progress.tsv`, `work/optimization_harness/progress.svg`, `work/optimization_harness/dashboard.html`, `work/optimization_harness/review.md`, `work/optimization_harness/audit.md`, `work/optimization_harness/checkpoints/progress.json`, `work/optimization_harness/candidates/_template.result.json`, `work/optimization_harness/schemas/candidate_result.schema.json`, `work/optimization_harness/promotion_ladder.md`, and `work/optimization_harness/verifier.md` before candidate work. `--harness-mode fast|standard|audit` controls how much advisory sidecar work is expected; `minimal` is accepted as an alias for `fast`. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv --direction lower
@@ -258,9 +258,9 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/optim
 python skills/problem-agnostic-optimization/scripts/progress_chart.py work/optimization_harness/progress.tsv -o work/optimization_harness/progress.svg --direction lower --target 1000 --ylabel cycles
 ```
 
-`render_progress.py` refreshes both `work/optimization_harness/progress.svg` and `work/optimization_harness/dashboard.html`. The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis, with `--score-scale auto|log|linear`. The token panel uses elapsed wall time from recorded snapshots. For exact golden tests or stable artifacts, set `--generated-at <iso timestamp>`, `--no-generated-at`, or `SOURCE_DATE_EPOCH`.
+`render_progress.py` refreshes both `work/optimization_harness/progress.svg` and `work/optimization_harness/dashboard.html` at checkpoints. Do not run it after every fast-mode candidate. The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis, with `--score-scale auto|log|linear`. The token panel uses elapsed wall time from recorded snapshots. For exact golden tests or stable artifacts, set `--generated-at <iso timestamp>`, `--no-generated-at`, or `SOURCE_DATE_EPOCH`.
 
-If a run has `Progress chart: on` but no progress artifacts, ask the optimizer to backfill `work/optimization_harness/progress.tsv` from `work/optimization_harness/log.md` and any saved result files, then continue appending `work/optimization_harness/progress.tsv` after every measured candidate and explicit `get_goal` snapshots to `work/optimization_harness/log.md`. Missing chart files should be treated as a harness bug, not as normal behavior.
+If a run has `Progress chart: on` but no progress artifacts, ask the optimizer to backfill `work/optimization_harness/progress.tsv` from `work/optimization_harness/log.md` and any saved result files, then continue appending `work/optimization_harness/progress.tsv` after every measured candidate. Missing chart files at checkpoint/handoff should be treated as a harness bug, not as normal fast-mode behavior.
 
 ## Progress Dashboard
 

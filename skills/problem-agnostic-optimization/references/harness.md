@@ -105,7 +105,7 @@ Adapt names to the repository. The important part is that all harness-created fi
 
 ## Typed Candidate Artifacts
 
-For substantial or high-risk runs, every measured candidate should have a normalized JSON artifact under `<harness>/candidates/`, even when the candidate is rejected. Use `<harness>/candidates/_template.result.json` when the initializer created it.
+Candidate JSON is required before stable promotion, for risky or surprising candidates, audit mode, handoff, or when the candidate changes the search model. For ordinary rejected candidates in `fast` mode, a progress row plus one-line learning is enough. For audit or high-risk runs, every measured candidate should have a normalized JSON artifact under `<harness>/candidates/`, even when the candidate is rejected. Use `<harness>/candidates/_template.result.json` when the initializer created it.
 
 Recommended normalized shape:
 
@@ -250,7 +250,7 @@ For security-sensitive, production-sensitive, or user-requested review-first wor
 
 ## Progress Monitor
 
-For substantial optimization runs, maintain a live progress surface by default. The score ledger is `<harness>/progress.tsv`; token history comes from explicit `get_goal` snapshots in `<harness>/log.md`, with the latest snapshot copied into `<harness>/state.json`.
+For substantial optimization runs, maintain a live progress surface by default. The score ledger is `<harness>/progress.tsv`; token history comes from explicit, best-effort `get_goal` snapshots in `<harness>/log.md`, with the latest snapshot copied into `<harness>/state.json` when available.
 
 ```text
 <harness>/log.md          # human log plus explicit get_goal token snapshots
@@ -261,20 +261,56 @@ For substantial optimization runs, maintain a live progress surface by default. 
 <harness>/state.json      # current best and latest usage snapshot
 ```
 
-Keep progress work split into two lanes:
+During active search, candidate throughput is part of the optimization objective. Keep progress work split into three lanes:
 
-- Critical path: correctness verdict, authoritative metric, one `<harness>/progress.tsv` row, raw evidence path, usage snapshot when available, and decision.
-- Sidecar path: `<harness>/progress.svg`, `<harness>/dashboard.html`, `<harness>/review.md`, rejected-candidate JSON cleanup, breakthrough summaries, and other derived/advisory artifacts.
+- Critical path: authoritative result or blocker, one `<harness>/progress.tsv` row, decision, and next direction.
+- Best-effort path: usage snapshot, raw evidence path, and compact log note. Leave these blank when unavailable.
+- Checkpoint/audit path: `<harness>/progress.svg`, `<harness>/dashboard.html`, `<harness>/review.md`, candidate JSON for rejected candidates, verifier details, promotion-ladder details, breakthrough summaries, and other derived/advisory artifacts.
 
-Do not block candidate iteration on sidecar refresh when the critical path is complete. Sidecar work may run after the next candidate starts, every `N` candidates, at promotion, at reassessment, or before handoff. Promotion remains serial: never update `<harness>/best.md`, canonical promotion state, or final submission state from a background sidecar.
+Do not block candidate iteration on rich logging, dashboard refresh, review text, rejected-candidate dossiers, breakthrough summaries, token accounting, or artifact cleanup. Sidecar work may run at promotion, reassessment, handoff, user request, every `N` candidates, or idle time. Promotion remains serial: never update `<harness>/best.md`, canonical promotion state, or final submission state from sidecar work.
+
+In a single-agent run, sidecar work is deferred, not backgrounded. In a multi-agent run, an explicit sidecar or auditor session may refresh derived artifacts. Sidecar work must never mutate `<harness>/best.md`, canonical promotion state, or final submission state.
 
 Harness modes:
 
-- `minimal`: critical-path ledger only unless the user asks for review artifacts.
-- `standard`: critical path after each measured candidate, sidecar refresh at natural checkpoints or when cheap.
+- `fast`: default for active search. Per candidate: result or blocker, progress row, decision, and next direction. Everything else is deferred.
+- `minimal`: accepted as an alias for `fast`.
+- `standard`: fast path after each measured candidate, sidecar refresh at promotions, reassessments, handoff, user request, idle time, or every N candidates.
 - `audit`: full candidate JSON, verifier, dashboard, review, and breakthrough state before important decisions.
 
-Regenerate both progress artifacts from `<harness>/progress.tsv` in one step:
+## Throughput Guard
+
+If harness work starts reducing candidate velocity, degrade logging before slowing search. Switch to `fast` mode when any is true:
+
+- Sidecar work takes more than 10-20% of active run time.
+- Candidate or submission rate is below the needed pace.
+- The next candidate is known and logging is the only remaining work.
+- Local screening is non-predictive and authoritative evaluations are the real search channel.
+
+In `fast` mode, leave token fields, raw paths, and rich artifacts blank when unavailable. Do not wait for them. Restore `standard` or `audit` mode at promotion, reassessment, handoff, user request, or when the sidecar/auditor catches up.
+
+## Sidecar Refresh
+
+Do not run `render_progress.py` after every candidate in `fast` mode. Run it at checkpoints.
+
+Concrete sidecar triggers:
+
+- promotion
+- reassessment
+- handoff
+- user request
+- every 10 candidates, when cheap
+- idle time only
+
+Forbidden on the fast path:
+
+- dashboard refresh
+- review refresh
+- candidate JSON for ordinary rejects
+- breakthrough summary
+- waiting for token accounting
+
+Regenerate both progress artifacts from `<harness>/progress.tsv` in one checkpoint step:
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv \
@@ -356,7 +392,7 @@ timestamp	candidate	cycles	decision	tokens_total	tokens_delta	wall_seconds	label
 2026-06-01T00:18:00Z	2	2226	promote	4500	1400	1080	dependency-list scheduled vector kernel
 ```
 
-Token snapshots must be explicit. In Codex, always try to call `get_goal` after each measured candidate and append the raw or structured snapshot to `<harness>/log.md` with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `<harness>/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, show it as unknown; do not interpolate or invent per-candidate token usage.
+Token snapshots must be explicit and best-effort. In Codex, capture `get_goal` after each measured candidate only when it is immediately available and does not slow the loop. Append the raw or structured snapshot to `<harness>/log.md` with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `<harness>/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, show it as unknown; do not interpolate or invent per-candidate token usage.
 
 `<harness>/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `<harness>/progress.tsv` for score rows and `<harness>/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read for compatibility only; they are lower-confidence than explicit `get_goal` snapshots, should be labeled as legacy when charted, and should not be used as new-run doctrine.
 
@@ -368,14 +404,12 @@ To disable chart rendering, record `Progress chart: off` in the `/goal` contract
 
 After every measured candidate:
 
-- Always try to capture current token/time usage with `get_goal`.
-- Append `<harness>/progress.tsv` with `record_progress.py` when available, using the authoritative metric result and token/time fields when available.
-- Append the raw or structured UTC usage snapshot to `<harness>/log.md`.
-- Copy the latest usage snapshot to `<harness>/state.json`.
-- Save raw evidence paths and the decision before starting another candidate.
+- Record the authoritative result or blocker.
+- Append `<harness>/progress.tsv` with `record_progress.py` when available.
+- Record decision and next direction.
+- Best-effort: append a raw or structured UTC usage snapshot to `<harness>/log.md`, copy it to `<harness>/state.json`, and save raw evidence paths when already available.
 - If the run is in `audit` mode, or this candidate is promoted, risky, surprising, or a reassessment trigger, refresh sidecar artifacts before the next important decision.
-- Otherwise, regenerate `<harness>/progress.svg` and `<harness>/dashboard.html` with `render_progress.py` as sidecar work unless charting is disabled; if the wrapper is missing, run `progress_chart.py` and `progress_dashboard.py` separately.
-- Update `<harness>/review.md` at sidecar checkpoints. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
+- Otherwise, do not run `render_progress.py`; defer `<harness>/progress.svg`, `<harness>/dashboard.html`, and `<harness>/review.md` until the next checkpoint.
 - Treat high token burn without authoritative improvement, rising bug/crash rate, or many same-family rejects as evidence for reassessment.
 
 ## Edit Surface
@@ -589,7 +623,8 @@ Small machine-readable state:
   "best_benchmark_candidate": null,
   "best_benchmark_score": null,
   "fixed_budget": null,
-  "harness_mode": "standard",
+  "harness_mode": "fast",
+  "requested_harness_mode": "fast",
   "seed_protocol": {},
   "scenario_sets": {},
   "statistical_gate": null,
@@ -645,17 +680,63 @@ Small machine-readable state:
     "logging_enabled": true,
     "chart_enabled": true,
     "critical_path_required": [
-      "correctness",
-      "authoritative_metric",
+      "result_or_blocker",
       "progress_row",
-      "raw_evidence_path",
-      "decision"
+      "decision",
+      "next_direction"
     ],
-    "sidecar": {
+    "critical_path_best_effort": [
+      "usage_snapshot",
+      "raw_evidence_path",
+      "compact_log_note"
+    ],
+    "checkpoint_or_audit_only": [
+      "progress_svg",
+      "dashboard_html",
+      "review_md",
+      "candidate_json_for_rejected_candidates",
+      "verifier_details",
+      "promotion_ladder_details",
+      "breakthrough_summaries"
+    ],
+    "throughput_guard": {
       "enabled": true,
-      "policy": "defer_advisory_artifacts_without_blocking_candidate_iteration",
+      "degrade_to": "fast",
+      "switch_when": [
+        "sidecar_work_exceeds_10_to_20_percent_of_active_run_time",
+        "candidate_or_submission_rate_below_needed_pace",
+        "next_candidate_known_and_logging_is_only_remaining_work",
+        "authoritative_evaluations_are_the_real_search_channel"
+      ],
+      "fast_mode_behavior": "leave_optional_fields_blank_rather_than_waiting",
+      "restore_standard_or_audit_at": [
+        "promotion",
+        "reassessment",
+        "handoff",
+        "user_request"
+      ]
+    },
+    "sidecar": {
+      "enabled": false,
+      "policy": "checkpoint_only",
+      "semantics": "deferred_in_single_agent_runs_explicit_sidecar_or_auditor_session_in_multi_agent_runs",
+      "refresh_triggers": {
+        "promotion": true,
+        "reassessment": true,
+        "handoff": true,
+        "user_request": true,
+        "every_n_candidates": 10,
+        "idle_only": true
+      },
+      "forbidden_on_fast_path": [
+        "dashboard_refresh",
+        "review_refresh",
+        "candidate_json_for_rejects",
+        "breakthrough_summary",
+        "token_accounting_wait"
+      ],
       "refresh_command": "python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv --chart-output work/optimization_harness/progress.svg --dashboard-output work/optimization_harness/dashboard.html",
-      "safe_parallel_outputs": ["work/optimization_harness/progress.svg", "work/optimization_harness/dashboard.html", "work/optimization_harness/review.md"],
+      "safe_sidecar_outputs": ["work/optimization_harness/progress.svg", "work/optimization_harness/dashboard.html", "work/optimization_harness/review.md"],
       "must_not_mutate": ["work/optimization_harness/best.md", "canonical promotion state", "final submission state"],
       "last_refreshed_at": null
     },
@@ -668,7 +749,7 @@ Small machine-readable state:
     "tokens_total": 0,
     "tokens_since_promotion": 0,
     "token_budget": null,
-    "usage_source": "explicit get_goal snapshots in work/optimization_harness/log.md",
+    "usage_source": "best-effort explicit get_goal snapshots in work/optimization_harness/log.md",
     "usage_gap": null,
     "latest_usage_snapshot": {
       "source": "get_goal",
@@ -948,23 +1029,22 @@ Before editing:
 - State expected signal.
 - State profiling basis and fallback if no useful profiler is available.
 - State validation and measurement command.
-- Create or plan the candidate JSON path under `<harness>/candidates/`.
+- Create or plan the candidate JSON path under `<harness>/candidates/` only when this is a promotion candidate, risky/surprising candidate, audit-mode candidate, handoff artifact, or search-model-changing candidate.
 
 After running:
 
-- Append `<harness>/log.md`.
-- Save or update the candidate JSON artifact under `<harness>/candidates/`.
-- Always try to capture current token/time usage with `get_goal`.
-- Append the measured candidate to `<harness>/progress.tsv` with `record_progress.py` if `progress.logging_enabled` is not `false` and the script is available, using token/time fields when available.
-- Append the UTC snapshot, wall time, `tokens_total`, and `tokens_delta` to `<harness>/log.md`, and copy the latest snapshot to `<harness>/state.json`.
-- Save raw and normalized outputs.
+- Record the authoritative result or blocker.
+- Append the measured candidate to `<harness>/progress.tsv` with `record_progress.py` if `progress.logging_enabled` is not `false` and the script is available.
+- Record decision and next direction.
+- Best-effort: append a compact `<harness>/log.md` note, capture `get_goal`, save raw paths, and copy the latest usage snapshot to `<harness>/state.json` only when those are immediately available.
+- Save or update the candidate JSON artifact under `<harness>/candidates/` when required by promotion, risk, surprise, audit mode, handoff, or search-model change.
 - Save profile/counter artifacts when available.
 - Update `<harness>/breakthroughs.md` when the result changes a tier, identifies a co-binder, calibrates a screen, uses a validation island, or rules out a tempting route.
 - Update `<harness>/plan.md` and `<harness>/breakthroughs.md` when a hill is closed, an escape burst starts, a feature-cell elite changes, an escape operator earns credit, or a divergence probe earns a new-hill commitment budget.
-- Update `<harness>/state.json`.
+- Update `<harness>/state.json` when the candidate changes state; do not block fast-path iteration on optional bookkeeping.
 - Update `<harness>/checkpoints/progress.json` with the current phase and terminal result when appropriate.
 - Run or record the fresh verifier gate before any stable promotion.
-- If `progress.chart_enabled` is not `false`, regenerate `<harness>/progress.svg`, regenerate `<harness>/dashboard.html`, and refresh `<harness>/review.md`.
+- If `progress.chart_enabled` is not `false`, regenerate `<harness>/progress.svg`, regenerate `<harness>/dashboard.html`, and refresh `<harness>/review.md` only at sidecar checkpoints, not after every fast-mode candidate.
 - Update `<harness>/best.md` only if promotion rules pass.
 - Update `<harness>/plan.md` with next branch status.
 

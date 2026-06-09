@@ -57,10 +57,13 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     state = json.loads((work / "state.json").read_text(encoding="utf-8"))
     assert state["schema_version"] == 2
     assert state["score_unit"] == "cycles"
-    assert state["harness_mode"] == "standard"
+    assert state["harness_mode"] == "fast"
+    assert state["requested_harness_mode"] == "fast"
     assert state["candidate_artifacts"]["directory"] == str(work / "candidates")
     assert state["candidate_artifacts"]["schema"] == str(work / "schemas" / "candidate_result.schema.json")
     assert state["candidate_artifacts"]["required_for_promotions"] is True
+    assert state["candidate_artifacts"]["required_for_rejects"] is False
+    assert state["candidate_artifacts"]["fast_mode_reject_policy"] == "progress_row_plus_one_line_learning_is_enough"
     assert state["breakthrough_mining"]["path"] == str(work / "breakthroughs.md")
     assert state["breakthrough_mining"]["enabled"] is True
     assert state["escape"]["status"] == "tracking"
@@ -83,15 +86,32 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["checkpoint"]["path"] == str(work / "checkpoints" / "progress.json")
     assert state["progress"]["chart_enabled"] is True
     assert state["progress"]["critical_path_required"] == [
-        "correctness",
-        "authoritative_metric",
+        "result_or_blocker",
         "progress_row",
-        "raw_evidence_path",
         "decision",
+        "next_direction",
     ]
-    assert state["progress"]["sidecar"]["enabled"] is True
-    assert state["progress"]["sidecar"]["policy"] == "defer_advisory_artifacts_without_blocking_candidate_iteration"
+    assert state["progress"]["critical_path_best_effort"] == [
+        "usage_snapshot",
+        "raw_evidence_path",
+        "compact_log_note",
+    ]
+    assert "candidate_json_for_rejected_candidates" in state["progress"]["checkpoint_or_audit_only"]
+    assert state["progress"]["throughput_guard"]["enabled"] is True
+    assert state["progress"]["throughput_guard"]["degrade_to"] == "fast"
+    assert "next_candidate_known_and_logging_is_only_remaining_work" in state["progress"]["throughput_guard"]["switch_when"]
+    assert state["progress"]["sidecar"]["enabled"] is False
+    assert state["progress"]["sidecar"]["policy"] == "checkpoint_only"
+    assert state["progress"]["sidecar"]["refresh_triggers"]["every_n_candidates"] == 10
+    assert state["progress"]["sidecar"]["refresh_triggers"]["idle_only"] is True
+    assert "token_accounting_wait" in state["progress"]["sidecar"]["forbidden_on_fast_path"]
+    assert state["progress"]["sidecar"]["semantics"].startswith("deferred_in_single_agent_runs")
     assert "render_progress.py" in state["progress"]["sidecar"]["refresh_command"]
+    assert state["progress"]["sidecar"]["safe_sidecar_outputs"] == [
+        str(work / "progress.svg"),
+        str(work / "dashboard.html"),
+        str(work / "review.md"),
+    ]
     assert state["progress"]["sidecar"]["must_not_mutate"] == [
         str(work / "best.md"),
         "canonical promotion state",
@@ -102,7 +122,7 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["progress"]["table"] == str(work / "progress.tsv")
     assert state["progress"]["chart"] == str(work / "progress.svg")
     assert state["progress"]["review"] == str(work / "review.md")
-    assert state["progress"]["usage_source"] == f"explicit get_goal snapshots in {work / 'log.md'}"
+    assert state["progress"]["usage_source"] == f"best-effort explicit get_goal snapshots in {work / 'log.md'}"
     assert "latest_usage_snapshot" in state["progress"]
     assert state["multi_agent"]["enabled"] is False
     assert state["multi_agent"]["mode"] == "off"
@@ -111,9 +131,9 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     )
     assert "sub 1000 cycles" in (work / "best.md").read_text(encoding="utf-8")
     assert "Multi-agent mode: off" in (work / "best.md").read_text(encoding="utf-8")
-    assert "Harness mode: standard" in (work / "best.md").read_text(encoding="utf-8")
+    assert "Harness mode: fast" in (work / "best.md").read_text(encoding="utf-8")
     assert "Draft patch only: no" in (work / "best.md").read_text(encoding="utf-8")
-    assert "- harness mode: standard" in (work / "log.md").read_text(encoding="utf-8")
+    assert "- harness mode: fast" in (work / "log.md").read_text(encoding="utf-8")
     assert "Token source:" in (work / "review.md").read_text(encoding="utf-8")
     assert "Fresh Verifier Gate" in (work / "verifier.md").read_text(encoding="utf-8")
     assert "Promotion Ladder" in (work / "promotion_ladder.md").read_text(encoding="utf-8")
@@ -127,7 +147,8 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert "Escape operator:" in plan
     assert "Basin memory:" in plan
     assert "Critical Path" in plan
-    assert "Sidecar Queue" in plan
+    assert "Best Effort" in plan
+    assert "Checkpoint Sidecar Queue" in plan
     checkpoint = json.loads((work / "checkpoints" / "progress.json").read_text(encoding="utf-8"))
     assert checkpoint["current_phase"] == "harness_boot"
     assert checkpoint["phase_status"]["fresh_verifier"] == "pending"
@@ -173,6 +194,7 @@ def test_init_harness_default_uses_isolated_harness_dir(tmp_path: Path) -> None:
     state = json.loads((harness / "state.json").read_text(encoding="utf-8"))
     assert state["progress"]["table"] == "work/optimization_harness/progress.tsv"
     assert state["progress"]["sidecar"]["must_not_mutate"][0] == "work/optimization_harness/best.md"
+    assert state["progress"]["sidecar"]["safe_sidecar_outputs"][0] == "work/optimization_harness/progress.svg"
 
 
 def test_init_harness_can_disable_chart_placeholders(tmp_path: Path) -> None:
@@ -203,7 +225,7 @@ def test_init_harness_can_disable_chart_placeholders(tmp_path: Path) -> None:
     assert state["progress"]["sidecar"]["enabled"] is False
 
 
-def test_init_harness_can_use_minimal_harness_mode(tmp_path: Path) -> None:
+def test_init_harness_accepts_minimal_alias_for_fast_mode(tmp_path: Path) -> None:
     work = tmp_path / "work" / "optimization_harness"
 
     subprocess.run(
@@ -221,16 +243,74 @@ def test_init_harness_can_use_minimal_harness_mode(tmp_path: Path) -> None:
     )
 
     state = json.loads((work / "state.json").read_text(encoding="utf-8"))
-    assert state["harness_mode"] == "minimal"
+    assert state["harness_mode"] == "fast"
+    assert state["requested_harness_mode"] == "minimal"
     assert state["progress"]["critical_path_required"] == [
-        "correctness",
-        "authoritative_metric",
+        "result_or_blocker",
         "progress_row",
-        "raw_evidence_path",
         "decision",
+        "next_direction",
     ]
     assert state["progress"]["sidecar"]["enabled"] is False
-    assert "Harness mode: minimal" in (work / "best.md").read_text(encoding="utf-8")
+    assert "Harness mode: fast (requested alias: minimal)" in (work / "best.md").read_text(encoding="utf-8")
+
+
+def test_init_harness_standard_mode_has_checkpoint_sidecar_triggers(tmp_path: Path) -> None:
+    work = tmp_path / "work" / "optimization_harness"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(INIT_SCRIPT),
+            "--work-dir",
+            str(work),
+            "--harness-mode",
+            "standard",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    state = json.loads((work / "state.json").read_text(encoding="utf-8"))
+    assert state["harness_mode"] == "standard"
+    assert state["progress"]["sidecar"]["enabled"] is True
+    assert state["progress"]["sidecar"]["policy"] == "checkpoint_only"
+    assert state["progress"]["sidecar"]["refresh_triggers"] == {
+        "promotion": True,
+        "reassessment": True,
+        "handoff": True,
+        "user_request": True,
+        "every_n_candidates": 10,
+        "idle_only": True,
+    }
+    assert "dashboard_refresh" in state["progress"]["sidecar"]["forbidden_on_fast_path"]
+    assert "usage_snapshot" in state["progress"]["critical_path_best_effort"]
+    assert "raw_evidence_path" not in state["progress"]["critical_path_required"]
+
+
+def test_init_harness_audit_mode_requires_full_reject_artifacts(tmp_path: Path) -> None:
+    work = tmp_path / "work" / "optimization_harness"
+
+    subprocess.run(
+        [
+            sys.executable,
+            str(INIT_SCRIPT),
+            "--work-dir",
+            str(work),
+            "--harness-mode",
+            "audit",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    state = json.loads((work / "state.json").read_text(encoding="utf-8"))
+    assert state["harness_mode"] == "audit"
+    assert state["candidate_artifacts"]["required_for_rejects"] is True
+    assert state["progress"]["sidecar"]["enabled"] is True
+    assert "verifier_details" in state["progress"]["checkpoint_or_audit_only"]
 
 
 def test_init_harness_can_enable_multi_agent_mode(tmp_path: Path) -> None:

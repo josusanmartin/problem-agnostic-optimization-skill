@@ -381,7 +381,7 @@ raw_result_path
 
 ### Progress TSV
 
-Use this for small/manual `<harness>/progress.tsv` runs or as a derived export from `<harness>/events.jsonl`. Progress charting is on by default for substantial optimization runs. Use `scripts/record_progress.py` when available, then regenerate `<harness>/progress.svg` and `<harness>/dashboard.html` with `scripts/render_progress.py` unless `/goal` says `Progress chart: off`.
+Use this for small/manual `<harness>/progress.tsv` runs or as a derived export from `<harness>/events.jsonl`. Progress charting is on by default for substantial optimization runs. Use `scripts/record_progress.py` when available. Regenerate `<harness>/progress.svg` and `<harness>/dashboard.html` with `scripts/render_progress.py` at sidecar checkpoints unless `/goal` says `Progress chart: off`.
 
 Required columns: `timestamp`, `candidate`, an authoritative metric column such as `score` or `cycles`, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form.
 
@@ -621,7 +621,7 @@ Complexity:
 Target:
 Current best:
 Stagnation:
-Harness mode: minimal | standard | audit
+Harness mode: fast | standard | audit
 
 ## Active Branches
 

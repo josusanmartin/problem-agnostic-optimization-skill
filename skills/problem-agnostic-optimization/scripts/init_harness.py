@@ -27,9 +27,14 @@ def touch(path: Path) -> bool:
     return not existed
 
 
+def harness_mode(args: argparse.Namespace) -> str:
+    return "fast" if args.harness_mode == "minimal" else args.harness_mode
+
+
 def state(args: argparse.Namespace) -> dict[str, object]:
     chart_enabled = args.progress_chart == "on"
-    sidecar_enabled = chart_enabled and args.harness_mode != "minimal"
+    mode = harness_mode(args)
+    sidecar_enabled = chart_enabled and mode in {"standard", "audit"}
     multi_agent_enabled = args.multi_agent_mode == "on"
     progress_path = args.work_dir / "progress.tsv"
     chart_path = args.work_dir / "progress.svg"
@@ -48,7 +53,8 @@ def state(args: argparse.Namespace) -> dict[str, object]:
         "best_benchmark_candidate": None,
         "best_benchmark_score": None,
         "fixed_budget": args.budget,
-        "harness_mode": args.harness_mode,
+        "harness_mode": mode,
+        "requested_harness_mode": args.harness_mode,
         "seed_protocol": {},
         "scenario_sets": {},
         "statistical_gate": None,
@@ -67,6 +73,8 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "directory": str(args.work_dir / "candidates"),
             "schema": str(args.work_dir / "schemas" / "candidate_result.schema.json"),
             "required_for_promotions": True,
+            "required_for_rejects": mode == "audit",
+            "fast_mode_reject_policy": "progress_row_plus_one_line_learning_is_enough",
         },
         "breakthrough_mining": {
             "enabled": True,
@@ -149,21 +157,67 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "logging_enabled": True,
             "chart_enabled": chart_enabled,
             "critical_path_required": [
-                "correctness",
-                "authoritative_metric",
+                "result_or_blocker",
                 "progress_row",
-                "raw_evidence_path",
                 "decision",
+                "next_direction",
             ],
+            "critical_path_best_effort": [
+                "usage_snapshot",
+                "raw_evidence_path",
+                "compact_log_note",
+            ],
+            "checkpoint_or_audit_only": [
+                "progress_svg",
+                "dashboard_html",
+                "review_md",
+                "candidate_json_for_rejected_candidates",
+                "verifier_details",
+                "promotion_ladder_details",
+                "breakthrough_summaries",
+            ],
+            "throughput_guard": {
+                "enabled": True,
+                "degrade_to": "fast",
+                "switch_when": [
+                    "sidecar_work_exceeds_10_to_20_percent_of_active_run_time",
+                    "candidate_or_submission_rate_below_needed_pace",
+                    "next_candidate_known_and_logging_is_only_remaining_work",
+                    "authoritative_evaluations_are_the_real_search_channel",
+                ],
+                "fast_mode_behavior": "leave_optional_fields_blank_rather_than_waiting",
+                "restore_standard_or_audit_at": [
+                    "promotion",
+                    "reassessment",
+                    "handoff",
+                    "user_request",
+                ],
+            },
             "sidecar": {
                 "enabled": sidecar_enabled,
-                "policy": "defer_advisory_artifacts_without_blocking_candidate_iteration",
+                "policy": "checkpoint_only",
+                "semantics": "deferred_in_single_agent_runs_explicit_sidecar_or_auditor_session_in_multi_agent_runs",
+                "refresh_triggers": {
+                    "promotion": True,
+                    "reassessment": True,
+                    "handoff": True,
+                    "user_request": True,
+                    "every_n_candidates": 10,
+                    "idle_only": True,
+                },
+                "forbidden_on_fast_path": [
+                    "dashboard_refresh",
+                    "review_refresh",
+                    "candidate_json_for_rejects",
+                    "breakthrough_summary",
+                    "token_accounting_wait",
+                ],
                 "refresh_command": (
                     "python skills/problem-agnostic-optimization/scripts/render_progress.py "
                     f"{shlex.quote(str(progress_path))} --chart-output {shlex.quote(str(chart_path))} "
                     f"--dashboard-output {shlex.quote(str(dashboard_path))}"
                 ),
-                "safe_parallel_outputs": [
+                "safe_sidecar_outputs": [
                     str(chart_path),
                     str(dashboard_path),
                     str(review_path),
@@ -184,7 +238,7 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "tokens_total": 0,
             "tokens_since_promotion": 0,
             "token_budget": None,
-            "usage_source": f"explicit get_goal snapshots in {args.work_dir / 'log.md'}",
+            "usage_source": f"best-effort explicit get_goal snapshots in {args.work_dir / 'log.md'}",
             "usage_gap": None,
             "latest_usage_snapshot": {
                 "source": "get_goal",
@@ -414,6 +468,8 @@ Advisory steps such as profiles, local screening, style, and implementation neat
 
 
 def best_md(args: argparse.Namespace) -> str:
+    mode_name = harness_mode(args)
+    alias = f" (requested alias: {args.harness_mode})" if args.harness_mode != mode_name else ""
     return f"""# Best Known State
 
 ## Objective
@@ -425,7 +481,7 @@ Baseline: {args.baseline}
 Budget / stopping rule: {args.budget}
 Validation: {args.validation}
 Progress chart: {args.progress_chart}
-Harness mode: {args.harness_mode}
+Harness mode: {mode_name}{alias}
 Fresh-run isolation: {args.fresh_run_isolation}
 Multi-agent mode: {args.multi_agent_mode}
 
@@ -448,6 +504,8 @@ Open directions:
 
 
 def log_md(args: argparse.Namespace) -> str:
+    mode_name = harness_mode(args)
+    alias = f" (requested alias: {args.harness_mode})" if args.harness_mode != mode_name else ""
     return f"""# Optimization Log
 
 ## {now()} :: harness_boot
@@ -457,7 +515,7 @@ def log_md(args: argparse.Namespace) -> str:
 - baseline: {args.baseline}
 - validation: {args.validation}
 - progress chart: {args.progress_chart}
-- harness mode: {args.harness_mode}
+- harness mode: {mode_name}{alias}
 - multi-agent mode: {args.multi_agent_mode}
 - decision: BOOTSTRAP
 - learning: harness initialized before candidate work
@@ -465,12 +523,14 @@ def log_md(args: argparse.Namespace) -> str:
 
 
 def plan_md(args: argparse.Namespace) -> str:
+    mode_name = harness_mode(args)
+    alias = f" (requested alias: {args.harness_mode})" if args.harness_mode != mode_name else ""
     return f"""# Optimization Plan
 
 - Target: {args.objective}
 - Current best: {args.baseline}
 - Stagnation count: 0
-- Harness mode: {args.harness_mode}
+- Harness mode: {mode_name}{alias}
 - Multi-agent mode: {args.multi_agent_mode}
 - Next candidate: reproduce or establish baseline before optimization
 
@@ -478,15 +538,21 @@ def plan_md(args: argparse.Namespace) -> str:
 
 ## Critical Path
 
-- correctness:
-- authoritative metric:
+- result or blocker:
 - progress row:
-- raw evidence path:
 - decision:
+- next direction:
 
-## Sidecar Queue
+## Best Effort
+
+- usage snapshot:
+- raw evidence path:
+- compact log note:
+
+## Checkpoint Sidecar Queue
 
 Safe to defer: progress.svg, dashboard.html, review.md, rejected-candidate JSON cleanup, breakthrough summaries.
+Do not run on fast path. Refresh only at promotion, reassessment, handoff, user request, every 10 candidates, or idle time.
 Do not mutate from sidecar: best.md, canonical promotion state, final submission state.
 
 ## Worker Queue
@@ -520,7 +586,7 @@ def review_md(args: argparse.Namespace) -> str:
 - Last promotion:
 - Candidates since promotion: 0
 - Tokens since promotion: 0
-- Token source: explicit get_goal snapshots in harness log.md
+- Token source: best-effort explicit get_goal snapshots in harness log.md
 - Token gap:
 - Active time:
 - Wall elapsed:
@@ -609,8 +675,8 @@ def placeholder_svg() -> str:
 <rect x="92" y="72" width="943" height="318" fill="#f9fafb" stroke="#e5e7eb"/>
 <rect x="92" y="475" width="943" height="165" fill="#fffbeb" stroke="#fde68a"/>
 <text x="560" y="170" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#17202a">Progress chart waiting for first measurement</text>
-<text x="560" y="205" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#697386">Append measured rows with scripts/record_progress.py, then refresh with scripts/render_progress.py.</text>
-<text x="560" y="555" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#92400e">Record explicit get_goal snapshots in the harness log.md for token history.</text>
+<text x="560" y="205" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#697386">Append measured rows with scripts/record_progress.py. Refresh derived artifacts at checkpoints.</text>
+<text x="560" y="555" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#92400e">Record get_goal snapshots when cheap; leave token fields blank rather than waiting.</text>
 </svg>
 """
 
@@ -623,7 +689,7 @@ def placeholder_dashboard() -> str:
 <main style="max-width:860px;margin:auto;background:#fff;border:1px solid #ded8cc;border-radius:8px;padding:28px">
 <h1>Optimization Dashboard</h1>
 <p>Waiting for the first measurement.</p>
-<p>Append one measured candidate row with <code>scripts/record_progress.py</code>, try to record a <code>get_goal</code> snapshot in the harness <code>log.md</code>, then refresh the chart and dashboard with <code>scripts/render_progress.py</code>.</p>
+<p>Append one measured candidate row with <code>scripts/record_progress.py</code>. In fast mode, keep moving; refresh this dashboard at checkpoints with <code>scripts/render_progress.py</code>.</p>
 </main>
 </body>
 </html>
@@ -639,7 +705,7 @@ def main() -> int:
     parser.add_argument("--budget", default="not recorded")
     parser.add_argument("--validation", default="not recorded")
     parser.add_argument("--mode", default="clean leaderboard")
-    parser.add_argument("--harness-mode", choices=("minimal", "standard", "audit"), default="standard")
+    parser.add_argument("--harness-mode", choices=("fast", "minimal", "standard", "audit"), default="fast", help="Harness evidence mode; minimal is accepted as an alias for fast")
     parser.add_argument("--progress-chart", choices=("on", "off"), default="on")
     parser.add_argument("--fresh-run-isolation", choices=("on", "off"), default="on")
     parser.add_argument("--multi-agent-mode", choices=("on", "off"), default="off")
