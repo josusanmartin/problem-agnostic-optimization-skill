@@ -73,7 +73,7 @@ def compact_record(args: argparse.Namespace) -> dict[str, object]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Append a progress event and optionally refresh progress.svg.")
-    parser.add_argument("--events", type=Path, default=Path("work/events.jsonl"))
+    parser.add_argument("--events", type=Path, default=Path("work/optimization_harness/events.jsonl"))
     parser.add_argument("--candidate", required=True)
     parser.add_argument("--decision", required=True)
     parser.add_argument("--score", type=float)

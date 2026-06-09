@@ -11,7 +11,7 @@ INIT_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts"
 
 
 def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
-    work = tmp_path / "work"
+    work = tmp_path / "work" / "optimization_harness"
 
     subprocess.run(
         [
@@ -58,8 +58,10 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["schema_version"] == 2
     assert state["score_unit"] == "cycles"
     assert state["harness_mode"] == "standard"
+    assert state["candidate_artifacts"]["directory"] == str(work / "candidates")
+    assert state["candidate_artifacts"]["schema"] == str(work / "schemas" / "candidate_result.schema.json")
     assert state["candidate_artifacts"]["required_for_promotions"] is True
-    assert state["breakthrough_mining"]["path"].endswith("work/breakthroughs.md")
+    assert state["breakthrough_mining"]["path"] == str(work / "breakthroughs.md")
     assert state["breakthrough_mining"]["enabled"] is True
     assert state["escape"]["status"] == "tracking"
     assert state["escape"]["active_burst"] == []
@@ -78,7 +80,7 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     ]
     assert state["verifier"]["mode"] == "fresh_environment_when_possible"
     assert state["execution_boundary"]["draft_patch_only"] is False
-    assert state["checkpoint"]["path"].endswith("work/checkpoints/progress.json")
+    assert state["checkpoint"]["path"] == str(work / "checkpoints" / "progress.json")
     assert state["progress"]["chart_enabled"] is True
     assert state["progress"]["critical_path_required"] == [
         "correctness",
@@ -95,8 +97,12 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
         "canonical promotion state",
         "final submission state",
     ]
-    assert state["progress"]["events"].endswith("work/events.jsonl")
-    assert state["progress"]["usage_source"] == "explicit get_goal snapshots in work/log.md"
+    assert state["progress"]["events"] == str(work / "events.jsonl")
+    assert state["progress"]["dashboard"] == str(work / "dashboard.html")
+    assert state["progress"]["table"] == str(work / "progress.tsv")
+    assert state["progress"]["chart"] == str(work / "progress.svg")
+    assert state["progress"]["review"] == str(work / "review.md")
+    assert state["progress"]["usage_source"] == f"explicit get_goal snapshots in {work / 'log.md'}"
     assert "latest_usage_snapshot" in state["progress"]
     assert state["multi_agent"]["enabled"] is False
     assert state["multi_agent"]["mode"] == "off"
@@ -144,8 +150,33 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert "waiting for the first measurement" in dashboard
 
 
+def test_init_harness_default_uses_isolated_harness_dir(tmp_path: Path) -> None:
+    subprocess.run(
+        [
+            sys.executable,
+            str(INIT_SCRIPT),
+            "--objective",
+            "default path check",
+        ],
+        cwd=tmp_path,
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    harness = tmp_path / "work" / "optimization_harness"
+    assert (harness / "state.json").exists()
+    assert (harness / "progress.tsv").exists()
+    assert (harness / "checkpoints" / "progress.json").exists()
+    assert not (tmp_path / "work" / "state.json").exists()
+    assert not (tmp_path / "work" / "progress.tsv").exists()
+    state = json.loads((harness / "state.json").read_text(encoding="utf-8"))
+    assert state["progress"]["table"] == "work/optimization_harness/progress.tsv"
+    assert state["progress"]["sidecar"]["must_not_mutate"][0] == "work/optimization_harness/best.md"
+
+
 def test_init_harness_can_disable_chart_placeholders(tmp_path: Path) -> None:
-    work = tmp_path / "work"
+    work = tmp_path / "work" / "optimization_harness"
 
     subprocess.run(
         [
@@ -173,7 +204,7 @@ def test_init_harness_can_disable_chart_placeholders(tmp_path: Path) -> None:
 
 
 def test_init_harness_can_use_minimal_harness_mode(tmp_path: Path) -> None:
-    work = tmp_path / "work"
+    work = tmp_path / "work" / "optimization_harness"
 
     subprocess.run(
         [
@@ -203,7 +234,7 @@ def test_init_harness_can_use_minimal_harness_mode(tmp_path: Path) -> None:
 
 
 def test_init_harness_can_enable_multi_agent_mode(tmp_path: Path) -> None:
-    work = tmp_path / "work"
+    work = tmp_path / "work" / "optimization_harness"
 
     subprocess.run(
         [

@@ -13,8 +13,8 @@ Observe the run, verify progress integrity, identify drift, and write one audit 
 ```text
 Use problem-agnostic-optimization in auditor mode.
 
-Read the current run artifacts and write/update only work/audit.md.
-Do not edit candidate code, harness files, work/best.md, work/log.md, work/plan.md, work/state.json, work/events.jsonl, or work/progress.tsv.
+Read the current run artifacts and write/update only work/optimization_harness/audit.md.
+Do not edit candidate code, harness files, work/optimization_harness/best.md, work/optimization_harness/log.md, work/optimization_harness/plan.md, work/optimization_harness/state.json, work/optimization_harness/events.jsonl, or work/optimization_harness/progress.tsv.
 Do not launch new candidates, submissions, benchmarks, or long-running jobs unless I explicitly ask.
 
 Audit whether the active optimization run is making valid progress under the recorded contract.
@@ -23,15 +23,15 @@ Check authoritative-metric promotion, correctness evidence, token/time burn, sta
 
 ## Inputs
 
-Read these, if present:
+Read these from the dedicated harness directory, defaulting to `work/optimization_harness/`, if present:
 
-- `work/best.md`
-- `work/state.json`
-- `work/events.jsonl`
-- `work/progress.svg`
-- `work/review.md`
-- `work/log.md`
-- `work/plan.md`
+- `work/optimization_harness/best.md`
+- `work/optimization_harness/state.json`
+- `work/optimization_harness/events.jsonl`
+- `work/optimization_harness/progress.svg`
+- `work/optimization_harness/review.md`
+- `work/optimization_harness/log.md`
+- `work/optimization_harness/plan.md`
 - raw result paths referenced by the ledger
 - official problem statement, benchmark contract, or target dashboard
 
@@ -43,10 +43,10 @@ Check the run against the recorded contract:
 
 - Contract: objective, authoritative metric, validation, budget, editable files, immutable files, and isolation setting are explicit.
 - Baseline: baseline was reproduced or marked `unknown, reproduce first`.
-- Best protection: `work/best.md`, `work/state.json`, and the ledger agree on the current best.
+- Best protection: `work/optimization_harness/best.md`, `work/optimization_harness/state.json`, and the ledger agree on the current best.
 - Promotion integrity: every promoted candidate is correct and promoted by the authoritative metric, not by a profile, local proxy, stale result, or wrong-answer speed.
 - Ledger integrity: events are chronological, scores use the same direction/unit, failures are not encoded as fake zero-score wins, and token/time fields are monotonic when present.
-- Chart/review freshness: `work/progress.svg` and `work/review.md` reflect the latest event when charting is enabled.
+- Chart/review freshness: `work/optimization_harness/progress.svg` and `work/optimization_harness/review.md` reflect the latest event when charting is enabled.
 - Search health: recent candidates test one hypothesis each, mechanism classes are not repeating blindly, and closed hills are not being retried without a new premise.
 - Reassessment triggers: token burn without improvement, rising bug/crash rate, repeated same-family rejects, mispredicted bottleneck model, exhausted budget, or stale pending jobs.
 - Next action: the planned next candidate is justified by the bottleneck model, or the run should reassess/change hill.
@@ -61,7 +61,7 @@ Use one verdict:
 - `INVALIDATED`: current best or recent promotion violates correctness, metric, isolation, or integrity rules.
 - `NEEDS USER DECISION`: multiple valid paths exist and the contract does not decide between them.
 
-## `work/audit.md`
+## `work/optimization_harness/audit.md`
 
 Write a compact report:
 
@@ -93,7 +93,7 @@ Write a compact report:
 | Next action justified | pass/fail/unknown | |
 ```
 
-Do not overwrite useful prior audit history. Append a new dated section if `work/audit.md` already exists.
+Do not overwrite useful prior audit history. Append a new dated section if `work/optimization_harness/audit.md` already exists.
 
 ## Escalation
 

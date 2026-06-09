@@ -5,6 +5,7 @@ import argparse
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import shlex
 
 
 def now() -> str:
@@ -30,6 +31,11 @@ def state(args: argparse.Namespace) -> dict[str, object]:
     chart_enabled = args.progress_chart == "on"
     sidecar_enabled = chart_enabled and args.harness_mode != "minimal"
     multi_agent_enabled = args.multi_agent_mode == "on"
+    progress_path = args.work_dir / "progress.tsv"
+    chart_path = args.work_dir / "progress.svg"
+    dashboard_path = args.work_dir / "dashboard.html"
+    review_path = args.work_dir / "review.md"
+    best_path = args.work_dir / "best.md"
     return {
         "schema_version": 2,
         "target_score": None,
@@ -154,16 +160,16 @@ def state(args: argparse.Namespace) -> dict[str, object]:
                 "policy": "defer_advisory_artifacts_without_blocking_candidate_iteration",
                 "refresh_command": (
                     "python skills/problem-agnostic-optimization/scripts/render_progress.py "
-                    "work/progress.tsv --chart-output work/progress.svg "
-                    "--dashboard-output work/dashboard.html"
+                    f"{shlex.quote(str(progress_path))} --chart-output {shlex.quote(str(chart_path))} "
+                    f"--dashboard-output {shlex.quote(str(dashboard_path))}"
                 ),
                 "safe_parallel_outputs": [
-                    str(args.work_dir / "progress.svg"),
-                    str(args.work_dir / "dashboard.html"),
-                    str(args.work_dir / "review.md"),
+                    str(chart_path),
+                    str(dashboard_path),
+                    str(review_path),
                 ],
                 "must_not_mutate": [
-                    str(args.work_dir / "best.md"),
+                    str(best_path),
                     "canonical promotion state",
                     "final submission state",
                 ],
@@ -178,7 +184,7 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "tokens_total": 0,
             "tokens_since_promotion": 0,
             "token_budget": None,
-            "usage_source": "explicit get_goal snapshots in work/log.md",
+            "usage_source": f"explicit get_goal snapshots in {args.work_dir / 'log.md'}",
             "usage_gap": None,
             "latest_usage_snapshot": {
                 "source": "get_goal",
@@ -378,7 +384,7 @@ def candidate_result_template() -> str:
 def verifier_md() -> str:
     return """# Fresh Verifier Gate
 
-Use this gate before updating `work/best.md` for any meaningful promotion.
+Use this gate before updating the harness `best.md` for any meaningful promotion.
 
 - Recreate or reset the environment when practical.
 - Carry only the candidate artifact or diff, the validation command, and the recorded contract across the boundary.
@@ -401,7 +407,7 @@ Every promoted candidate should pass the gating steps in order:
 3. `authoritative_metric`: the official metric improves outside the recorded noise or gate.
 4. `regression_or_adversarial`: targeted regressions, hidden-risk cases, or no-exploit checks pass when applicable.
 5. `fresh_verifier`: an independent/fresh retest sees only the artifact, contract, and commands.
-6. `promote`: update `work/best.md`, `work/state.json`, ledgers, and dashboard.
+6. `promote`: update harness `best.md`, `state.json`, ledgers, and dashboard.
 
 Advisory steps such as profiles, local screening, style, and implementation neatness can explain a candidate but cannot promote it.
 """
@@ -514,7 +520,7 @@ def review_md(args: argparse.Namespace) -> str:
 - Last promotion:
 - Candidates since promotion: 0
 - Tokens since promotion: 0
-- Token source: explicit get_goal snapshots in work/log.md
+- Token source: explicit get_goal snapshots in harness log.md
 - Token gap:
 - Active time:
 - Wall elapsed:
@@ -548,7 +554,7 @@ def breakthroughs_md() -> str:
     return """# Breakthrough Mining
 
 Use this file for plateaued, high-stakes, public-leaderboard, or multi-agent runs.
-Keep it compact and durable; detailed raw logs belong under `work/raw_logs/`.
+Keep it compact and durable; detailed raw logs belong under this harness directory's `raw_logs/`.
 
 ## Frontier Sources
 
@@ -604,7 +610,7 @@ def placeholder_svg() -> str:
 <rect x="92" y="475" width="943" height="165" fill="#fffbeb" stroke="#fde68a"/>
 <text x="560" y="170" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="700" fill="#17202a">Progress chart waiting for first measurement</text>
 <text x="560" y="205" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#697386">Append measured rows with scripts/record_progress.py, then refresh with scripts/render_progress.py.</text>
-<text x="560" y="555" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#92400e">Record explicit get_goal snapshots in work/log.md for token history.</text>
+<text x="560" y="555" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="14" fill="#92400e">Record explicit get_goal snapshots in the harness log.md for token history.</text>
 </svg>
 """
 
@@ -617,7 +623,7 @@ def placeholder_dashboard() -> str:
 <main style="max-width:860px;margin:auto;background:#fff;border:1px solid #ded8cc;border-radius:8px;padding:28px">
 <h1>Optimization Dashboard</h1>
 <p>Waiting for the first measurement.</p>
-<p>Append one measured candidate row with <code>scripts/record_progress.py</code>, try to record a <code>get_goal</code> snapshot in <code>work/log.md</code>, then refresh the chart and dashboard with <code>scripts/render_progress.py</code>.</p>
+<p>Append one measured candidate row with <code>scripts/record_progress.py</code>, try to record a <code>get_goal</code> snapshot in the harness <code>log.md</code>, then refresh the chart and dashboard with <code>scripts/render_progress.py</code>.</p>
 </main>
 </body>
 </html>
@@ -626,7 +632,7 @@ def placeholder_dashboard() -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Initialize the optimization harness quickly.")
-    parser.add_argument("--work-dir", type=Path, default=Path("work"))
+    parser.add_argument("--work-dir", type=Path, default=Path("work/optimization_harness"), help="Dedicated directory for harness-created files; default keeps them out of problem-local work/")
     parser.add_argument("--objective", default="unknown")
     parser.add_argument("--metric", default="authoritative metric")
     parser.add_argument("--baseline", default="unknown, reproduce first")

@@ -10,9 +10,9 @@ from progress_dashboard import render_dashboard
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render progress.svg and dashboard.html from one progress ledger.")
-    parser.add_argument("input", type=Path, nargs="?", default=Path("work/progress.tsv"))
-    parser.add_argument("--chart-output", type=Path, default=Path("work/progress.svg"))
-    parser.add_argument("--dashboard-output", type=Path, default=Path("work/dashboard.html"))
+    parser.add_argument("input", type=Path, nargs="?", default=Path("work/optimization_harness/progress.tsv"))
+    parser.add_argument("--chart-output", type=Path, default=Path("work/optimization_harness/progress.svg"))
+    parser.add_argument("--dashboard-output", type=Path, default=Path("work/optimization_harness/dashboard.html"))
     parser.add_argument("--log", type=Path, help="Log file containing explicit get_goal token snapshots; defaults to input sibling log.md")
     parser.add_argument("--state", type=Path, help="State file with current best/latest usage snapshot; defaults to input sibling state.json")
     parser.add_argument("--title", default="Optimization Progress")

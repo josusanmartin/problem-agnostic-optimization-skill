@@ -276,7 +276,7 @@ Declare `STUCK` when several of these are true:
 - Frontier mismatch: public or local breakthrough rows improve through mechanisms you are not testing.
 - Floor proof: the target is below the current hill's resource, tail, or statistical floor.
 
-Write the stuck signal into `work/plan.md` and, for harnessed runs, mark the hill `CLOSED` or `NARROWED` with the evidence.
+Write the stuck signal into `<harness>/plan.md`, where `<harness>` defaults to `work/optimization_harness`, and, for harnessed runs, mark the hill `CLOSED` or `NARROWED` with the evidence.
 
 Record the closed basin, not just the failed candidate:
 

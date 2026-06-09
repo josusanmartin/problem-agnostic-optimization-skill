@@ -397,8 +397,8 @@ def serve_dashboard(args: argparse.Namespace) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render or serve a zero-dependency optimization progress dashboard.")
-    parser.add_argument("input", type=Path, nargs="?", default=Path("work/progress.tsv"))
-    parser.add_argument("-o", "--output", type=Path, default=Path("work/dashboard.html"))
+    parser.add_argument("input", type=Path, nargs="?", default=Path("work/optimization_harness/progress.tsv"))
+    parser.add_argument("-o", "--output", type=Path, default=Path("work/optimization_harness/dashboard.html"))
     parser.add_argument("--title", default="Optimization Dashboard")
     parser.add_argument("--ylabel", default="Authoritative metric")
     parser.add_argument("--direction", choices=("lower", "higher"), default="lower")

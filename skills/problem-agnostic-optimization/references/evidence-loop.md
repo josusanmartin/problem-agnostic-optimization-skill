@@ -43,7 +43,7 @@ When porting an external mechanism:
 
 Use this when a run is plateaued, public-leaderboard driven, or expensive enough that another same-family sweep is unlikely to matter. A breakthrough is a mechanism that changes an active floor, exposes a new resource axis, imports a better route, or creates a cheaper way to search. It is not merely a large score delta.
 
-Mine public history and local ledgers into a small durable table. In harnessed runs, keep it in `work/breakthroughs.md`; do not leave it only in chat.
+Mine public history and local ledgers into a small durable table. In harnessed runs, keep it in `<harness>/breakthroughs.md`, where `<harness>` defaults to `work/optimization_harness`; do not leave it only in chat.
 
 ```text
 row | parent -> candidate | score/resources | active floor | delta | mechanism | proof or invariant | search tool | validation | slack/dependency

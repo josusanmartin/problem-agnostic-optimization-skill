@@ -20,9 +20,11 @@ python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py
   --validation "<validation command or protocol>"
 ```
 
-Run this from the target repository root so it creates the local `work/` directory for that optimization run. Add `--progress-chart off` only when the contract says `Progress chart: off`. Add `--fresh-run-isolation off` only when the user has allowed prior-run transfer. Add `--multi-agent-mode on` only when the `/goal` says `Multi-agent mode: on` or the user explicitly asks for parallel workers.
+Run this from the target repository root. The default harness directory is `work/optimization_harness/`, so problem-local scratch files can still live elsewhere under `work/` without being mixed with PAO ledgers. If that path conflicts with the project, pass `--work-dir <dedicated-harness-dir>`. Do not point `--work-dir` at a shared problem scratch directory. Add `--progress-chart off` only when the contract says `Progress chart: off`. Add `--fresh-run-isolation off` only when the user has allowed prior-run transfer. Add `--multi-agent-mode on` only when the `/goal` says `Multi-agent mode: on` or the user explicitly asks for parallel workers.
 
 If the initializer is unavailable, create the same files manually before candidate work. Do not wait until after the first result to create the ledger.
+
+In the rest of this reference, `<harness>` means the dedicated harness directory, defaulting to `work/optimization_harness`.
 
 ## Minimal Harness
 
@@ -30,25 +32,26 @@ For small projects, create only:
 
 ```text
 work/
-  audit.md
-  best.md
-  breakthroughs.md            # frontier mechanisms, co-binders, calibrated screens
-  checkpoints/
-    progress.json              # phase/checkpoint state for resume
-  candidates/
-    _template.result.json      # typed candidate result template
-  dashboard.html             # static dashboard for local or remote review
-  events.jsonl               # optional compatibility event ledger
-  log.md
-  plan.md
-  progress.tsv              # small-run table or derived export
-  progress.svg
-  promotion_ladder.md
-  review.md
-  schemas/
-    candidate_result.schema.json
-  state.json
-  verifier.md
+  optimization_harness/
+    audit.md
+    best.md
+    breakthroughs.md          # frontier mechanisms, co-binders, calibrated screens
+    checkpoints/
+      progress.json            # phase/checkpoint state for resume
+    candidates/
+      _template.result.json    # typed candidate result template
+    dashboard.html             # static dashboard for local or remote review
+    events.jsonl               # optional compatibility event ledger
+    log.md
+    plan.md
+    progress.tsv               # small-run table or derived export
+    progress.svg
+    promotion_ladder.md
+    review.md
+    schemas/
+      candidate_result.schema.json
+    state.json
+    verifier.md
 ```
 
 For longer projects, use:
@@ -62,33 +65,35 @@ project/
     cand_0001.*
     cand_0002.*
   work/
-    audit.md
-    best.md
-    breakthroughs.md
-    checkpoints/
-      progress.json
-    candidates/
-      _template.result.json
-      cand_0001.result.json
-      cand_0001.md
-    dashboard.html
-    events.jsonl
-    log.md
-    plan.md
-    progress.tsv
-    progress.svg
-    promotion_ladder.md
-    state.json
-    verifier.md
-    schemas/
-      candidate_result.schema.json
-    profiles/
-      baseline.profile.txt
-      cand_0001.profile.txt
-    results/
-      cand_0001.json
-    raw_logs/
-      cand_0001.out
+    problem-local scratch/results...
+    optimization_harness/
+      audit.md
+      best.md
+      breakthroughs.md
+      checkpoints/
+        progress.json
+      candidates/
+        _template.result.json
+        cand_0001.result.json
+        cand_0001.md
+      dashboard.html
+      events.jsonl
+      log.md
+      plan.md
+      progress.tsv
+      progress.svg
+      promotion_ladder.md
+      state.json
+      verifier.md
+      schemas/
+        candidate_result.schema.json
+      profiles/
+        baseline.profile.txt
+        cand_0001.profile.txt
+      results/
+        cand_0001.json
+      raw_logs/
+        cand_0001.out
   scripts/
     validate.sh
     benchmark.sh
@@ -96,11 +101,11 @@ project/
     summarize.*
 ```
 
-Adapt names to the repository. The important part is that best state, history, active plan, and machine-readable state survive chat compaction and process crashes.
+Adapt names to the repository. The important part is that all harness-created files stay under one dedicated harness directory, and that best state, history, active plan, and machine-readable state survive chat compaction and process crashes.
 
 ## Typed Candidate Artifacts
 
-For substantial or high-risk runs, every measured candidate should have a normalized JSON artifact under `work/candidates/`, even when the candidate is rejected. Use `work/candidates/_template.result.json` when the initializer created it.
+For substantial or high-risk runs, every measured candidate should have a normalized JSON artifact under `<harness>/candidates/`, even when the candidate is rejected. Use `<harness>/candidates/_template.result.json` when the initializer created it.
 
 Recommended normalized shape:
 
@@ -115,7 +120,7 @@ Recommended normalized shape:
   "duplicate_check": "why this is not the same hill or worker packet as an existing attempt",
   "hypothesis": "one concrete hypothesis",
   "artifact_paths": ["candidates/cand_0007.py"],
-  "raw_log_paths": ["work/raw_logs/cand_0007.out"],
+  "raw_log_paths": ["<harness>/raw_logs/cand_0007.out"],
   "commands": {
     "apply_or_build": "...",
     "correctness": "...",
@@ -128,7 +133,7 @@ Recommended normalized shape:
     "score": 2226,
     "unit": "cycles",
     "direction": "lower",
-    "raw_result_path": "work/results/cand_0007.json"
+    "raw_result_path": "<harness>/results/cand_0007.json"
   },
   "escape": {
     "status": "tracking",
@@ -155,11 +160,11 @@ Recommended normalized shape:
 }
 ```
 
-Do not use the JSON artifact as a second score ledger. `work/progress.tsv` remains the compact score ledger; candidate JSON preserves the richer evidence, raw paths, verifier verdict, and promotion-ladder state.
+Do not use the JSON artifact as a second score ledger. `<harness>/progress.tsv` remains the compact score ledger; candidate JSON preserves the richer evidence, raw paths, verifier verdict, and promotion-ladder state.
 
 ## Breakthrough Ledger
 
-Use `work/breakthroughs.md` for plateaued, high-stakes, public-leaderboard, or multi-agent runs. It is the durable frontier map: public breakthroughs, local breakthrough rows, phase owners, calibrated screens, validation islands, diversity-map feature cells, escape-operator credit, closed hills, new-hill commitments, and negative breakthroughs. Keep it compact; raw outputs still belong under `work/raw_logs/`, `work/results/`, or `work/profiles/`.
+Use `<harness>/breakthroughs.md` for plateaued, high-stakes, public-leaderboard, or multi-agent runs. It is the durable frontier map: public breakthroughs, local breakthrough rows, phase owners, calibrated screens, validation islands, diversity-map feature cells, escape-operator credit, closed hills, new-hill commitments, and negative breakthroughs. Keep it compact; raw outputs still belong under `<harness>/raw_logs/`, `<harness>/results/`, or `<harness>/profiles/`.
 
 Minimum sections:
 
@@ -184,11 +189,11 @@ Update it when any of these happen:
 - A local-optimum audit closes or narrows a hill, opens a divergence burst, assigns operator credit, updates the diversity map, or commits a short budget to a new hill.
 - A tempting route is ruled out by measured resource tradeoff.
 
-Do not promote from `work/breakthroughs.md`; it explains search direction. Candidate JSON plus the promotion ladder still hold promotion evidence.
+Do not promote from `<harness>/breakthroughs.md`; it explains search direction. Candidate JSON plus the promotion ladder still hold promotion evidence.
 
 ## Phase Checkpoints
 
-Use `work/checkpoints/progress.json` to make long runs resumable. It tracks phase status, completed shards, terminal results, and the current phase. Resume should skip only completed terminal phases. Retry failed, blocked, or partial phases after checking their raw logs.
+Use `<harness>/checkpoints/progress.json` to make long runs resumable. It tracks phase status, completed shards, terminal results, and the current phase. Resume should skip only completed terminal phases. Retry failed, blocked, or partial phases after checking their raw logs.
 
 Recommended phases:
 
@@ -208,13 +213,13 @@ Verifier contract:
 - Transfer only the candidate artifact or diff, the recorded contract, validation command, and measurement command.
 - Rerun correctness before the authoritative metric.
 - Reproduce the authoritative metric with the same official command, submission path, or public result source.
-- Record `PASS`, `FAIL`, `INCONCLUSIVE`, or `SKIPPED_WITH_LIMITATION` in the candidate JSON and summarize limitations in `work/log.md`.
+- Record `PASS`, `FAIL`, `INCONCLUSIVE`, or `SKIPPED_WITH_LIMITATION` in the candidate JSON and summarize limitations in `<harness>/log.md`.
 
 If a true fresh environment is impossible, run the cleanest independent retest available and make the limitation visible. A candidate may be kept as `KEEP VARIANT`; it should not become the stable best unless the user accepts that limitation or the contract explicitly allows it.
 
 ## Promotion Ladder
 
-Use `work/promotion_ladder.md` and the candidate JSON `promotion_ladder` object to separate gating evidence from advisory evidence.
+Use `<harness>/promotion_ladder.md` and the candidate JSON `promotion_ladder` object to separate gating evidence from advisory evidence.
 
 Gating steps:
 
@@ -237,31 +242,31 @@ When executing untrusted/generated target code, attacker-controlled inputs, fuzz
 - restricted egress or no network when the task does not require it
 - fresh process/container for verifier runs
 
-Prompts and immutable-file rules are not a security boundary. If the environment cannot enforce the boundary, record the limitation in `work/state.json.execution_boundary.notes` and in the candidate JSON.
+Prompts and immutable-file rules are not a security boundary. If the environment cannot enforce the boundary, record the limitation in `<harness>/state.json.execution_boundary.notes` and in the candidate JSON.
 
 ## Draft Patch Mode
 
-For security-sensitive, production-sensitive, or user-requested review-first work, set `work/state.json.execution_boundary.draft_patch_only` to `true`. In draft patch mode, generate inert diffs or patch files under `work/PATCHES/` or `work/candidates/`; do not apply them to the live tree unless the user explicitly asks. Still validate the patch concept where possible in a separate sandbox or copied checkout.
+For security-sensitive, production-sensitive, or user-requested review-first work, set `<harness>/state.json.execution_boundary.draft_patch_only` to `true`. In draft patch mode, generate inert diffs or patch files under `<harness>/PATCHES/` or `<harness>/candidates/`; do not apply them to the live tree unless the user explicitly asks. Still validate the patch concept where possible in a separate sandbox or copied checkout.
 
 ## Progress Monitor
 
-For substantial optimization runs, maintain a live progress surface by default. The score ledger is `work/progress.tsv`; token history comes from explicit `get_goal` snapshots in `work/log.md`, with the latest snapshot copied into `work/state.json`.
+For substantial optimization runs, maintain a live progress surface by default. The score ledger is `<harness>/progress.tsv`; token history comes from explicit `get_goal` snapshots in `<harness>/log.md`, with the latest snapshot copied into `<harness>/state.json`.
 
 ```text
-work/log.md          # human log plus explicit get_goal token snapshots
-work/dashboard.html  # static dashboard for review and handoff
-work/progress.tsv   # one row per measured candidate
-work/progress.svg   # chart regenerated after each result unless Progress chart: off
-work/review.md      # short human review snapshot unless Progress chart: off
-work/state.json      # current best and latest usage snapshot
+<harness>/log.md          # human log plus explicit get_goal token snapshots
+<harness>/dashboard.html  # static dashboard for review and handoff
+<harness>/progress.tsv    # one row per measured candidate
+<harness>/progress.svg    # chart regenerated after each result unless Progress chart: off
+<harness>/review.md       # short human review snapshot unless Progress chart: off
+<harness>/state.json      # current best and latest usage snapshot
 ```
 
 Keep progress work split into two lanes:
 
-- Critical path: correctness verdict, authoritative metric, one `work/progress.tsv` row, raw evidence path, usage snapshot when available, and decision.
-- Sidecar path: `work/progress.svg`, `work/dashboard.html`, `work/review.md`, rejected-candidate JSON cleanup, breakthrough summaries, and other derived/advisory artifacts.
+- Critical path: correctness verdict, authoritative metric, one `<harness>/progress.tsv` row, raw evidence path, usage snapshot when available, and decision.
+- Sidecar path: `<harness>/progress.svg`, `<harness>/dashboard.html`, `<harness>/review.md`, rejected-candidate JSON cleanup, breakthrough summaries, and other derived/advisory artifacts.
 
-Do not block candidate iteration on sidecar refresh when the critical path is complete. Sidecar work may run after the next candidate starts, every `N` candidates, at promotion, at reassessment, or before handoff. Promotion remains serial: never update `work/best.md`, canonical promotion state, or final submission state from a background sidecar.
+Do not block candidate iteration on sidecar refresh when the critical path is complete. Sidecar work may run after the next candidate starts, every `N` candidates, at promotion, at reassessment, or before handoff. Promotion remains serial: never update `<harness>/best.md`, canonical promotion state, or final submission state from a background sidecar.
 
 Harness modes:
 
@@ -269,26 +274,26 @@ Harness modes:
 - `standard`: critical path after each measured candidate, sidecar refresh at natural checkpoints or when cheap.
 - `audit`: full candidate JSON, verifier, dashboard, review, and breakthrough state before important decisions.
 
-Regenerate both progress artifacts from `work/progress.tsv` in one step:
+Regenerate both progress artifacts from `<harness>/progress.tsv` in one step:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/render_progress.py work/progress.tsv \
-  --chart-output work/progress.svg \
-  --dashboard-output work/dashboard.html \
+python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv \
+  --chart-output work/optimization_harness/progress.svg \
+  --dashboard-output work/optimization_harness/dashboard.html \
   --ylabel "Authoritative metric" \
   --direction lower
 ```
 
-Use the separate chart renderer when you only need `work/progress.svg` or need a focused chart test:
+Use the separate chart renderer when you only need `<harness>/progress.svg` or need a focused chart test:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv \
-  -o work/progress.svg \
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/optimization_harness/progress.tsv \
+  -o work/optimization_harness/progress.svg \
   --ylabel "Authoritative metric" \
   --direction lower
 
-python skills/problem-agnostic-optimization/scripts/progress_chart.py work/progress.tsv \
-  -o work/progress.svg \
+python skills/problem-agnostic-optimization/scripts/progress_chart.py work/optimization_harness/progress.tsv \
+  -o work/optimization_harness/progress.svg \
   --ylabel cycles \
   --direction lower \
   --target 1000
@@ -298,19 +303,19 @@ Use `--direction higher` for scores where larger is better. The score panel alwa
 
 The rendered SVG and static dashboard footer show the full URL for the bundled `problem-agnostic-optimization` skill source.
 
-Use the separate dashboard renderer when you only need `work/dashboard.html`:
+Use the separate dashboard renderer when you only need `<harness>/dashboard.html`:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
-  -o work/dashboard.html \
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/optimization_harness/progress.tsv \
+  -o work/optimization_harness/dashboard.html \
   --ylabel "Authoritative metric" \
   --direction lower
 ```
 
-The static dashboard is the safest remote-server path: regenerate `work/dashboard.html`, then open, download, or attach that file. For live local review, run:
+The static dashboard is the safest remote-server path: regenerate `<harness>/dashboard.html`, then open, download, or attach that file. For live local review, run:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
+python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/optimization_harness/progress.tsv \
   --serve \
   --host 127.0.0.1 \
   --port 8765
@@ -324,13 +329,13 @@ On a remote server, keep the server bound to `127.0.0.1` and open a tunnel from 
 ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
 ```
 
-`work/progress.tsv` should be tab-separated. New runs must include `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label` in every row. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form. `wall_seconds` is cumulative elapsed wall time since the run start, or since the first recorded snapshot if the true run start is unavailable. Token/time values may be blank when unavailable, but do not omit the columns. If candidate names contain unrelated digits, include `candidate_number`; otherwise the chart only parses pure numeric IDs and `cand_0001`-style IDs as candidate numbers. Do not put fabricated token deltas into this table.
+`<harness>/progress.tsv` should be tab-separated. New runs must include `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label` in every row. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form. `wall_seconds` is cumulative elapsed wall time since the run start, or since the first recorded snapshot if the true run start is unavailable. Token/time values may be blank when unavailable, but do not omit the columns. If candidate names contain unrelated digits, include `candidate_number`; otherwise the chart only parses pure numeric IDs and `cand_0001`-style IDs as candidate numbers. Do not put fabricated token deltas into this table.
 
 Use the bundled writer when available so the row shape is deterministic:
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/record_progress.py \
-  --progress work/progress.tsv \
+  --progress work/optimization_harness/progress.tsv \
   --candidate cand_0007 \
   --metric cycles=2226 \
   --decision promote \
@@ -351,31 +356,31 @@ timestamp	candidate	cycles	decision	tokens_total	tokens_delta	wall_seconds	label
 2026-06-01T00:18:00Z	2	2226	promote	4500	1400	1080	dependency-list scheduled vector kernel
 ```
 
-Token snapshots must be explicit. In Codex, always try to call `get_goal` after each measured candidate and append the raw or structured snapshot to `work/log.md` with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, show it as unknown; do not interpolate or invent per-candidate token usage.
+Token snapshots must be explicit. In Codex, always try to call `get_goal` after each measured candidate and append the raw or structured snapshot to `<harness>/log.md` with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `<harness>/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, show it as unknown; do not interpolate or invent per-candidate token usage.
 
-`work/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `work/progress.tsv` for score rows and `work/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read for compatibility only; they are lower-confidence than explicit `get_goal` snapshots, should be labeled as legacy when charted, and should not be used as new-run doctrine.
+`<harness>/events.jsonl` is retained for backward compatibility with older runs and `record_event.py`. New runs should use `<harness>/progress.tsv` for score rows and `<harness>/log.md` for token snapshots. Legacy token columns in TSV or JSONL may be read for compatibility only; they are lower-confidence than explicit `get_goal` snapshots, should be labeled as legacy when charted, and should not be used as new-run doctrine.
 
 Only `baseline`, `promote`, and `promoted` rows update the protected-best curve. Use `keep` for retained evidence or ties that did not pass the canonical promotion gate.
 
 The dashboard is diagnostic. It can trigger push/reassess decisions, but it never replaces correctness checks or the authoritative promotion gate.
 
-To disable chart rendering, record `Progress chart: off` in the `/goal` contract and set `progress.chart_enabled` to `false` in `work/state.json`. Continue appending `work/progress.tsv` and `work/log.md` unless the user explicitly disables progress logging too.
+To disable chart rendering, record `Progress chart: off` in the `/goal` contract and set `progress.chart_enabled` to `false` in `<harness>/state.json`. Continue appending `<harness>/progress.tsv` and `<harness>/log.md` unless the user explicitly disables progress logging too.
 
 After every measured candidate:
 
 - Always try to capture current token/time usage with `get_goal`.
-- Append `work/progress.tsv` with `record_progress.py` when available, using the authoritative metric result and token/time fields when available.
-- Append the raw or structured UTC usage snapshot to `work/log.md`.
-- Copy the latest usage snapshot to `work/state.json`.
+- Append `<harness>/progress.tsv` with `record_progress.py` when available, using the authoritative metric result and token/time fields when available.
+- Append the raw or structured UTC usage snapshot to `<harness>/log.md`.
+- Copy the latest usage snapshot to `<harness>/state.json`.
 - Save raw evidence paths and the decision before starting another candidate.
 - If the run is in `audit` mode, or this candidate is promoted, risky, surprising, or a reassessment trigger, refresh sidecar artifacts before the next important decision.
-- Otherwise, regenerate `work/progress.svg` and `work/dashboard.html` with `render_progress.py` as sidecar work unless charting is disabled; if the wrapper is missing, run `progress_chart.py` and `progress_dashboard.py` separately.
-- Update `work/review.md` at sidecar checkpoints. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
+- Otherwise, regenerate `<harness>/progress.svg` and `<harness>/dashboard.html` with `render_progress.py` as sidecar work unless charting is disabled; if the wrapper is missing, run `progress_chart.py` and `progress_dashboard.py` separately.
+- Update `<harness>/review.md` at sidecar checkpoints. Include current best, last 5-10 candidates, token burn since last promotion, stagnation count, open blockers, and next candidate.
 - Treat high token burn without authoritative improvement, rising bug/crash rate, or many same-family rejects as evidence for reassessment.
 
 ## Edit Surface
 
-Before the first candidate, write the mutable and immutable file sets into `work/best.md` or `work/state.json`.
+Before the first candidate, write the mutable and immutable file sets into `<harness>/best.md` or `<harness>/state.json`.
 
 - Editable files: candidate implementation files, candidate-local scripts, notes, and generated outputs.
 - Immutable files: reference implementations, evaluation harnesses, data generators, scoring code, benchmark wrappers, and submission protocol files unless the user explicitly asks to change them.
@@ -393,7 +398,7 @@ When isolation is `on`:
 - Reading sibling workspaces, archived `work/` directories, old submissions, or private prior notes is not allowed unless they are listed as allowed sources.
 - If prior work appears relevant, ask or log a transfer note instead of silently importing it.
 
-Record the setting in `work/state.json` as `isolation.fresh_run`.
+Record the setting in `<harness>/state.json` as `isolation.fresh_run`.
 
 ## Multi-Agent Search
 
@@ -401,7 +406,7 @@ Use only when `Multi-agent mode: on` is present in the `/goal` or the user expli
 
 ### Canonical Roles
 
-- **Coordinator**: owns the canonical workspace, `work/state.json`, `work/best.md`, `work/breakthroughs.md`, `work/log.md`, `work/progress.tsv`, charts, dashboard, and final promotion decisions.
+- **Coordinator**: owns the canonical workspace, `<harness>/state.json`, `<harness>/best.md`, `<harness>/breakthroughs.md`, `<harness>/log.md`, `<harness>/progress.tsv`, charts, dashboard, and final promotion decisions.
 - **Worker**: operates in an isolated worktree or copied sandbox from a named parent artifact/hash. A worker may run screening and local validation, but cannot mutate the canonical ledger or declare a promotion.
 - **Auditor**: optional read-only reviewer. Use `references/auditor.md` after a batch, a surprising result, repeated bugs, or suspected drift.
 
@@ -417,9 +422,9 @@ Use only when `Multi-agent mode: on` is present in the `/goal` or the user expli
 
 ### Worker Restrictions
 
-Workers must not edit canonical `work/state.json`, `work/best.md`, `work/breakthroughs.md`, `work/log.md`, `work/events.jsonl`, `work/progress.tsv`, charts, dashboard, benchmark harnesses, immutable files, or final submission files. They must not promote from screening metrics, stale parents, wrong-answer speedups, modified graders, or private leaked results.
+Workers must not edit canonical `<harness>/state.json`, `<harness>/best.md`, `<harness>/breakthroughs.md`, `<harness>/log.md`, `<harness>/events.jsonl`, `<harness>/progress.tsv`, charts, dashboard, benchmark harnesses, immutable files, or final submission files. They must not promote from screening metrics, stale parents, wrong-answer speedups, modified graders, or private leaked results.
 
-Workers also must not mark canonical checkpoints complete. The coordinator alone updates `work/checkpoints/progress.json`, creates canonical candidate result JSON files, and runs the fresh verifier gate.
+Workers also must not mark canonical checkpoints complete. The coordinator alone updates `<harness>/checkpoints/progress.json`, creates canonical candidate result JSON files, and runs the fresh verifier gate.
 
 ### Search Allocation
 
@@ -438,14 +443,14 @@ For long runs, a second Codex session may audit progress without becoming a seco
 Default auditor contract:
 
 - Read current run artifacts and official target context.
-- Write or append only `work/audit.md`.
-- Do not edit candidate code, harness files, `work/best.md`, `work/log.md`, `work/plan.md`, `work/state.json`, `work/events.jsonl`, or `work/progress.tsv`.
+- Write or append only `<harness>/audit.md`.
+- Do not edit candidate code, harness files, `<harness>/best.md`, `<harness>/log.md`, `<harness>/plan.md`, `<harness>/state.json`, `<harness>/events.jsonl`, or `<harness>/progress.tsv`.
 - Do not launch new candidates, submissions, benchmarks, or long-running jobs unless explicitly asked.
 - Report one verdict: `ON TRACK`, `NEEDS REASSESSMENT`, `BLOCKED`, `INVALIDATED`, or `NEEDS USER DECISION`.
 
 ## Profiling Plan
 
-Write the profiling plan into `work/best.md` or `work/state.json` before deep tuning:
+Write the profiling plan into `<harness>/best.md` or `<harness>/state.json` before deep tuning:
 
 - Authoritative metric and command.
 - Available profiling surfaces: target profiler, hardware counters, traces, flamegraphs, per-case timings, logs, public profiles, static analyzers, or none.
@@ -458,8 +463,8 @@ Use profiles to choose experiments:
 
 - Profile or counter-sample the baseline/current best when the cost is reasonable.
 - Compare parent and candidate with the same workload and command.
-- Save raw profile output under `work/profiles/` or an equivalent durable path.
-- Summarize only the decision-relevant deltas in `work/log.md`.
+- Save raw profile output under `<harness>/profiles/` or an equivalent durable path.
+- Summarize only the decision-relevant deltas in `<harness>/log.md`.
 - Re-profile after promotions and surprising regressions; the bottleneck map may change.
 
 If strong profiling is unavailable:
@@ -478,13 +483,13 @@ When git is available and the run has many candidates, use it as the keep/discar
 4. Keep the commit only if promotion gates pass.
 5. Revert or reset losing candidates after logging their result.
 
-Keep noisy ledgers such as `work/log.md`, `work/state.json`, raw logs, and TSV summaries untracked if the repository should only preserve winning code. Keep them tracked when the project expects reproducible experiment history.
+Keep noisy ledgers such as `<harness>/log.md`, `<harness>/state.json`, raw logs, and TSV summaries untracked if the repository should only preserve winning code. Keep them tracked when the project expects reproducible experiment history.
 
 ## Fixed-Budget Experiments
 
 Some tasks are defined by a fixed budget instead of fastest wall time: five minutes of training, 30 public submissions per day, one Modal run, a GPU-hour cap, an API spend cap, or a maximum memory envelope.
 
-- Record the fixed budget in `work/best.md` and `work/state.json`.
+- Record the fixed budget in `<harness>/best.md` and `<harness>/state.json`.
 - Judge candidates by the official metric under that same budget.
 - Do not compare a longer or more expensive run against the baseline unless the contract allows it.
 - Treat timeout, OOM, daily submission exhaustion, and spend limits as first-class results.
@@ -492,7 +497,7 @@ Some tasks are defined by a fixed budget instead of fastest wall time: five minu
 
 ## File Roles
 
-### `work/best.md`
+### `<harness>/best.md`
 
 Stable promoted state only:
 
@@ -511,7 +516,7 @@ Stable promoted state only:
 
 Do not put every experiment here.
 
-### `work/log.md`
+### `<harness>/log.md`
 
 Append-only experiment ledger. Every candidate, including failures, gets:
 
@@ -544,7 +549,7 @@ Append-only experiment ledger. Every candidate, including failures, gets:
 
 Failures should kill or narrow families of ideas, not just individual files.
 
-### `work/plan.md`
+### `<harness>/plan.md`
 
 Mutable active strategy:
 
@@ -555,7 +560,7 @@ Mutable active strategy:
 - Escape ladder state: stuck signal, escape operator, basin memory, diversity map, operator credit, anti-revisit rules, divergence burst, and active new-hill commitment.
 - Escalation rule for local-optimum audit or structural reset.
 
-### `work/audit.md`
+### `<harness>/audit.md`
 
 Auditor-mode report from a second Codex session. The optimizer should read it as feedback, not as a candidate ledger.
 
@@ -568,7 +573,7 @@ Auditor-mode report from a second Codex session. The optimizer should read it as
 
 Append dated sections instead of overwriting useful prior audit history.
 
-### `work/state.json`
+### `<harness>/state.json`
 
 Small machine-readable state:
 
@@ -649,21 +654,21 @@ Small machine-readable state:
     "sidecar": {
       "enabled": true,
       "policy": "defer_advisory_artifacts_without_blocking_candidate_iteration",
-      "refresh_command": "python skills/problem-agnostic-optimization/scripts/render_progress.py work/progress.tsv --chart-output work/progress.svg --dashboard-output work/dashboard.html",
-      "safe_parallel_outputs": ["work/progress.svg", "work/dashboard.html", "work/review.md"],
-      "must_not_mutate": ["work/best.md", "canonical promotion state", "final submission state"],
+      "refresh_command": "python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv --chart-output work/optimization_harness/progress.svg --dashboard-output work/optimization_harness/dashboard.html",
+      "safe_parallel_outputs": ["work/optimization_harness/progress.svg", "work/optimization_harness/dashboard.html", "work/optimization_harness/review.md"],
+      "must_not_mutate": ["work/optimization_harness/best.md", "canonical promotion state", "final submission state"],
       "last_refreshed_at": null
     },
-    "events": "work/events.jsonl",
-    "dashboard": "work/dashboard.html",
-    "table": "work/progress.tsv",
-    "chart": "work/progress.svg",
-    "review": "work/review.md",
+    "events": "work/optimization_harness/events.jsonl",
+    "dashboard": "work/optimization_harness/dashboard.html",
+    "table": "work/optimization_harness/progress.tsv",
+    "chart": "work/optimization_harness/progress.svg",
+    "review": "work/optimization_harness/review.md",
     "x_axis": "candidate",
     "tokens_total": 0,
     "tokens_since_promotion": 0,
     "token_budget": null,
-    "usage_source": "explicit get_goal snapshots in work/log.md",
+    "usage_source": "explicit get_goal snapshots in work/optimization_harness/log.md",
     "usage_gap": null,
     "latest_usage_snapshot": {
       "source": "get_goal",
@@ -680,8 +685,8 @@ Small machine-readable state:
   },
   "audit": {
     "enabled": true,
-    "report": "work/audit.md",
-    "write_surface": ["work/audit.md"],
+    "report": "work/optimization_harness/audit.md",
+    "write_surface": ["work/optimization_harness/audit.md"],
     "last_audited_at": null,
     "last_verdict": null
   },
@@ -769,8 +774,8 @@ For remote leaderboards, scripts should enforce queue and rate-limit discipline:
 - Max active submissions: usually 2-3 unless the platform says otherwise.
 - Do not submit a comparable candidate while one is pending.
 - Store raw output for every job.
-- Parse completed jobs into `work/results/<candidate>.json`.
-- Update `work/log.md`, `work/state.json`, and `work/best.md` only when promotion gates pass.
+- Parse completed jobs into `<harness>/results/<candidate>.json`.
+- Update `<harness>/log.md`, `<harness>/state.json`, and `<harness>/best.md` only when promotion gates pass.
 
 Coordinator loop:
 
@@ -802,7 +807,7 @@ Use status values like `baseline`, `promote`, `keep`, `discard`, `crash`, `bug`,
 
 ## Extended Candidate JSON
 
-Use this as an extension of the typed candidate artifact, not a replacement for it. Keep the required fields from `work/schemas/candidate_result.schema.json`, then add domain-specific result blocks as needed:
+Use this as an extension of the typed candidate artifact, not a replacement for it. Keep the required fields from `<harness>/schemas/candidate_result.schema.json`, then add domain-specific result blocks as needed:
 
 ```json
 {
@@ -924,13 +929,13 @@ Use this as an extension of the typed candidate artifact, not a replacement for 
 
 At the start:
 
-- Read `work/best.md`.
-- Read `work/breakthroughs.md` if it exists and the run is plateaued, public-leaderboard driven, multi-agent, or near a resource tier.
-- Read the tail of `work/log.md`.
-- Read `work/plan.md`.
-- Read `work/state.json`.
-- Read recent rows from `work/progress.tsv` and the latest token snapshots in `work/log.md` if `progress.logging_enabled` is not `false`.
-- Open `work/dashboard.html`, `work/progress.svg`, and `work/review.md` if `progress.chart_enabled` is not `false`.
+- Read `<harness>/best.md`.
+- Read `<harness>/breakthroughs.md` if it exists and the run is plateaued, public-leaderboard driven, multi-agent, or near a resource tier.
+- Read the tail of `<harness>/log.md`.
+- Read `<harness>/plan.md`.
+- Read `<harness>/state.json`.
+- Read recent rows from `<harness>/progress.tsv` and the latest token snapshots in `<harness>/log.md` if `progress.logging_enabled` is not `false`.
+- Open `<harness>/dashboard.html`, `<harness>/progress.svg`, and `<harness>/review.md` if `progress.chart_enabled` is not `false`.
 - Check pending jobs if using a remote system.
 
 Before editing:
@@ -943,25 +948,25 @@ Before editing:
 - State expected signal.
 - State profiling basis and fallback if no useful profiler is available.
 - State validation and measurement command.
-- Create or plan the candidate JSON path under `work/candidates/`.
+- Create or plan the candidate JSON path under `<harness>/candidates/`.
 
 After running:
 
-- Append `work/log.md`.
-- Save or update the candidate JSON artifact under `work/candidates/`.
+- Append `<harness>/log.md`.
+- Save or update the candidate JSON artifact under `<harness>/candidates/`.
 - Always try to capture current token/time usage with `get_goal`.
-- Append the measured candidate to `work/progress.tsv` with `record_progress.py` if `progress.logging_enabled` is not `false` and the script is available, using token/time fields when available.
-- Append the UTC snapshot, wall time, `tokens_total`, and `tokens_delta` to `work/log.md`, and copy the latest snapshot to `work/state.json`.
+- Append the measured candidate to `<harness>/progress.tsv` with `record_progress.py` if `progress.logging_enabled` is not `false` and the script is available, using token/time fields when available.
+- Append the UTC snapshot, wall time, `tokens_total`, and `tokens_delta` to `<harness>/log.md`, and copy the latest snapshot to `<harness>/state.json`.
 - Save raw and normalized outputs.
 - Save profile/counter artifacts when available.
-- Update `work/breakthroughs.md` when the result changes a tier, identifies a co-binder, calibrates a screen, uses a validation island, or rules out a tempting route.
-- Update `work/plan.md` and `work/breakthroughs.md` when a hill is closed, an escape burst starts, a feature-cell elite changes, an escape operator earns credit, or a divergence probe earns a new-hill commitment budget.
-- Update `work/state.json`.
-- Update `work/checkpoints/progress.json` with the current phase and terminal result when appropriate.
+- Update `<harness>/breakthroughs.md` when the result changes a tier, identifies a co-binder, calibrates a screen, uses a validation island, or rules out a tempting route.
+- Update `<harness>/plan.md` and `<harness>/breakthroughs.md` when a hill is closed, an escape burst starts, a feature-cell elite changes, an escape operator earns credit, or a divergence probe earns a new-hill commitment budget.
+- Update `<harness>/state.json`.
+- Update `<harness>/checkpoints/progress.json` with the current phase and terminal result when appropriate.
 - Run or record the fresh verifier gate before any stable promotion.
-- If `progress.chart_enabled` is not `false`, regenerate `work/progress.svg`, regenerate `work/dashboard.html`, and refresh `work/review.md`.
-- Update `work/best.md` only if promotion rules pass.
-- Update `work/plan.md` with next branch status.
+- If `progress.chart_enabled` is not `false`, regenerate `<harness>/progress.svg`, regenerate `<harness>/dashboard.html`, and refresh `<harness>/review.md`.
+- Update `<harness>/best.md` only if promotion rules pass.
+- Update `<harness>/plan.md` with next branch status.
 
 ## Structural Reset Prompt
 
