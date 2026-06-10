@@ -72,7 +72,7 @@ def test_invalid_utf8_fails_without_traceback(tmp_path: Path) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
-@pytest.mark.parametrize("reference_name", ["auditor.md", "gpu-architecture.md"])
+@pytest.mark.parametrize("reference_name", ["adapter-interface.md", "auditor.md", "gpu-architecture.md", "local-harness-api.md"])
 def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
     skill_dir = copy_skill(tmp_path)
     (skill_dir / "references" / reference_name).unlink()
@@ -81,10 +81,19 @@ def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
-@pytest.mark.parametrize("script_name", ["init_harness.py", "progress_chart.py", "progress_dashboard.py", "render_progress.py", "record_event.py", "record_progress.py"])
+@pytest.mark.parametrize("script_name", ["init_harness.py", "pao_harness_client.py", "pao_harness_server.py", "progress_chart.py", "progress_dashboard.py", "render_progress.py", "record_event.py", "record_progress.py"])
 def test_missing_skill_script_fails(tmp_path: Path, script_name: str) -> None:
     skill_dir = copy_skill(tmp_path)
     (skill_dir / "scripts" / script_name).unlink()
 
     with pytest.raises(validate_skill.ValidationError, match=f"missing required file: scripts/{script_name}"):
+        validate_skill.validate_skill(skill_dir)
+
+
+@pytest.mark.parametrize("adapter_name", ["__init__.py", "_template.py", "base.py", "local_command.py"])
+def test_missing_adapter_file_fails(tmp_path: Path, adapter_name: str) -> None:
+    skill_dir = copy_skill(tmp_path)
+    (skill_dir / "scripts" / "adapters" / adapter_name).unlink()
+
+    with pytest.raises(validate_skill.ValidationError, match=f"missing required file: scripts/adapters/{adapter_name}"):
         validate_skill.validate_skill(skill_dir)

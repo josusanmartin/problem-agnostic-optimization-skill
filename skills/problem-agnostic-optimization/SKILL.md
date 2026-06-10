@@ -64,6 +64,19 @@ The default harness directory is `work/optimization_harness/`. Keep every file t
 
 Only skip harness deployment when the task is explicitly tiny or the user disables persistence. If you skip it, record the skip reason in your response or notes.
 
+## Local Harness API
+
+If `work/optimization_harness/server.json` exists or a `/goal` provides a PAO harness API, use it as the canonical evaluation path. Call the local API for candidate evaluation and continue optimizing from the normalized result. Do not manually handle challenge login, submission, polling, progress rows, raw logs, dashboard refresh, or rate limits when the API is available.
+
+Fast path:
+
+1. Generate candidate.
+2. Call `/evaluate`.
+3. Read score, status, and decision hint.
+4. Decide the next candidate.
+
+The API owns operational work: auth, submit/poll, retries, result normalization, progress writing, raw logs, best tracking, and sidecar refresh policy. The agent still owns strategy. The API should say what happened, not what to try next. For the protocol and adapter contract, read `references/local-harness-api.md` and `references/adapter-interface.md`.
+
 ## Progress
 
 For substantial runs, progress artifacts are default-on unless the `/goal` says `Progress chart: off`.
@@ -168,6 +181,7 @@ When uncertain, keep the candidate separate and report the risk.
 |---|---|
 | Long/noisy/remote or multi-agent run | `references/harness.md` |
 | Audit an active run from a second session | `references/auditor.md` |
+| Local evaluation API or adapters | `references/local-harness-api.md`, `references/adapter-interface.md` |
 | Floors, tails, primitive inversion, local optima | `references/resource-models.md` |
 | Measurement, profiling, variance, blockers | `references/evidence-loop.md` |
 | Simulator/policy/hidden seeds | `references/stochastic-policy-search.md` |

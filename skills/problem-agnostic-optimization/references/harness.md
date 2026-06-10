@@ -26,6 +26,18 @@ If the initializer is unavailable, create the same files manually before candida
 
 In the rest of this reference, `<harness>` means the dedicated harness directory, defaulting to `work/optimization_harness`.
 
+## Local Harness API Boundary
+
+If `<harness>/server.json` exists, a local PAO harness API is running or configured. Use it as the canonical evaluation path unless the user asks otherwise or the API is broken.
+
+The agent fast path becomes:
+
+```text
+generate candidate -> call /evaluate -> read normalized result -> decide next candidate
+```
+
+When the API is running, the API owns progress row writing, raw logs, best tracking, rate limits, and sidecar refresh policy. The agent should not duplicate those writes in `<harness>/progress.tsv`, `<harness>/raw_logs/`, `<harness>/best.md`, or sidecar artifacts. Explicit `/refresh` is the API path for dashboard/chart refresh. See `references/local-harness-api.md` and `references/adapter-interface.md`.
+
 ## Minimal Harness
 
 For small projects, create only:

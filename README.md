@@ -13,6 +13,12 @@ The skill works best when the task starts with a clear `/goal`. Optimization is 
 5. For a draft only, ask Codex to draft the full copy-paste prompt for later, including `Use problem-agnostic-optimization.`, and explicitly say not to start or activate it.
 6. For long runs, open a second Codex session in auditor mode to review `work/optimization_harness/` progress without editing the active candidate.
 
+## Local Harness API
+
+For challenge platforms with login, submit/poll, rate limits, or fragile result parsing, use the local PAO harness API. The skill repo defines the generic API contract, server/client scripts, progress/dashboard tools, adapter interface, and local command adapter. Challenge-specific adapters should live in a separate adapter package.
+
+When `work/optimization_harness/server.json` exists, Codex should evaluate candidates through the local API instead of manually handling platform operations or duplicate progress writes. Details are in `skills/problem-agnostic-optimization/references/local-harness-api.md` and `skills/problem-agnostic-optimization/references/adapter-interface.md`.
+
 Draft a goal without starting:
 
 ```text

@@ -13,11 +13,13 @@ except ModuleNotFoundError:  # pragma: no cover - exercised by users without dep
 
 
 REQUIRED_REFERENCES = [
+    "adapter-interface.md",
     "auditor.md",
     "cpu-architecture.md",
     "evidence-loop.md",
     "gpu-architecture.md",
     "harness.md",
+    "local-harness-api.md",
     "problem-families.md",
     "resource-models.md",
     "stochastic-policy-search.md",
@@ -26,11 +28,20 @@ REQUIRED_REFERENCES = [
 
 REQUIRED_SKILL_SCRIPTS = [
     "init_harness.py",
+    "pao_harness_client.py",
+    "pao_harness_server.py",
     "progress_chart.py",
     "progress_dashboard.py",
     "render_progress.py",
     "record_event.py",
     "record_progress.py",
+]
+
+REQUIRED_ADAPTER_FILES = [
+    "__init__.py",
+    "_template.py",
+    "base.py",
+    "local_command.py",
 ]
 
 
@@ -122,6 +133,7 @@ def required_files(skill_dir: Path) -> list[Path]:
     ]
     files.extend(skill_dir / "references" / name for name in REQUIRED_REFERENCES)
     files.extend(skill_dir / "scripts" / name for name in REQUIRED_SKILL_SCRIPTS)
+    files.extend(skill_dir / "scripts" / "adapters" / name for name in REQUIRED_ADAPTER_FILES)
     return files
 
 
