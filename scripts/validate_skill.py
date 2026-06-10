@@ -28,6 +28,7 @@ REQUIRED_SKILL_SCRIPTS = [
     "init_harness.py",
     "progress_chart.py",
     "progress_dashboard.py",
+    "render_progress.py",
     "record_event.py",
     "record_progress.py",
 ]

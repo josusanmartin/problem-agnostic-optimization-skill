@@ -42,23 +42,25 @@ Harness deployment is default-on for every substantial `/goal` run, leaderboard/
 Before baseline or candidate work, read `references/harness.md` and initialize the harness. Fast path: run the bundled `scripts/init_harness.py` if available; otherwise create the same files manually:
 
 ```text
-work/audit.md
-work/best.md
-work/breakthroughs.md
-work/checkpoints/progress.json
-work/candidates/_template.result.json
-work/dashboard.html
-work/events.jsonl
-work/log.md
-work/plan.md
-work/promotion_ladder.md
-work/progress.tsv
-work/progress.svg
-work/review.md
-work/schemas/candidate_result.schema.json
-work/state.json
-work/verifier.md
+work/optimization_harness/audit.md
+work/optimization_harness/best.md
+work/optimization_harness/breakthroughs.md
+work/optimization_harness/checkpoints/progress.json
+work/optimization_harness/candidates/_template.result.json
+work/optimization_harness/dashboard.html
+work/optimization_harness/events.jsonl
+work/optimization_harness/log.md
+work/optimization_harness/plan.md
+work/optimization_harness/promotion_ladder.md
+work/optimization_harness/progress.tsv
+work/optimization_harness/progress.svg
+work/optimization_harness/review.md
+work/optimization_harness/schemas/candidate_result.schema.json
+work/optimization_harness/state.json
+work/optimization_harness/verifier.md
 ```
+
+The default harness directory is `work/optimization_harness/`. Keep every file the harness creates under that dedicated directory unless the user explicitly chooses another isolated path with `--work-dir`; do not mix harness ledgers with problem-local `work/` scratch files.
 
 Only skip harness deployment when the task is explicitly tiny or the user disables persistence. If you skip it, record the skip reason in your response or notes.
 
@@ -66,11 +68,21 @@ Only skip harness deployment when the task is explicitly tiny or the user disabl
 
 For substantial runs, progress artifacts are default-on unless the `/goal` says `Progress chart: off`.
 
-Before the first candidate, initialize `work/progress.tsv`, `work/log.md`, and the `progress` fields in `work/state.json`. After every measured candidate, try to capture current usage, append one candidate row to `work/progress.tsv`, regenerate `work/progress.svg` and `work/dashboard.html`, and refresh `work/review.md`. Use the bundled `scripts/record_progress.py` when available; hand-write TSV rows only when the script is missing. If the chart/dashboard scripts are unavailable or a result cannot be charted yet, write the blocker into `work/log.md` or `work/review.md`; do not silently skip progress artifacts.
+During active search, candidate throughput is part of the optimization objective. Do not slow the candidate loop to maintain rich logs or derived artifacts. Fast path after each measured candidate:
 
-`work/progress.tsv` is the score ledger. New runs must include these columns in every row: `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. Timestamps must be UTC snapshots in `YYYY-MM-DDTHH:MM:SSZ` form. Token/time values may be blank when unavailable, but do not omit the columns. Do not use candidate count as a proxy for resource burn.
+1. Record the authoritative result or blocker.
+2. Append one `<harness>/progress.tsv` row with `record_progress.py` when available.
+3. Record the decision and next direction.
 
-Token history comes from explicit `get_goal` usage snapshots recorded in `work/log.md`, not from interpolation across candidates. In Codex, always try to call `get_goal` after each measured candidate and append the raw or structured snapshot to `work/log.md` with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, mark it as unknown; do not backfill or invent per-candidate token deltas.
+Best-effort, never blocking: `get_goal` usage snapshot, raw evidence path, and compact `<harness>/log.md` note. Checkpoint/audit only: `<harness>/progress.svg`, `<harness>/dashboard.html`, `<harness>/review.md`, candidate JSON for rejected candidates, verifier and promotion-ladder details, and breakthrough summaries. Leave optional fields blank rather than waiting. Ordinary rejected candidates in fast mode do not need a dossier.
+
+Before the first candidate, initialize `<harness>/progress.tsv`, `<harness>/log.md`, and the `progress` fields in `<harness>/state.json`, where `<harness>` defaults to `work/optimization_harness`. Do not run `render_progress.py` after every candidate in fast mode; run it at promotion, reassessment, handoff, user request, periodic sidecar checkpoints, or audit mode. If a chart/dashboard/result cannot be produced yet, write the blocker into `<harness>/log.md` or `<harness>/review.md`; do not silently skip required checkpoint artifacts.
+
+Harness modes: `fast` is the default for active search and keeps per-candidate work to result/blocker, row, decision, and next direction; `minimal` is accepted as an alias for `fast`; `standard` uses the fast path after each candidate and refreshes sidecar artifacts at promotions, reassessments, handoff, idle time, or every N candidates; `audit` requires full candidate JSON, verifier, dashboard, review, and breakthrough state before important decisions. Promotion remains serial and must wait for gating evidence even when sidecar work is deferred or delegated.
+
+`<harness>/progress.tsv` is the score ledger. New runs must include these columns in every row: `timestamp`, `candidate`, `score` or another authoritative metric column, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. Timestamps must be UTC snapshots in `YYYY-MM-DDTHH:MM:SSZ` form. Token/time values may be blank when unavailable, but do not omit the columns. Do not use candidate count as a proxy for resource burn.
+
+Token history comes from explicit `get_goal` usage snapshots recorded in `<harness>/log.md`, not from interpolation across candidates. In Codex, capture `get_goal` after a measured candidate only when it is immediately available and does not slow the loop. Append the raw or structured snapshot to `<harness>/log.md` with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `<harness>/state.json` under `progress.latest_usage_snapshot`. If early token history is missing, mark it as unknown; do not backfill or invent per-candidate token deltas.
 
 The SVG chart has two panels: the top plots authoritative score by candidate number with a protected-best curve and optional target line; the bottom plots recorded token snapshots by elapsed wall time. Candidate count is the right x-axis for score progress. Elapsed wall time is the right x-axis for token burn.
 
@@ -89,13 +101,13 @@ A gap classification is a revisable hypothesis, not a fact, especially when inhe
 
 ## Candidate
 
-For each candidate, state: parent, parent hash when available, hypothesis, mechanism, duplicate check, expected signal, kill criterion, smallest edit, validation, measurement, and decision. For substantial runs, save a typed candidate result under `work/candidates/`. For tiny/minimal runs, a compact log entry is enough unless the candidate is promoted or risky.
+For each candidate, state: parent, parent hash when available, hypothesis, mechanism, duplicate check, expected signal, kill criterion, smallest edit, validation, measurement, and decision. Candidate JSON under `<harness>/candidates/` is required before stable promotion, for risky or surprising candidates, audit mode, handoff, or when the candidate changes the search model. For ordinary rejected candidates in fast mode, a progress row plus one-line learning is enough.
 
 Mechanism class: work deletion | resource transfer | tail/dependency | scheduler/variance | representation/primitive/route change | contract specialization | approximation | forbidden shortcut.
 
 Decision: `PROMOTE` | `KEEP VARIANT` | `REJECT` | `BUG` | `BLOCKED`.
 
-Never promote from a screening metric. Promotion should pass the ladder in `work/promotion_ladder.md`; meaningful promotions should also run or explicitly limit the fresh verifier gate in `work/verifier.md`. Near ties favor the simpler, smaller, less stateful artifact. After a promotion or surprising regression, update the bottleneck model before choosing the next candidate.
+Never promote from a screening metric. Promotion should pass the ladder in `<harness>/promotion_ladder.md`; meaningful promotions should also run or explicitly limit the fresh verifier gate in `<harness>/verifier.md`. Near ties favor the simpler, smaller, less stateful artifact. After a promotion or surprising regression, update the bottleneck model before choosing the next candidate.
 
 ## Multi-Agent Mode
 
@@ -122,7 +134,7 @@ Reassess before the next candidate when any is true:
 
 After reassessment, either continue with a narrower hypothesis and kill criterion, or mark the hill `CLOSED` and spend the next candidate off-hill.
 
-For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep and preserve the map in `work/breakthroughs.md`. Read "Breakthrough Mining" in `references/evidence-loop.md`.
+For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep and preserve the map in `<harness>/breakthroughs.md`. Read "Breakthrough Mining" in `references/evidence-loop.md`.
 
 Exception: when a `best-of-N` scoreboard or contract-allowed draw distribution can vary the recorded result, a *budgeted* distribution sweep (written plan + falsifiable stop, see `references/evidence-loop.md`) is sanctioned rather than churn. It either banks a best-of-N gain or supplies family-specific distribution evidence to close that draw family. It must self-terminate by its stop rule, not run open-ended.
 

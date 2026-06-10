@@ -81,7 +81,7 @@ def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
-@pytest.mark.parametrize("script_name", ["init_harness.py", "progress_chart.py", "progress_dashboard.py", "record_event.py", "record_progress.py"])
+@pytest.mark.parametrize("script_name", ["init_harness.py", "progress_chart.py", "progress_dashboard.py", "render_progress.py", "record_event.py", "record_progress.py"])
 def test_missing_skill_script_fails(tmp_path: Path, script_name: str) -> None:
     skill_dir = copy_skill(tmp_path)
     (skill_dir / "scripts" / script_name).unlink()

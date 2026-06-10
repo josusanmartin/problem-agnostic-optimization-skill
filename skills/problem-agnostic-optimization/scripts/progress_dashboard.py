@@ -78,6 +78,8 @@ def inline_chart(
     hide_before_candidate: int,
     score_scale: str,
     generated_at: str | None,
+    log_path: Path | None = None,
+    state_path: Path | None = None,
 ) -> str:
     with tempfile.TemporaryDirectory() as tmp:
         chart_path = Path(tmp) / "progress.svg"
@@ -88,8 +90,8 @@ def inline_chart(
             ylabel,
             direction,
             x_axis,
-            infer_log_path(input_path, None),
-            infer_state_path(input_path, None),
+            infer_log_path(input_path, log_path),
+            infer_state_path(input_path, state_path),
             target,
             hide_before_candidate,
             score_scale,
@@ -169,10 +171,12 @@ def render_dashboard(
     hide_before_candidate: int = 3,
     score_scale: str = "auto",
     generated_at: str | None = None,
+    log_path: Path | None = None,
+    state_path: Path | None = None,
 ) -> str:
     points = read_points(input_path)
-    usage, _, _ = state_snapshot(infer_state_path(input_path, None))
-    snapshots = read_token_snapshots(infer_log_path(input_path, None))
+    usage, _, _ = state_snapshot(infer_state_path(input_path, state_path))
+    snapshots = read_token_snapshots(infer_log_path(input_path, log_path))
     if snapshots:
         latest_snapshot = snapshots[-1]
         if usage is None:
@@ -182,7 +186,7 @@ def render_dashboard(
                 usage.total_tokens = latest_snapshot.total_tokens
             if usage.wall_seconds is None:
                 usage.wall_seconds = latest_snapshot.wall_seconds
-    chart = inline_chart(input_path, points, title, ylabel, direction, x_axis, target, hide_before_candidate, score_scale, generated_at)
+    chart = inline_chart(input_path, points, title, ylabel, direction, x_axis, target, hide_before_candidate, score_scale, generated_at, log_path, state_path)
     refresh = f'<meta http-equiv="refresh" content="{refresh_seconds}">' if refresh_seconds else ""
     latest = points[-1]
     return f"""<!doctype html>
@@ -367,6 +371,8 @@ def serve_dashboard(args: argparse.Namespace) -> None:
                     args.hide_before_candidate,
                     args.score_scale,
                     generated_at_value(args.generated_at, args.no_generated_at),
+                    args.log,
+                    args.state,
                 )
                 args.output.parent.mkdir(parents=True, exist_ok=True)
                 args.output.write_text(html, encoding="utf-8")
@@ -391,13 +397,15 @@ def serve_dashboard(args: argparse.Namespace) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Render or serve a zero-dependency optimization progress dashboard.")
-    parser.add_argument("input", type=Path, nargs="?", default=Path("work/progress.tsv"))
-    parser.add_argument("-o", "--output", type=Path, default=Path("work/dashboard.html"))
+    parser.add_argument("input", type=Path, nargs="?", default=Path("work/optimization_harness/progress.tsv"))
+    parser.add_argument("-o", "--output", type=Path, default=Path("work/optimization_harness/dashboard.html"))
     parser.add_argument("--title", default="Optimization Dashboard")
     parser.add_argument("--ylabel", default="Authoritative metric")
     parser.add_argument("--direction", choices=("lower", "higher"), default="lower")
     parser.add_argument("--x-axis", choices=("candidate", "tokens", "active", "wall"), default="candidate")
     parser.add_argument("--target", type=float, help="Target score line for the embedded SVG")
+    parser.add_argument("--log", type=Path, help="Log file containing explicit get_goal token snapshots; defaults to input sibling log.md")
+    parser.add_argument("--state", type=Path, help="State file with current best/latest usage snapshot; defaults to input sibling state.json")
     parser.add_argument("--hide-before-candidate", type=int, default=3, help="Hide early candidate numbers below this value when possible")
     parser.add_argument("--score-scale", choices=("auto", "log", "linear"), default="auto", help="Score y-axis scale for the embedded SVG")
     parser.add_argument("--generated-at", help="Fixed generation timestamp for deterministic embedded SVG output; ISO-8601, normalized to UTC Z")
@@ -425,6 +433,8 @@ def main() -> int:
         args.hide_before_candidate,
         args.score_scale,
         generated_at_value(args.generated_at, args.no_generated_at),
+        args.log,
+        args.state,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(html, encoding="utf-8")

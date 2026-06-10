@@ -178,8 +178,8 @@ def append_row(progress: Path, header: list[str], row: dict[str, str]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Append one canonical row to work/progress.tsv.")
-    parser.add_argument("--progress", type=Path, default=Path("work/progress.tsv"))
+    parser = argparse.ArgumentParser(description="Append one canonical row to the harness progress.tsv.")
+    parser.add_argument("--progress", type=Path, default=Path("work/optimization_harness/progress.tsv"))
     parser.add_argument("--timestamp", help="ISO-8601 timestamp; normalized to UTC Z. Defaults to current UTC time.")
     parser.add_argument("--candidate", required=True)
     parser.add_argument("--decision", required=True)

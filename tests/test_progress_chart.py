@@ -10,6 +10,7 @@ import sys
 REPO_ROOT = Path(__file__).resolve().parents[1]
 CHART_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "progress_chart.py"
 RUN_DASHBOARD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "progress_dashboard.py"
+RENDER_PROGRESS_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "render_progress.py"
 RECORD_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "record_event.py"
 
 
@@ -505,6 +506,47 @@ def test_record_event_appends_jsonl_and_renders_chart(tmp_path: Path) -> None:
     svg = chart.read_text(encoding="utf-8")
     assert "recorded win" in svg
     assert "Cumulative tokens" in svg
+
+
+def test_render_progress_refreshes_chart_and_dashboard(tmp_path: Path) -> None:
+    progress = tmp_path / "progress.tsv"
+    chart = tmp_path / "progress.svg"
+    dashboard = tmp_path / "dashboard.html"
+    write_minimal_progress(progress)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(RENDER_PROGRESS_SCRIPT),
+            str(progress),
+            "--chart-output",
+            str(chart),
+            "--dashboard-output",
+            str(dashboard),
+            "--title",
+            "Wrapper Progress",
+            "--ylabel",
+            "Score",
+            "--direction",
+            "lower",
+            "--generated-at",
+            "2026-06-01T00:00:00Z",
+        ],
+        check=True,
+        text=True,
+        capture_output=True,
+    )
+
+    assert str(chart) in result.stdout
+    assert str(dashboard) in result.stdout
+    svg = chart.read_text(encoding="utf-8")
+    html = dashboard.read_text(encoding="utf-8")
+    assert "Wrapper Progress" in svg
+    assert "Wrapper Progress" in html
+    assert "generated 2026-06-01T00:00:00Z" in svg
+    assert "generated 2026-06-01T00:00:00Z" in html
+    assert "win" in svg
+    assert "win" in html
 
 
 def test_record_event_keeps_nullable_token_and_time_fields(tmp_path: Path) -> None:

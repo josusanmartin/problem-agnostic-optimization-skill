@@ -355,7 +355,7 @@ cand_0003	38.200	0.0	discard	graph wrapper regressed
 
 ### Progress Event JSONL
 
-Use this for compatibility `work/events.jsonl` rows or structured progress exports. Append one JSON object after each baseline, measurement, failure, blocker, or handoff when this file is enabled.
+Use this for compatibility `<harness>/events.jsonl` rows or structured progress exports. Append one JSON object after each baseline, measurement, failure, blocker, or handoff when this file is enabled. The default `<harness>` directory is `work/optimization_harness`.
 
 Required fields: `timestamp`, `candidate`, `decision`, `tokens_total`, `tokens_delta`, `active_seconds`, `wall_seconds`, and `label`. `timestamp` must be UTC in `YYYY-MM-DDTHH:MM:SSZ` form. Token/time fields may be `null` when unavailable, but do not omit them from new events. In Codex, always try to capture `tokensUsed` and `timeUsedSeconds` from `get_goal` after each measured candidate.
 
@@ -381,7 +381,7 @@ raw_result_path
 
 ### Progress TSV
 
-Use this for small/manual `work/progress.tsv` runs or as a derived export from `work/events.jsonl`. Progress charting is on by default for substantial optimization runs. Use `scripts/record_progress.py` when available, then regenerate `work/progress.svg` after appending rows unless `/goal` says `Progress chart: off`.
+Use this for small/manual `<harness>/progress.tsv` runs or as a derived export from `<harness>/events.jsonl`. Progress charting is on by default for substantial optimization runs. Use `scripts/record_progress.py` when available. Regenerate `<harness>/progress.svg` and `<harness>/dashboard.html` with `scripts/render_progress.py` at sidecar checkpoints unless `/goal` says `Progress chart: off`.
 
 Required columns: `timestamp`, `candidate`, an authoritative metric column such as `score` or `cycles`, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form.
 
@@ -389,7 +389,7 @@ Optional `candidate_number` should be used for candidate names with unrelated di
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/record_progress.py \
-  --progress work/progress.tsv \
+  --progress work/optimization_harness/progress.tsv \
   --candidate cand_0002 \
   --metric cycles=2226 \
   --decision promote \
@@ -408,7 +408,7 @@ timestamp	candidate	cycles	decision	tokens_total	tokens_delta	wall_seconds	label
 
 ### Candidate Result JSON
 
-Use `work/candidates/_template.result.json` when present. Keep this artifact for every measured candidate in substantial runs.
+Use `<harness>/candidates/_template.result.json` when present. Keep this artifact for every measured candidate in substantial runs.
 
 ```json
 {
@@ -421,7 +421,7 @@ Use `work/candidates/_template.result.json` when present. Keep this artifact for
   "duplicate_check": "not the same hill as cand_0001",
   "hypothesis": "one concrete hypothesis",
   "artifact_paths": ["candidates/cand_0002.py"],
-  "raw_log_paths": ["work/raw_logs/cand_0002.out"],
+  "raw_log_paths": ["work/optimization_harness/raw_logs/cand_0002.out"],
   "commands": {
     "apply_or_build": null,
     "correctness": null,
@@ -473,7 +473,7 @@ Use `work/candidates/_template.result.json` when present. Keep this artifact for
 }
 ```
 
-### `work/review.md`
+### `<harness>/review.md`
 
 ```markdown
 # Progress Review
@@ -495,13 +495,14 @@ Use `work/candidates/_template.result.json` when present. Keep this artifact for
 - Next candidate:
 ```
 
-### `work/dashboard.html`
+### `<harness>/dashboard.html`
 
-Generate this from `work/progress.tsv` for local, remote, or handoff review:
+Generate this from `<harness>/progress.tsv` for local, remote, or handoff review:
 
 ```bash
-python skills/problem-agnostic-optimization/scripts/progress_dashboard.py work/progress.tsv \
-  -o work/dashboard.html \
+python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv \
+  --chart-output work/optimization_harness/progress.svg \
+  --dashboard-output work/optimization_harness/dashboard.html \
   --direction lower
 ```
 
@@ -511,7 +512,7 @@ For live remote review, run the dashboard server on the remote host with `--host
 ssh -L 8765:127.0.0.1:8765 <user>@<remote-host>
 ```
 
-### `work/audit.md`
+### `<harness>/audit.md`
 
 Use this for auditor-mode reports from a second Codex session. Append a dated section for each audit.
 
@@ -576,7 +577,7 @@ Risk:
 - Next experiments:
 ```
 
-### `work/best.md`
+### `<harness>/best.md`
 
 ```markdown
 # Best Known State
@@ -612,7 +613,7 @@ Complexity:
 1. 
 ```
 
-### `work/plan.md`
+### `<harness>/plan.md`
 
 ```markdown
 # Active Plan
@@ -620,6 +621,7 @@ Complexity:
 Target:
 Current best:
 Stagnation:
+Harness mode: fast | standard | audit
 
 ## Active Branches
 
@@ -628,6 +630,21 @@ Stagnation:
   - next probe:
   - expected signal:
   - budget:
+
+## Critical Path
+
+- correctness:
+- authoritative metric:
+- progress row:
+- raw evidence path:
+- decision:
+
+## Sidecar Queue
+
+- deferred artifacts:
+- refresh command:
+- next checkpoint:
+- must not mutate:
 
 ## Frozen Branches
 

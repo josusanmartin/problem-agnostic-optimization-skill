@@ -1061,9 +1061,9 @@ def infer_state_path(input_path: Path, explicit: Path | None) -> Path | None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Render a two-panel optimization progress SVG from work/progress.tsv plus get_goal snapshots.")
+    parser = argparse.ArgumentParser(description="Render a two-panel optimization progress SVG from the harness progress.tsv plus get_goal snapshots.")
     parser.add_argument("input", type=Path, help="TSV or JSONL with candidate, score/cycles, status/decision, and description columns")
-    parser.add_argument("-o", "--output", type=Path, default=Path("work/progress.svg"))
+    parser.add_argument("-o", "--output", type=Path, default=Path("work/optimization_harness/progress.svg"))
     parser.add_argument("--log", type=Path, help="Log file containing explicit get_goal token snapshots; defaults to input sibling log.md")
     parser.add_argument("--state", type=Path, help="State file with current best/latest usage snapshot; defaults to input sibling state.json")
     parser.add_argument("--target", type=float, help="Target score line, for example 1000 for sub-1000 cycles")
