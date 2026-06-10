@@ -41,6 +41,7 @@ def state(args: argparse.Namespace) -> dict[str, object]:
     dashboard_path = args.work_dir / "dashboard.html"
     review_path = args.work_dir / "review.md"
     best_path = args.work_dir / "best.md"
+    render_script = Path(__file__).resolve().parent / "render_progress.py"
     return {
         "schema_version": 2,
         "target_score": None,
@@ -213,7 +214,7 @@ def state(args: argparse.Namespace) -> dict[str, object]:
                     "token_accounting_wait",
                 ],
                 "refresh_command": (
-                    "python skills/problem-agnostic-optimization/scripts/render_progress.py "
+                    f"python {shlex.quote(str(render_script))} "
                     f"{shlex.quote(str(progress_path))} --chart-output {shlex.quote(str(chart_path))} "
                     f"--dashboard-output {shlex.quote(str(dashboard_path))}"
                 ),

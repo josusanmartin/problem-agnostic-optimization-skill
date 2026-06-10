@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import shlex
 import subprocess
 import sys
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INIT_SCRIPT = REPO_ROOT / "skills" / "problem-agnostic-optimization" / "scripts" / "init_harness.py"
+RENDER_SCRIPT = INIT_SCRIPT.parent / "render_progress.py"
 
 
 def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
@@ -106,7 +108,10 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["progress"]["sidecar"]["refresh_triggers"]["idle_only"] is True
     assert "token_accounting_wait" in state["progress"]["sidecar"]["forbidden_on_fast_path"]
     assert state["progress"]["sidecar"]["semantics"].startswith("deferred_in_single_agent_runs")
-    assert "render_progress.py" in state["progress"]["sidecar"]["refresh_command"]
+    refresh_command = state["progress"]["sidecar"]["refresh_command"]
+    assert refresh_command.startswith(f"python {shlex.quote(str(RENDER_SCRIPT))} ")
+    assert "python skills/problem-agnostic-optimization/scripts/render_progress.py" not in refresh_command
+    assert str(work / "progress.tsv") in refresh_command
     assert state["progress"]["sidecar"]["safe_sidecar_outputs"] == [
         str(work / "progress.svg"),
         str(work / "dashboard.html"),

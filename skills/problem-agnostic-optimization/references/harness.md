@@ -735,7 +735,7 @@ Small machine-readable state:
         "breakthrough_summary",
         "token_accounting_wait"
       ],
-      "refresh_command": "python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv --chart-output work/optimization_harness/progress.svg --dashboard-output work/optimization_harness/dashboard.html",
+      "refresh_command": "python /path/to/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv --chart-output work/optimization_harness/progress.svg --dashboard-output work/optimization_harness/dashboard.html",
       "safe_sidecar_outputs": ["work/optimization_harness/progress.svg", "work/optimization_harness/dashboard.html", "work/optimization_harness/review.md"],
       "must_not_mutate": ["work/optimization_harness/best.md", "canonical promotion state", "final submission state"],
       "last_refreshed_at": null

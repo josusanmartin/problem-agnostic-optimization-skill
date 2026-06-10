@@ -217,7 +217,7 @@ python skills/problem-agnostic-optimization/scripts/record_progress.py \
 
 Add `--candidate-number 7` when the candidate name has unrelated digits and the TSV has a `candidate_number` column.
 
-Refresh both the SVG chart and static dashboard with one checkpoint command:
+Refresh both the SVG chart and static dashboard with one checkpoint command. When running from an installed skill, use `PAO="${CODEX_HOME:-$HOME/.codex}/skills/problem-agnostic-optimization"` and replace `skills/problem-agnostic-optimization/scripts/...` with `"$PAO/scripts/..."`; generated harness state records the actual script path from the installed skill.
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv \
