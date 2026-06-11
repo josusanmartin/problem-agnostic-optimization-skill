@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+import shlex
 import subprocess
 from typing import Any
 
@@ -33,11 +34,12 @@ class Adapter:
 
         project_root = Path(request.get("project_root", "."))
         artifact_path = request["artifact_path"]
-        values = {
+        raw_values = {
             "artifact_path": artifact_path,
             "artifact_path_abs": str((project_root / artifact_path).resolve()),
             "candidate_id": request.get("candidate_id", ""),
         }
+        values = {key: shlex.quote(str(value)) for key, value in raw_values.items()}
         command = command_template.format_map(values)
         timeout = self.config.get("timeout_seconds")
         try:
@@ -72,7 +74,10 @@ class Adapter:
         if isinstance(metric_regex, str) and metric_regex:
             match = re.search(metric_regex, output, re.MULTILINE)
             if match:
-                score = float(match.group(1))
+                try:
+                    score = float(match.group(1))
+                except ValueError:
+                    score = None
 
         correct_regex = self.config.get("correct_regex")
         if isinstance(correct_regex, str) and correct_regex:

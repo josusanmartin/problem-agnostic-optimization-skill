@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -69,10 +70,14 @@ def write_project(tmp_path: Path, *, mode: str = "fast", every_n: int | None = N
     return project
 
 
-def start_server(project: Path) -> tuple[subprocess.Popen[str], str]:
+def start_server(project: Path, extra_env: dict[str, str] | None = None) -> tuple[subprocess.Popen[str], str]:
+    env = os.environ.copy()
+    if extra_env:
+        env.update(extra_env)
     proc = subprocess.Popen(
         [sys.executable, str(SERVER_SCRIPT), "--config", "pao_harness.json"],
         cwd=project,
+        env=env,
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -175,7 +180,7 @@ def test_evaluate_success_writes_progress_raw_log_and_best(tmp_path: Path) -> No
 
         rows = progress_rows(project)
         assert rows[-1]["candidate"] == "cand_0001"
-        assert rows[-1]["score"] == "10.0"
+        assert rows[-1]["score"] == "10"
         assert rows[-1]["decision"] == "promote"
         assert rows[-1]["label"] == "baseline candidate"
 
@@ -232,6 +237,90 @@ def test_compile_error_writes_bug_progress_and_raw_log(tmp_path: Path) -> None:
         assert rows[-1]["decision"] == "bug"
         raw = json.loads((project / result["raw_log_path"]).read_text(encoding="utf-8"))
         assert raw["adapter_result"]["raw"]["returncode"] == 1
+    finally:
+        stop_server(proc)
+
+
+def test_local_command_quotes_artifact_path_before_shell_execution(tmp_path: Path) -> None:
+    project = write_project(tmp_path)
+    artifact = project / "submissions" / "cand; touch INJECTED.py"
+    artifact.write_text("score = 10\n", encoding="utf-8")
+    proc, base_url = start_server(project)
+    try:
+        status, result = evaluate(base_url, "cand_shellsafe", "submissions/cand; touch INJECTED.py")
+        assert status == 200
+        assert result["ok"] is True
+        assert not (project / "INJECTED.py").exists()
+    finally:
+        stop_server(proc)
+
+
+def test_malformed_measured_adapter_result_is_not_ok(tmp_path: Path) -> None:
+    project = write_project(tmp_path)
+    (project / "submissions" / "cand_bad_metric.py").write_text("score = 10\n", encoding="utf-8")
+    (project / "fake_adapter.py").write_text(
+        "\n".join(
+            [
+                "class Adapter:",
+                "    def __init__(self, config):",
+                "        pass",
+                "    def contract(self):",
+                "        return {'metric_name': 'score', 'direction': 'lower', 'artifact_type': 'file', 'supports_async': False}",
+                "    def evaluate(self, request):",
+                "        return {'ok': True, 'status': 'measured', 'correct': True, 'metric_name': 'score', 'score': 'not-a-number', 'direction': 'lower', 'message': 'bad metric'}",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    config_path = project / "pao_harness.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["adapter"] = {"import": "fake_adapter:Adapter", "config": {}}
+    config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    proc, base_url = start_server(project, {"PYTHONPATH": str(project)})
+    try:
+        status, result = evaluate(base_url, "cand_bad_metric", "submissions/cand_bad_metric.py")
+        assert status == 200
+        assert result["ok"] is False
+        assert result["status"] == "submission_error"
+        assert result["score"] is None
+        assert result["decision_hint"] == "bug"
+        rows = progress_rows(project)
+        assert rows[-1]["decision"] == "bug"
+        assert rows[-1]["score"] == ""
+    finally:
+        stop_server(proc)
+
+
+def test_measured_false_correctness_normalizes_to_wrong_answer(tmp_path: Path) -> None:
+    project = write_project(tmp_path)
+    (project / "submissions" / "cand_wrong.py").write_text("score = 10\n", encoding="utf-8")
+    (project / "fake_adapter.py").write_text(
+        "\n".join(
+            [
+                "class Adapter:",
+                "    def __init__(self, config):",
+                "        pass",
+                "    def contract(self):",
+                "        return {'metric_name': 'score', 'direction': 'lower', 'artifact_type': 'file', 'supports_async': False}",
+                "    def evaluate(self, request):",
+                "        return {'ok': False, 'status': 'measured', 'correct': False, 'metric_name': 'score', 'score': 10, 'direction': 'lower', 'message': 'wrong'}",
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    config_path = project / "pao_harness.json"
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    config["adapter"] = {"import": "fake_adapter:Adapter", "config": {}}
+    config_path.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
+    proc, base_url = start_server(project, {"PYTHONPATH": str(project)})
+    try:
+        status, result = evaluate(base_url, "cand_wrong", "submissions/cand_wrong.py")
+        assert status == 200
+        assert result["ok"] is False
+        assert result["status"] == "wrong_answer"
+        assert result["decision_hint"] == "reject"
     finally:
         stop_server(proc)
 

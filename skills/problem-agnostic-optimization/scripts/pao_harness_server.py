@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 from datetime import datetime, timezone
 from decimal import Decimal
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import importlib
 import json
 from pathlib import Path
@@ -271,13 +271,24 @@ class HarnessState:
         )
         correct = bool(adapter_result.get("correct", False))
         score = self._score(adapter_result.get("score"))
+        if status == "measured" and score is None:
+            status = "submission_error"
+            correct = False
+        elif status == "measured" and not correct:
+            status = "wrong_answer"
         direction = str(adapter_result.get("direction") or self.direction)
         if direction not in {"lower", "higher"}:
             direction = self.direction
         metric_name = str(adapter_result.get("metric_name") or self.metric_name)
         decision_hint = decision_for_status(status, correct, score, self._score(best_before.get("best_score")), direction)
         best_after = self._update_best_if_needed(best_before, candidate_id, score, artifact_path, decision_hint, metric_name, direction)
-        progress_written = self._write_progress(candidate_id, metric_name, score, progress_decision(decision_hint), request.get("label", status))
+        progress_written = self._write_progress(
+            candidate_id,
+            metric_name,
+            adapter_result.get("score") if score is not None else None,
+            progress_decision(decision_hint),
+            request.get("label", status),
+        )
         candidate_result_path = self._write_candidate_result_if_needed(
             candidate_id,
             request,
@@ -289,7 +300,7 @@ class HarnessState:
         refreshed = self._maybe_checkpoint_refresh()
 
         response = {
-            "ok": status == "measured" and correct,
+            "ok": status == "measured" and correct and score is not None,
             "api_version": API_VERSION,
             "candidate_id": candidate_id,
             "status": status,
@@ -352,13 +363,14 @@ class HarnessState:
         path.write_text(text + "\n", encoding="utf-8")
         return path
 
-    def _write_progress(self, candidate_id: str, metric_name: str, score: float | None, decision: str, label: Any) -> bool:
+    def _write_progress(self, candidate_id: str, metric_name: str, score: Any, decision: str, label: Any) -> bool:
+        score_text = self._score_text(score)
         args = SimpleNamespace(
             timestamp=None,
             candidate=candidate_id,
             decision=decision,
-            score=str(score) if score is not None and metric_name == "score" else None,
-            metric=f"{metric_name}={score}" if score is not None and metric_name != "score" else None,
+            score=score_text if score_text is not None and metric_name == "score" else None,
+            metric=f"{metric_name}={score_text}" if score_text is not None and metric_name != "score" else None,
             metric_name=metric_name if score is None else None,
             candidate_number=None,
             tokens_total=None,
@@ -545,6 +557,18 @@ class HarnessState:
             return None
         return float(number)
 
+    @staticmethod
+    def _score_text(value: Any) -> str | None:
+        if value is None or value == "":
+            return None
+        try:
+            number = Decimal(str(value))
+        except Exception:
+            return None
+        if not number.is_finite():
+            return None
+        return record_progress.format_decimal(number)
+
 
 class HarnessHandler(BaseHTTPRequestHandler):
     server_version = "PAOHarness/0.1"
@@ -605,7 +629,7 @@ class HarnessHandler(BaseHTTPRequestHandler):
         sys.stderr.write("%s - %s\n" % (self.log_date_time_string(), fmt % args))
 
 
-class HarnessHTTPServer(ThreadingHTTPServer):
+class HarnessHTTPServer(HTTPServer):
     state: HarnessState
 
 

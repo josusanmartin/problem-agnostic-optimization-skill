@@ -164,6 +164,8 @@ Available format fields:
 - `{artifact_path_abs}`: absolute validated path
 - `{candidate_id}`: candidate id
 
+The built-in adapter shell-quotes request-derived placeholder values before formatting the command string. Keep command templates under repo/config control; do not construct templates from candidate content.
+
 ## External Adapter Repos
 
 Challenge adapters should live in a separate package, for example:
