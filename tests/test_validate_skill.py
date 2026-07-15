@@ -72,7 +72,7 @@ def test_invalid_utf8_fails_without_traceback(tmp_path: Path) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
-@pytest.mark.parametrize("reference_name", ["auditor.md", "gpu-architecture.md"])
+@pytest.mark.parametrize("reference_name", ["auditor.md", "frontier-introspection.md", "gpu-architecture.md"])
 def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
     skill_dir = copy_skill(tmp_path)
     (skill_dir / "references" / reference_name).unlink()

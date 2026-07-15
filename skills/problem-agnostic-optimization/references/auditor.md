@@ -45,9 +45,10 @@ Check the run against the recorded contract:
 - Baseline: baseline was reproduced or marked `unknown, reproduce first`.
 - Best protection: `work/optimization_harness/best.md`, `work/optimization_harness/state.json`, and the ledger agree on the current best.
 - Promotion integrity: every promoted candidate is correct and promoted by the authoritative metric, not by a profile, local proxy, stale result, or wrong-answer speed.
+- Execution attestation: conditional routes, optional builds, JITs, graph replays, caches, and fallbacks have evidence that the intended candidate path actually ran.
 - Ledger integrity: events are chronological, scores use the same direction/unit, failures are not encoded as fake zero-score wins, and token/time fields are monotonic when present.
 - Chart/review freshness: `work/optimization_harness/progress.svg` and `work/optimization_harness/review.md` reflect the latest event when charting is enabled.
-- Search health: recent candidates test one hypothesis each, mechanism classes are not repeating blindly, and closed hills are not being retried without a new premise.
+- Search health: recent candidates test one hypothesis each, mechanism classes are not repeating blindly, and closed hills have scoped verdicts, aspiration rules, and no retries without a new premise.
 - Reassessment triggers: token burn without improvement, rising bug/crash rate, repeated same-family rejects, mispredicted bottleneck model, exhausted budget, or stale pending jobs.
 - Next action: the planned next candidate is justified by the bottleneck model, or the run should reassess/change hill.
 

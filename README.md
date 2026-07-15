@@ -364,6 +364,7 @@ test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/render_progres
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/record_event.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/record_progress.py"
 test -f "$CODEX_HOME/skills/problem-agnostic-optimization/references/auditor.md"
+test -f "$CODEX_HOME/skills/problem-agnostic-optimization/references/frontier-introspection.md"
 ```
 
 The installed layout should be:
@@ -384,6 +385,7 @@ $CODEX_HOME/skills/problem-agnostic-optimization/
     cpu-architecture.md
     auditor.md
     evidence-loop.md
+    frontier-introspection.md
     gpu-architecture.md
     harness.md
     problem-families.md

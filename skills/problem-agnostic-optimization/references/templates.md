@@ -146,6 +146,37 @@ Next off-hill probe:
 - Reopen condition:
 ```
 
+### Frontier Architecture Diff
+
+```markdown
+## Frontier Architecture Diff: source
+
+- Source snapshot / result:
+- Protected best:
+- Contract match:
+- Timed boundary:
+
+| dimension | protected best | frontier | evidence | causal / enabling / incidental / unknown | cheapest probe |
+|---|---|---|---|---|---|
+| contract and enforcement |  |  |  |  |  |
+| timed lifecycle |  |  |  |  |  |
+| algorithm |  |  |  |  |  |
+| dependency DAG |  |  |  |  |  |
+| hardware mapping |  |  |  |  |  |
+| representation / precision |  |  |  |  |  |
+| specialization / routing |  |  |  |  |  |
+| state / lifetime |  |  |  |  |  |
+| toolchain / generation |  |  |  |  |  |
+| correctness recovery |  |  |  |  |  |
+```
+
+### Negative Verdict Audit
+
+```markdown
+| prior verdict | original evidence | scope: algorithm / implementation / integration / attachment / enforcement / invalid measurement | new premise | keep / narrow / supersede | cheapest falsifier | reopen condition |
+|---|---|---|---|---|---|---|
+```
+
 ### Escape Ladder
 
 ```markdown
