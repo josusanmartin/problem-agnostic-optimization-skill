@@ -141,6 +141,8 @@ After reassessment, either continue with a narrower hypothesis and kill criterio
 
 For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep and preserve the map in `<harness>/breakthroughs.md`. Read "Breakthrough Mining" in `references/evidence-loop.md`.
 
+If about three independent wrapper, primitive, or isolated-phase substitutions fail to move the measured owner and the remaining gap exceeds their plausible gain, protect the best and reserve a bounded branch for an integrated architecture. Define its phase contract, milestones, budget, route attestation, and kill criteria before implementation; diagnose components separately, but promote only end to end. See `references/frontier-introspection.md`.
+
 Exception: when a `best-of-N` scoreboard or contract-allowed draw distribution can vary the recorded result, a *budgeted* distribution sweep (written plan + falsifiable stop, see `references/evidence-loop.md`) is sanctioned rather than churn. It either banks a best-of-N gain or supplies family-specific distribution evidence to close that draw family. It must self-terminate by its stop rule, not run open-ended.
 
 ## Escape

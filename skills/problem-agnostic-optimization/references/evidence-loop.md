@@ -37,6 +37,7 @@ Objective Evidence finds the best known *result*. Also seek the best known *meth
 When porting an external mechanism:
 
 - Snapshot the source, build path, runtime lifecycle, and authoritative result before interpreting it.
+- When multiple sources exist, establish provenance and common ancestry, then use independent architectural agreement to rank hypotheses. Keep source-unique details unproven until ablated.
 - Run the architecture diff in `frontier-introspection.md`: compare algorithm, dependency DAG, hardware mapping, precision, repair, routing, state lifetime, setup boundary, and toolchain.
 - Decompose it into named sub-techniques and port them faithfully before tuning.
 - Verify each sub-technique transferred with a counter, ablation, or microbenchmark, not just the end-to-end score.
@@ -180,11 +181,13 @@ Fallback tools:
 - Static models: compiler output, instruction mix, occupancy estimates, `llvm-mca`, roofline-style math, kernel launch count, or query plans.
 - Surrogate profiles: local `perf`, language profilers, flamegraphs, tracing logs, simulator output, or a smaller reproducible workload.
 - Differential timing: compare parent and candidate under identical commands, seeds, input order, and warmup protocol.
+- Stage-cut diagnostics: run an attested prefix, controlled suffix replacement, or phase-only route to estimate ownership when the full profiler is unavailable.
 
 Fallback discipline:
 
 - Promote only by the authoritative metric, even if a weak profiler says the candidate should win.
 - Use weak evidence to choose the next candidate, not to claim the bottleneck is proven.
+- Treat stage cuts as diagnosis only. Do not promote them, add timings from incompatible cuts, or infer an end-to-end win from an isolated phase.
 - If weak evidence repeatedly mispredicts the authoritative score, downgrade or discard that screening model.
 - A weak screen produces false negatives, not just false positives: it can veto a real win. Once you have downgraded a screen, do not let it reject a candidate; let the authoritative metric decide that candidate.
 - When local screening is non-predictive, the authoritative metric becomes the screen. Budget exploratory authoritative evaluations for screening instead of throttling exploration to conserve them; an unspent submission or eval budget is worth less than a discovered improvement.

@@ -14,6 +14,18 @@ Record before analysis:
 
 Do not rewrite old ledger entries to match hindsight. Append a superseding interpretation and retain the original evidence.
 
+## Triangulate Multiple Frontiers
+
+When two or more materially faster artifacts are available, compare them with each other before treating either one as the blueprint:
+
+- Check provenance, common ancestry, copied modules, shared authorship, and shared build artifacts. Two submissions with the same underlying source are one evidence lineage, not independent confirmation.
+- Quantify both the protected-best gap and the frontier-to-frontier spread under the same contract. A small spread between independent architectures is stronger evidence about the reachable tier than one isolated score.
+- Build a consensus matrix of shared algorithm, phase graph, representation, hardware mapping, precision, repair, routing, and lifecycle choices.
+- Promote shared differences to high-priority hypotheses, not facts. They still need an ablation or faithful port.
+- Keep source-unique details labeled `unknown` until measured. A winner comment, import, constant, or large source file is a clue, not causal evidence.
+
+Use independent agreement to rank probes. Do not average incompatible contracts, hardware, timed boundaries, or correctness scopes into false consensus.
+
 ## Run The Architecture Diff
 
 Compare the frontier artifact with the protected best across every dimension. Do not stop at imports or the headline algorithm.
@@ -43,14 +55,16 @@ For each difference, label it:
 
 Revisit prior rejections that touch the frontier mechanism. Assign the narrowest valid verdict:
 
-- `algorithm-negative`: a mature implementation proves the decomposition itself loses under the same contract.
+- `algorithm-negative`: a mature, integrated, co-designed implementation proves the decomposition itself loses under the same contract.
 - `implementation-negative`: the tested implementation is immature, underparallelized, unstable, or otherwise unrepresentative.
+- `mapping-negative`: the tested thread, block, tile, layout, schedule, or device mapping loses; the algorithm remains open under another mapping.
 - `integration-negative`: the mechanism is sound but its precision, layout, ordering, or API boundary was transferred incorrectly.
 - `attachment-negative`: the candidate replaced one phase while an unchanged parent bottleneck dominated end to end.
+- `availability-negative`: the required library, compiler, profiler, device feature, build path, or runtime was unavailable; performance remains undecided.
 - `enforcement-negative`: one syntax, API, tool, or execution form was rejected; broader semantics remain undecided.
 - `measurement-invalid`: fallback, stale code, failed build, wrong route, warmup, or harness behavior means the mechanism was not measured.
 
-Never close an algorithm from a fallback timing or from a prototype whose own bottleneck is unrelated to the intended steady-state design. Never reopen a genuinely forbidden mechanism by disguising it.
+Never close an algorithm from a fallback timing, an unavailable tool, a stage-only prototype, or a mapping whose own bottleneck is unrelated to the intended steady-state design. Never reopen a genuinely forbidden mechanism by disguising it.
 
 ## Require Execution Attestation
 
@@ -88,6 +102,52 @@ Do not evaluate an algorithm independently of the substrate that makes it useful
 
 When mechanisms are coupled, use staged ablations for understanding, but budget one integrated candidate. Local pieces may regress while the complete architecture wins.
 
+## Write The Phase Contract
+
+For an integrated route, specify every boundary between adjacent phases:
+
+- Input and output representation, dtype, layout, ownership, and normalization.
+- Metadata and complementary outputs produced once and consumed later.
+- Buffer aliasing, workspace, synchronization, and lifetime across capture or replay.
+- Critical scalars that require higher precision than the bulk carrier.
+- Certificate, repair, retry, and fallback behavior, including their expected rates and costs.
+
+Evaluate the phase graph as a system. A component that loses in isolation can still enable a faster end-to-end route by deleting conversion, materialization, traversal, synchronization, or a second solve.
+
+## Keep A Precision Ledger
+
+Record precision by phase and state rather than assigning one dtype to the whole algorithm:
+
+| phase or state | carrier/storage | products/accumulation | critical scalars | certificate | repair/fallback |
+|---|---|---|---|---|---|
+|  |  |  |  |  |  |
+
+Low-precision storage or transport does not imply a low-precision output contract. Scope failures to the tested boundary: unscaled carrier, weak accumulation, missing certificate, expensive repair, or inaccurate terminal solve.
+
+## Reserve An Architecture Budget
+
+A practical trigger for a bounded end-to-end architecture branch is:
+
+- About three independent wrapper, primitive, or local phase substitutions failed to move the measured owner; and
+- The remaining gap is larger than the plausible gain from another wrapper-level change; and
+- A frontier artifact or resource model points to a different integrated phase graph.
+
+When triggered:
+
+1. Protect the current best and assign explicit candidate, time, submission, and implementation budgets to the branch.
+2. Start with the cheapest representative case that exercises the complete phase contract, not a microbenchmark that omits the hard boundaries.
+3. Define milestones for build, route attestation, correctness, stage ownership, integrated execution, and authoritative measurement.
+4. Define kill criteria for impossible resource use, failed invariants, unrepairable correctness, or a measured integrated floor above target.
+5. Allow diagnostic components to regress while the architecture is incomplete; only the integrated route can promote.
+
+Do not let a stream of cheap local candidates consume the architecture budget. A much larger or generated frontier implementation is a planning signal that the route may require real systems work; it is not evidence that source volume itself causes speed.
+
+## Diagnose With Stage Cuts
+
+When a full profiler is unavailable, create diagnostic variants that stop after an attested phase boundary, replace a suffix with a controlled sink, or run a representative prefix. Keep inputs, warmup, setup boundary, and route markers comparable.
+
+Use stage cuts to estimate ownership and critical-path changes. Never promote a stage-cut result, infer end-to-end speedup by summing incompatible cuts, or treat a fast isolated phase as an algorithm-level win.
+
 ## Run The Counterfactual Timeline
 
 For each enabling idea, record:
@@ -105,9 +165,9 @@ Judge the process using evidence available then, not only the final answer. Pres
 
 Produce three outputs:
 
-1. **Mechanism map**: architecture differences with causal/enabling labels.
+1. **Mechanism map**: cross-frontier consensus and architecture differences with causal/enabling labels.
 2. **Verdict corrections**: old closures narrowed, superseded, or retained with explicit evidence.
-3. **Next-run rules**: concrete trigger, probe, kill criterion, and durable ledger field.
+3. **Next-run rules**: concrete trigger, architecture budget, probe, kill criterion, and durable ledger field.
 
 For every transferable mechanism, define the cheapest falsifiable probe and an integrated target candidate. Do not reduce the lesson to "write more custom code" or "use the winner's library."
 

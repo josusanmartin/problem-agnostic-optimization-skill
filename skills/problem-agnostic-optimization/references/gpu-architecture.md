@@ -35,6 +35,8 @@ Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, production
 - For captured or cached routes, prove pointer lifetime, workspace isolation, output alias safety, input refresh, and route execution.
 - Treat code generation, fixed-shape instantiation, offline compilation, and prelinked device code as optimization axes when source and deployment rules allow them.
 - Co-design the algorithm and schedule. A new decomposition can lose when attached to an old reduction, materialization, or backtransform even if the integrated architecture wins.
+- Write the phase contract before a multi-kernel rewrite: representation, layout, precision, metadata, ownership, synchronization, buffer lifetime, certificate, and repair at every boundary.
+- If repeated wrapper or isolated primitive swaps do not move end-to-end time and the gap exceeds their plausible gain, protect the best and reserve a bounded branch for the integrated phase graph.
 
 ## Device Discovery
 
@@ -62,6 +64,7 @@ Treat every discovered fact as a hypothesis until measured on the authoritative 
 ## Precision And Recovery
 
 - Budget precision by state: storage, products, accumulation, critical scalar solves, final output, and verifier need not share one dtype.
+- Keep a precision ledger per phase: carrier/storage, products/accumulation, critical scalars, output conversion, certificate, and repair/fallback.
 - Normalize or scale before low-precision storage when range is the blocker.
 - Pair approximate carriers with a mathematically justified repair such as residual correction, refinement, reorthogonalization, purification, or accurate terminal solve.
 - Prefer per-item certificates and selective repair when failures are sparse and independently routable. Include certificate cost, synchronization, compaction, and worst-case fallback in the model.
@@ -79,6 +82,8 @@ hipcc --save-temps my_kernel.cpp
 ```
 
 Use counters to check occupancy, memory bandwidth, tensor/ALU utilization, shared-memory conflicts, cache behavior, atomics, stalls, and launch overhead. Counter wins do not override authoritative wall time.
+
+When target profiling is unavailable, use route-attested stage cuts or controlled prefix/suffix variants to estimate phase ownership. Keep setup and warmup comparable, and never promote from a stage-only result.
 
 ## Attention And Decode Lessons
 
