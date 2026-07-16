@@ -43,7 +43,7 @@ When porting an external mechanism:
 
 Use this when a run is plateaued, public-leaderboard driven, or expensive enough that another same-family sweep is unlikely to matter. A breakthrough is a mechanism that changes an active floor, exposes a new resource axis, imports a better route, or creates a cheaper way to search. It is not merely a large score delta.
 
-Mine public history and local ledgers into a small durable table. In harnessed runs, keep it in `<harness>/breakthroughs.md`, where `<harness>` defaults to `work/optimization_harness`; do not leave it only in chat.
+Mine public history and available prior evidence into a small working map only when it will prevent duplicate work or reveal a new mechanism. If Scorebench or another observability module is active, store the map there. Otherwise keep it compact in the active plan; do not bootstrap a local logging system just for breakthrough mining.
 
 ```text
 row | parent -> candidate | score/resources | active floor | delta | mechanism | proof or invariant | search tool | validation | slack/dependency
@@ -195,44 +195,15 @@ If you are about to declare a target unreachable and your evidence is weak, that
 
 A floor claim is valid only from a lower-bound proof or strong target-class evidence. Until then the correct recorded state is "best known so far," and the search stays open.
 
-## Candidate Ledger
+## Candidate Evidence
 
-Every meaningful candidate gets:
+Keep candidate bookkeeping proportional to the decision. The default is one compact active-state entry:
 
-```markdown
-## vNN short-name
-
-- Parent:
-- Hypothesis:
-- Mechanism:
-- Expected signal:
-- Profiling basis:
-- Profiling availability:
-- Resource floor delta:
-- Profile/trace evidence:
-- Tail/dependency risk:
-- Artifact:
-- Correctness:
-- Measurement:
-- Per-shape/counter delta:
-- Decision: promote / keep variant / reject / bug / blocked
-- Next:
+```text
+parent | hypothesis | expected signal | validation | measurement | decision | next
 ```
 
-For longer runs, add theme summaries:
-
-```markdown
-## vNN-vMM theme
-
-- Starting model:
-- Variants tried:
-- Best result:
-- What improved:
-- What regressed:
-- What this ruled out:
-- Updated model:
-- Next experiments:
-```
+Use richer persistent records only when the user requests them or an active external harness requires them. Scorebench owns persistent candidate history during Scorebench runs. Do not create a parallel local ledger.
 
 ## Promotion Gates
 
@@ -254,7 +225,7 @@ Optimization work should be narrow even when the search is aggressive:
 
 - Every changed line should trace to the candidate hypothesis.
 - Do not add speculative abstractions, configurability, dependencies, or error handling that is not required by the target contract.
-- Match the existing project style and harness conventions.
+- Match the existing project style and evaluation conventions.
 - If equal or near-equal scores are available, prefer deletion, simplification, or smaller diffs over clever machinery.
 - Surface assumptions and tradeoffs before coding when multiple interpretations would change the experiment.
 
@@ -316,7 +287,7 @@ Classify as platform/tooling blocker when:
 - The submit endpoint returns availability errors with no job/submission ID.
 - External capacity or billing prevents execution.
 
-Do not spend repeated submissions on a platform blocker. Preserve the state/log, write a short issue note, and continue only when the platform changes or a bypass is credible.
+Do not spend repeated submissions on a platform blocker. Retain the exact error in the current context or active external harness, and continue only when the platform changes or a credible recovery path appears.
 
 ## Forbidden Shortcut Screen
 

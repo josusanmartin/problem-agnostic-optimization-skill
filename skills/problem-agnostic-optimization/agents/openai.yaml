@@ -1,4 +1,4 @@
 interface:
   display_name: "Problem-Agnostic Optimization"
-  short_description: "Evidence-driven performance and policy optimization."
-  default_prompt: "Use this skill to set an ambitious objective, protect the best artifact, run the authoritative measurement, iterate on controlled candidates, and coordinate isolated parallel workers when multi-agent mode is requested."
+  short_description: "Lean evidence-driven optimization loop"
+  default_prompt: "Use $problem-agnostic-optimization to improve this measured artifact through controlled candidates and authoritative validation."
