@@ -11,6 +11,14 @@ Convert the workload into constrained-resource lower bounds:
 - Add unavoidable latency or launch/setup costs.
 - The maximum lower bound is the best possible runtime without deleting work, moving work, or changing the representation.
 
+Label the result correctly:
+
+- `proven lower bound`: counts cover all required work, throughput assumptions are valid, and unavoidable dependencies and setup are included.
+- `model floor`: useful estimate with incomplete packing, dependency, lifetime, or route assumptions.
+- `observed plateau`: failed search history only; never call this a floor.
+
+A large configuration sweep proves only that the sampled search procedure did not find a better result. It does not prove the graph, scheduler family, or target is resource-pinned. If a later structural candidate could invalidate an assumption, keep that assumption explicit and the floor revisable.
+
 Use the gap to estimate minimum useful change. If the target is below several resource floors, a candidate must reduce all blocking floors enough to matter; deleting a few operations on one resource is not a breakthrough if another floor remains above target.
 
 If the target is below the current lower bound, do not spend time on schedule-only changes. Move up a level:
@@ -45,6 +53,8 @@ Classify each candidate before spending a large budget:
 - `representation/primitive change`: a different data layout, algorithm, or hardware primitive changes the floor model.
 
 When the target is below the current floors, prioritize work deletion, representation, primitive, or contract-valid omission over scheduler-only search.
+
+If a candidate lowers a model floor but the authoritative result fails to improve twice, stop optimizing that floor. Audit dependencies, tails, and omitted resource owners, then use an off-hill graph, representation, route, or evidence probe.
 
 ## Tail Audit
 

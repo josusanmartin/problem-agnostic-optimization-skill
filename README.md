@@ -9,9 +9,9 @@ The skill works best when the task starts with a clear `/goal`. Optimization is 
 1. Install the skill using the commands in [Install](#install).
 2. Start a new Codex session so the skill metadata is loaded.
 3. For a real optimization run, paste a filled `/goal` block and ask Codex to use `problem-agnostic-optimization`.
-4. The optimizer should deploy the isolated `work/optimization_harness/` harness immediately before baseline or candidate work. Missing harness files on a substantial run are a bug.
+4. Start in `fast` mode and establish the baseline promptly. Deploy the durable harness only when the run needs resume state, explicit progress artifacts, an auditor, asynchronous remote work, or multiple agents.
 5. For a draft only, ask Codex to draft the full copy-paste prompt for later, including `Use problem-agnostic-optimization.`, and explicitly say not to start or activate it.
-6. For long runs, open a second Codex session in auditor mode to review `work/optimization_harness/` progress without editing the active candidate.
+6. For long runs, let a second Codex session or external coordinator handle tokens, heartbeats, charts, and audit work without interrupting the optimizer.
 
 Draft a goal without starting:
 
@@ -38,7 +38,9 @@ Editable files:
 Immutable files:
 Budget / stopping rule:
 Validation:
-Progress chart: on
+Harness mode: fast
+Progress owner: optimizer | coordinator | sidecar | none
+Progress chart: off
 Fresh-run isolation: on
 Multi-agent mode: off
 ```
@@ -57,7 +59,11 @@ Immutable files:
 Budget:
 Validation:
 Stopping rule:
-Progress chart: on
+Harness mode: fast
+Search accounting: attempts plus active budget since meaningful promotion
+Plateau trigger: 3 same-family misses or 10% promotion drought
+Progress owner: optimizer | coordinator | sidecar | none
+Progress chart: off
 Fresh-run isolation: on
 Multi-agent mode: off
 Notes:
@@ -97,7 +103,7 @@ Editable files:
 Immutable files:
 Budget / stopping rule:
 Validation:
-Progress chart: on
+Progress chart: off
 Fresh-run isolation: on
 Multi-agent mode: off
 ```
@@ -114,10 +120,22 @@ Multi-agent mode: off
 - `Budget` / `Budget / stopping rule`: submissions, GPU minutes, wall time, simulation count, API spend, max candidates, or target exit condition.
 - `Validation`: correctness checks, seed protocol, shape sweep, test command, profiler/counter expectations, or production guardrails.
 - `Stopping rule`: target reached, budget exhausted, blocker, plateau audit, or handoff after N candidates.
-- `Progress chart`: defaults to `on` for substantial optimization runs. When on, Codex should keep harness files under the dedicated default directory `work/optimization_harness/`, including `progress.tsv`, `log.md`, `state.json`, `progress.svg`, `dashboard.html`, and `review.md`. Set `Progress chart: off` to skip chart/dashboard/review rendering.
+- `Harness mode`: `fast` is the default active-search mode; use `standard` for durable remote/resumable work and `audit` for evidence review.
+- `Search accounting`: count every measured configuration, seed, scheduler result, generated candidate, or authoritative evaluation, including attempts inside a sweep.
+- `Plateau trigger`: defaults to three same-family misses or 10% of the contract budget without meaningful promotion.
+- `Progress owner`: assign tokens, heartbeats, checkpoints, and rendering to a coordinator or sidecar when available.
+- `Progress chart`: optional. When on, refresh it at checkpoints rather than on the optimizer's candidate path.
 - `Fresh-run isolation`: defaults to `on`. In a new assigned workspace, do not inspect sibling workspaces or prior run artifacts unless the user sets `Fresh-run isolation: off`.
 - `Multi-agent mode`: defaults to `off`. Set `Multi-agent mode: on` only when several isolated hypotheses can run in parallel and a coordinator will serialize canonical writes and promotion.
 - `Notes`: known failed attempts, public clues, constraints, tolerances, hidden-test risk, and anything that would make an optimization invalid.
+
+### Search Health
+
+PAO counts actual measured attempts rather than candidate names. A scheduler sweep containing 5,000 measured configurations consumes 5,000 attempts even if it produces one candidate artifact. Same-artifact checkpoints, verifier reruns, heartbeats, token snapshots, and dashboard refreshes consume operational time but are not optimization candidates.
+
+By default, three consecutive same-family misses or 10% of the contract budget without a meaningful promotion forces an off-hill candidate. The next measurement must change the representation, primitive, route, dependency structure, target split, or another real mechanism family. A new seed batch is not a new family. Compound structural candidates are allowed when coordinated edits are necessary to test the mechanism faithfully.
+
+A plateau is not a resource floor. Reserve `proven lower bound` for models whose work counts, throughput assumptions, dependencies, and unavoidable costs establish the bound. Otherwise use `model floor` or `observed plateau` and keep structural alternatives open.
 
 ## Prompt Templates
 
@@ -135,6 +153,10 @@ Immutable files: problem statement, checker, benchmark, reference, scoring code.
 Budget: <N submissions or time limit>.
 Validation: run correctness first when available; compare per-shape/per-case results; record variance.
 Stopping rule: stop when first place is verified, budget is exhausted, or plateau audit says change hill.
+Harness mode: fast.
+Search accounting: every local configuration and public submission.
+Plateau trigger: 3 same-family misses or 10% promotion drought.
+Progress owner: coordinator.
 Progress chart: on.
 Fresh-run isolation: on.
 Multi-agent mode: off.
@@ -155,6 +177,10 @@ Immutable files: public API, correctness tests, datasets, benchmark contract.
 Budget: <wall time, candidate count, risk window>.
 Validation: tests, load test, profiling artifacts, p95/p99, error rate, rollback safety.
 Stopping rule: target reached with stable validation, or handoff with bottleneck map.
+Harness mode: standard.
+Search accounting: measured candidates plus active wall-time budget.
+Plateau trigger: 3 same-family misses or 10% promotion drought.
+Progress owner: sidecar.
 Progress chart: on.
 Fresh-run isolation: on.
 Multi-agent mode: off.
@@ -175,6 +201,10 @@ Immutable files: simulator, scorer, seed generator, reference policies, submissi
 Budget: <simulations, submissions, wall time>.
 Validation: smoke/train/validation/holdout/adversarial scenario sets; report mean, SEM, p05/p95, invalid rate, win rate vs parent.
 Stopping rule: public score improves, holdout rejects candidate, budget exhausted, or overfit audit triggers.
+Harness mode: standard.
+Search accounting: every seed, selector, policy, and authoritative evaluation.
+Plateau trigger: 3 same-family misses or 10% promotion drought.
+Progress owner: sidecar.
 Progress chart: on.
 Fresh-run isolation: on.
 Multi-agent mode: off.
@@ -183,7 +213,7 @@ Notes: compare parent and candidate on matched scenarios when possible.
 
 ## Multi-Agent Mode
 
-Multi-agent mode is opt-in. Use `Multi-agent mode: on` only when the contract, protected best, and durable ledger already exist, and several candidate hypotheses can be tested from isolated parents.
+Multi-agent mode is opt-in. Use `Multi-agent mode: on` only when the contract, protected best, and durable ledger already exist, and different mechanism families can be tested from isolated parents.
 
 The coordinator owns the canonical workspace and the dedicated harness directory, defaulting to `work/optimization_harness/`: `state.json`, `checkpoints/progress.json`, `best.md`, `log.md`, `progress.tsv`, candidate result JSON files, charts, dashboard, verifier gate, and promotion gate. Workers run in isolated worktrees or copied sandboxes, receive one candidate packet, and return evidence plus a patch/diff recommendation. Workers must not edit canonical ledgers, immutable files, harnesses, charts, dashboards, checkpoints, or final submissions.
 
@@ -193,7 +223,7 @@ Use workers to diversify search allocation, not to multiply the same local tweak
 
 ## Progress Monitoring
 
-For substantial optimization runs, progress monitoring is on by default. The optimizer should initialize `work/optimization_harness/progress.tsv`, `work/optimization_harness/log.md`, `work/optimization_harness/state.json`, `work/optimization_harness/checkpoints/progress.json`, and `work/optimization_harness/candidates/_template.result.json` before the first candidate. During active search, append one score row after every measured candidate, record the decision and next direction, and keep moving. Typed candidate result JSON is required for promotions, risky/surprising candidates, audit mode, handoff, or search-model-changing results, not for ordinary fast-mode rejects. Regenerate `work/optimization_harness/progress.svg`, `work/optimization_harness/dashboard.html`, and `work/optimization_harness/review.md` at sidecar checkpoints rather than after every row. Problem-local scratch files may still live elsewhere under `work/`; harness-created files should stay under the isolated harness directory unless `--work-dir` explicitly selects another dedicated path.
+Progress monitoring is optional during `fast` search. Establish the baseline first, preserve the best artifact, and record the authoritative result, decision, and next direction. When persistence is requested, append a compact score row if the writer is immediately available. Typed candidate JSON is reserved for promotions, risky or surprising candidates, audit mode, handoff, or search-model changes. Regenerate `work/optimization_harness/progress.svg`, `work/optimization_harness/dashboard.html`, and `work/optimization_harness/review.md` only at sidecar checkpoints. Problem-local scratch files may still live elsewhere under `work/`; harness-created files should stay under the isolated harness directory.
 
 `work/optimization_harness/progress.svg` is a two-panel SVG dashboard:
 
@@ -226,7 +256,7 @@ python skills/problem-agnostic-optimization/scripts/render_progress.py work/opti
   --direction lower
 ```
 
-For fast iteration, keep the critical path small: authoritative result or blocker, one progress row, decision, and next direction. Token snapshots, raw evidence paths, and compact log notes are best-effort. Chart/dashboard/review refresh, rejected-candidate JSON, promotion-ladder details, verifier details, and breakthrough summaries are checkpoint/audit work. In a single-agent run, sidecar work is deferred; in a multi-agent run, an explicit sidecar or auditor session may refresh derived artifacts. Sidecar work must not mutate `work/optimization_harness/best.md`, canonical promotion state, or final submission state.
+For fast iteration, keep the critical path to the authoritative result or blocker, decision, and next direction. A progress row, token snapshot, raw evidence path, and compact log note are best-effort. Chart/dashboard/review refresh, rejected-candidate JSON, promotion-ladder details, verifier details, and breakthrough summaries are checkpoint/audit work. Same-artifact checkpoints, repeated verification, heartbeats, and token snapshots are operational events, not candidates, and do not reset stagnation. In a single-agent run, sidecar work is deferred; in a multi-agent run, an explicit sidecar or auditor session may refresh derived artifacts. Sidecar work must not mutate `work/optimization_harness/best.md`, canonical promotion state, or final submission state.
 
 Use `work/optimization_harness/log.md` for token/time snapshots. In Codex, call `get_goal` after a measured candidate only when it is immediately available and does not slow the loop, then paste or summarize the snapshot with UTC timestamp, elapsed wall time, total tokens, token delta since the previous snapshot when known, and all available token fields: input, cached input, output, reasoning output, cache creation, and cache read. Copy the latest snapshot into `work/optimization_harness/state.json` under `progress.latest_usage_snapshot`. If an existing run lacks early token snapshots, record only the current cumulative value going forward and mark earlier token history as unknown; do not invent per-candidate token deltas.
 
@@ -236,7 +266,7 @@ Only `baseline`, `promote`, and `promoted` rows update protected best. Use `keep
 
 The dashboard is diagnostic. It can trigger push/reassess decisions, but it never replaces correctness checks or the authoritative promotion gate.
 
-Fast harness bootstrap from an installed skill:
+Durable harness bootstrap from an installed skill. In ordinary `fast` search, establish the baseline first and run this only when persistence is needed:
 
 ```bash
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
@@ -250,7 +280,7 @@ python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py
   --multi-agent-mode off
 ```
 
-This creates `work/optimization_harness/best.md`, `work/optimization_harness/log.md`, `work/optimization_harness/plan.md`, `work/optimization_harness/state.json`, `work/optimization_harness/events.jsonl`, `work/optimization_harness/progress.tsv`, `work/optimization_harness/progress.svg`, `work/optimization_harness/dashboard.html`, `work/optimization_harness/review.md`, `work/optimization_harness/audit.md`, `work/optimization_harness/checkpoints/progress.json`, `work/optimization_harness/candidates/_template.result.json`, `work/optimization_harness/schemas/candidate_result.schema.json`, `work/optimization_harness/promotion_ladder.md`, and `work/optimization_harness/verifier.md` before candidate work. `--harness-mode fast|standard|audit` controls how much advisory sidecar work is expected; `minimal` is accepted as an alias for `fast`. Use `--progress-chart off` only when the `/goal` says `Progress chart: off`.
+This creates durable state and deferred placeholders under `work/optimization_harness/`. Their existence does not put them on the active-search path. `--harness-mode fast|standard|audit` controls how much advisory sidecar work is expected; `minimal` is accepted as an alias for `fast`.
 
 ```bash
 python skills/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv --direction lower
@@ -260,7 +290,7 @@ python skills/problem-agnostic-optimization/scripts/progress_chart.py work/optim
 
 `render_progress.py` refreshes both `work/optimization_harness/progress.svg` and `work/optimization_harness/dashboard.html` at checkpoints. Do not run it after every fast-mode candidate. The chart separates optimization progress from resource burn. The score panel always uses candidate number on the x-axis, with `--score-scale auto|log|linear`. The token panel uses elapsed wall time from recorded snapshots. For exact golden tests or stable artifacts, set `--generated-at <iso timestamp>`, `--no-generated-at`, or `SOURCE_DATE_EPOCH`.
 
-If a run has `Progress chart: on` but no progress artifacts, ask the optimizer to backfill `work/optimization_harness/progress.tsv` from `work/optimization_harness/log.md` and any saved result files, then continue appending `work/optimization_harness/progress.tsv` after every measured candidate. Missing chart files at checkpoint/handoff should be treated as a harness bug, not as normal fast-mode behavior.
+If a run requests a progress chart but lacks artifacts at checkpoint or handoff, let a coordinator or sidecar backfill `work/optimization_harness/progress.tsv` from saved authoritative results. Do not pause active search solely to repair presentation artifacts.
 
 ## Progress Dashboard
 

@@ -16,6 +16,9 @@ Use the default templates for normal optimization runs. Use the extended templat
 - Target or floor:
 - Validation:
 - Budget / stopping rule:
+- Search accounting unit: attempts | evaluations | submissions | active time | tokens | spend
+- Plateau trigger: 3 same-family misses or 10% promotion drought, unless stricter
+- Progress owner: optimizer | coordinator | sidecar | none
 - Progress chart: on | off
 - Fresh-run isolation: on | off
 - Editable files:
@@ -46,10 +49,14 @@ Use the default templates for normal optimization runs. Use the extended templat
 ## vNN-short-name
 
 - Parent:
-- Hypothesis:
+- Mechanism hypothesis:
+- Coordinated edits required: yes | no
 - Mechanism class:
 - Expected signal:
 - Kill criterion:
+- Family attempt budget:
+- Attempts consumed, including inner-loop evaluations:
+- Active budget since meaningful promotion:
 - Artifact:
 - Correctness:
 - Validation command:
@@ -58,6 +65,7 @@ Use the default templates for normal optimization runs. Use the extended templat
 - Decision: PROMOTE | KEEP VARIANT | REJECT | BUG | BLOCKED
 - Push/reassess:
 - Hill status: OPEN | NARROWED | CLOSED
+- Plateau trigger fired: yes | no
 - Learning:
 - Next:
 ```
@@ -71,7 +79,11 @@ Use the default templates for normal optimization runs. Use the extended templat
 - Why it looked promising:
 - Best verified result:
 - Plateau evidence:
+- Total measured attempts, including sweep evaluations:
+- Active budget since meaningful promotion:
+- Same-artifact checkpoints excluded:
 - Floor/resource blocker:
+- Floor status: proven lower bound | model floor | observed plateau
 - Tail/dependency/statistical blocker:
 - Remaining plausible gain on this hill:
 - Why that is not enough:
@@ -84,7 +96,9 @@ Different hills:
 
 Next off-hill probe:
 - Artifact:
-- Hypothesis:
+- Mechanism hypothesis:
+- Why this is a different family:
+- Coordinated edits required:
 - Expected signal:
 - Kill criterion:
 ```
@@ -381,7 +395,7 @@ raw_result_path
 
 ### Progress TSV
 
-Use this for small/manual `<harness>/progress.tsv` runs or as a derived export from `<harness>/events.jsonl`. Progress charting is on by default for substantial optimization runs. Use `scripts/record_progress.py` when available. Regenerate `<harness>/progress.svg` and `<harness>/dashboard.html` with `scripts/render_progress.py` at sidecar checkpoints unless `/goal` says `Progress chart: off`.
+Use this for small/manual `<harness>/progress.tsv` runs or as a derived export from `<harness>/events.jsonl`. Progress charting is off by default in `fast` mode. Use `scripts/record_progress.py` when immediately available. If charts are requested, regenerate `<harness>/progress.svg` and `<harness>/dashboard.html` with `scripts/render_progress.py` at sidecar checkpoints.
 
 Required columns: `timestamp`, `candidate`, an authoritative metric column such as `score` or `cycles`, `decision`, `tokens_total`, `tokens_delta`, `wall_seconds`, and `label`. `timestamp` must be a UTC snapshot in `YYYY-MM-DDTHH:MM:SSZ` form.
 

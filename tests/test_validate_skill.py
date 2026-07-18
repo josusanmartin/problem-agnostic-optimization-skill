@@ -30,6 +30,19 @@ def test_valid_skill_passes(tmp_path: Path) -> None:
     validate_skill.validate_skill(skill_dir)
 
 
+def test_core_skill_keeps_search_policy_concise_and_enforceable() -> None:
+    text = (SKILL_SRC / "SKILL.md").read_text(encoding="utf-8")
+
+    assert len(text.split()) < 1600
+    assert "Ten percent of the available active-time" in text
+    assert "Three consecutive same-family measured candidates" in text
+    assert "wrapping thousands of evaluations in one candidate does not reset stagnation" in text
+    assert "A plateau is not a floor proof" in text
+    assert "Compound changes are appropriate" in text
+    assert "checkpoint" in text.lower()
+    assert "operational work, not a candidate or promotion" in text
+
+
 def test_missing_openai_yaml_is_structured_error(tmp_path: Path) -> None:
     skill_dir = copy_skill(tmp_path)
     (skill_dir / "agents" / "openai.yaml").unlink()

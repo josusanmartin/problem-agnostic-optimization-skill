@@ -142,6 +142,23 @@ def state(args: argparse.Namespace) -> dict[str, object]:
         "round": 0,
         "iterations": 0,
         "stagnation_count": 0,
+        "search_health": {
+            "accounting_unit": "measured_attempt",
+            "attempt_definition": "each measured configuration_seed_scheduler_result_generated_candidate_or_authoritative_evaluation",
+            "attempts_since_promotion": 0,
+            "same_family_misses": 0,
+            "active_budget_since_promotion": 0,
+            "active_budget_unit": "contract_defined",
+            "same_family_miss_limit": 3,
+            "promotion_drought_budget_fraction": 0.10,
+            "meaningful_promotion_required": True,
+            "current_family": None,
+            "plateau_triggered": False,
+            "force_off_hill_next": False,
+            "compound_structural_candidates_allowed": True,
+            "checkpoints_count_as_candidates": False,
+            "floor_requires_lower_bound": True,
+        },
         "next_candidate_id": 1,
         "active_branches": [],
         "exhausted_branches": [],
@@ -159,11 +176,11 @@ def state(args: argparse.Namespace) -> dict[str, object]:
             "chart_enabled": chart_enabled,
             "critical_path_required": [
                 "result_or_blocker",
-                "progress_row",
                 "decision",
                 "next_direction",
             ],
             "critical_path_best_effort": [
+                "progress_row",
                 "usage_snapshot",
                 "raw_evidence_path",
                 "compact_log_note",
@@ -185,6 +202,7 @@ def state(args: argparse.Namespace) -> dict[str, object]:
                     "candidate_or_submission_rate_below_needed_pace",
                     "next_candidate_known_and_logging_is_only_remaining_work",
                     "authoritative_evaluations_are_the_real_search_channel",
+                    "checkpoint_or_token_work_can_be_owned_by_a_coordinator",
                 ],
                 "fast_mode_behavior": "leave_optional_fields_blank_rather_than_waiting",
                 "restore_standard_or_audit_at": [
@@ -212,6 +230,7 @@ def state(args: argparse.Namespace) -> dict[str, object]:
                     "candidate_json_for_rejects",
                     "breakthrough_summary",
                     "token_accounting_wait",
+                    "same_artifact_checkpoint_administration_when_delegable",
                 ],
                 "refresh_command": (
                     f"python {shlex.quote(str(render_script))} "
@@ -323,6 +342,7 @@ def candidate_result_schema() -> str:
             "screening": {"type": "object"},
             "validation_island": {"type": "object"},
             "phase_owners": {"type": "array", "items": {"type": "object"}},
+            "search_accounting": {"type": "object"},
             "escape": {"type": "object"},
             "promotion_ladder": {"type": "object"},
             "verifier": {"type": "object"},
@@ -391,6 +411,16 @@ def candidate_result_template() -> str:
             "full_validation": None,
         },
         "phase_owners": [],
+        "search_accounting": {
+            "mechanism_family": None,
+            "coordinated_edits_required": False,
+            "family_attempt_budget": None,
+            "attempts_consumed": 0,
+            "active_budget_since_promotion": None,
+            "same_artifact_checkpoint": False,
+            "plateau_triggered": False,
+            "force_off_hill_next": False,
+        },
         "escape": {
             "status": "tracking",
             "stuck_signal": None,
@@ -485,6 +515,8 @@ Progress chart: {args.progress_chart}
 Harness mode: {mode_name}{alias}
 Fresh-run isolation: {args.fresh_run_isolation}
 Multi-agent mode: {args.multi_agent_mode}
+Search accounting: measured attempts, including inner-loop evaluations
+Plateau trigger: 3 same-family misses or 10% of contract budget without meaningful promotion
 
 ## Current Best
 Current best stable:
@@ -519,7 +551,8 @@ def log_md(args: argparse.Namespace) -> str:
 - harness mode: {mode_name}{alias}
 - multi-agent mode: {args.multi_agent_mode}
 - decision: BOOTSTRAP
-- learning: harness initialized before candidate work
+- learning: durable harness state initialized
+- search policy: checkpoints excluded; off-hill candidate forced at plateau trigger
 """
 
 
@@ -531,6 +564,11 @@ def plan_md(args: argparse.Namespace) -> str:
 - Target: {args.objective}
 - Current best: {args.baseline}
 - Stagnation count: 0
+- Attempts since meaningful promotion: 0
+- Active budget since meaningful promotion: 0
+- Current mechanism family:
+- Plateau trigger: 3 same-family misses or 10% promotion drought
+- Force off-hill next: no
 - Harness mode: {mode_name}{alias}
 - Multi-agent mode: {args.multi_agent_mode}
 - Next candidate: reproduce or establish baseline before optimization
@@ -540,12 +578,12 @@ def plan_md(args: argparse.Namespace) -> str:
 ## Critical Path
 
 - result or blocker:
-- progress row:
 - decision:
 - next direction:
 
 ## Best Effort
 
+- progress row:
 - usage snapshot:
 - raw evidence path:
 - compact log note:
@@ -586,6 +624,10 @@ def review_md(args: argparse.Namespace) -> str:
 - Best score:
 - Last promotion:
 - Candidates since promotion: 0
+- Measured attempts since promotion: 0
+- Same-family misses: 0
+- Active budget since meaningful promotion: 0
+- Force off-hill next: no
 - Tokens since promotion: 0
 - Token source: best-effort explicit get_goal snapshots in harness log.md
 - Token gap:
@@ -707,7 +749,7 @@ def main() -> int:
     parser.add_argument("--validation", default="not recorded")
     parser.add_argument("--mode", default="clean leaderboard")
     parser.add_argument("--harness-mode", choices=("fast", "minimal", "standard", "audit"), default="fast", help="Harness evidence mode; minimal is accepted as an alias for fast")
-    parser.add_argument("--progress-chart", choices=("on", "off"), default="on")
+    parser.add_argument("--progress-chart", choices=("on", "off"), default="off", help="Create chart/dashboard placeholders; off by default to protect active-search throughput")
     parser.add_argument("--fresh-run-isolation", choices=("on", "off"), default="on")
     parser.add_argument("--multi-agent-mode", choices=("on", "off"), default="off")
     parser.add_argument("--force", action="store_true", help="Overwrite existing harness files")

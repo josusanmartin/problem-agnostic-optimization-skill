@@ -1,4 +1,4 @@
 interface:
   display_name: "Problem-Agnostic Optimization"
-  short_description: "Evidence-driven performance and policy optimization."
-  default_prompt: "Use this skill to set an ambitious objective, protect the best artifact, run the authoritative measurement, iterate on controlled candidates, and coordinate isolated parallel workers when multi-agent mode is requested."
+  short_description: "Throughput-first measured optimization with plateau escapes."
+  default_prompt: "Use this skill to set an ambitious objective, protect the best artifact, prioritize authoritative candidate throughput, count actual search attempts, and force an off-hill probe when the current mechanism family plateaus."

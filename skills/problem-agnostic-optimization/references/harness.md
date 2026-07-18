@@ -1,14 +1,14 @@
 # Optimization Harness
 
-Use this reference when an optimization run may span multiple turns, many candidates, noisy measurements, remote jobs, or rate limits. The harness is a persistent contract:
+Use this reference when an optimization run needs durable state across sessions, asynchronous or noisy remote work, explicit progress artifacts, an auditor, or multiple agents. Ordinary single-agent search should remain in the core skill's `fast` mode and need not load this reference before establishing a baseline.
 
 ```text
-Preserve the best, test one hypothesis at a time, log every result, and reject exploit-like shortcuts outright.
+Preserve the best, account for actual search attempts, record decisions compactly, and reject exploit-like shortcuts outright.
 ```
 
-## Fast Bootstrap
+## Durable Bootstrap
 
-For any substantial `/goal` run, deploy the harness before baseline or candidate work. Use the bundled initializer when it is available:
+For `standard` or `audit` runs, deploy the harness with the bundled initializer. For `fast` runs, first establish the baseline and initialize durable state only when it is needed for resume, user-requested progress, or handoff:
 
 ```bash
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
@@ -20,15 +20,26 @@ python "$CODEX_HOME/skills/problem-agnostic-optimization/scripts/init_harness.py
   --validation "<validation command or protocol>"
 ```
 
-Run this from the target repository root. The default harness directory is `work/optimization_harness/`, so problem-local scratch files can still live elsewhere under `work/` without being mixed with PAO ledgers. If that path conflicts with the project, pass `--work-dir <dedicated-harness-dir>`. Do not point `--work-dir` at a shared problem scratch directory. Add `--progress-chart off` only when the contract says `Progress chart: off`. Add `--fresh-run-isolation off` only when the user has allowed prior-run transfer. Add `--multi-agent-mode on` only when the `/goal` says `Multi-agent mode: on` or the user explicitly asks for parallel workers.
+Run this from the target repository root. The default harness directory is `work/optimization_harness/`, so problem-local scratch files can still live elsewhere under `work/` without being mixed with PAO ledgers. If that path conflicts with the project, pass `--work-dir <dedicated-harness-dir>`. Do not point `--work-dir` at a shared problem scratch directory. Charts are off by default; add `--progress-chart on` only when the contract requests them and render them at checkpoints. Add `--fresh-run-isolation off` only when the user has allowed prior-run transfer. Add `--multi-agent-mode on` only when the `/goal` says `Multi-agent mode: on` or the user explicitly asks for parallel workers.
 
-If the initializer is unavailable, create the same files manually before candidate work. Do not wait until after the first result to create the ledger.
+The initializer creates placeholders mechanically; their existence does not put them on the active-search path. Do not read, narrate, or refresh every file after bootstrap. If the initializer is unavailable, create only the files needed by the selected mode.
 
 In the rest of this reference, `<harness>` means the dedicated harness directory, defaulting to `work/optimization_harness`.
 
-## Minimal Harness
+## Harness Layout
 
-For small projects, create only:
+For a resumable single-agent run, the active working set is only:
+
+```text
+work/
+  optimization_harness/
+    best.md                 # protected best and contract
+    plan.md                 # current family, counters, next direction
+    progress.tsv            # compact authoritative results when requested
+    state.json              # machine-readable counters and mode
+```
+
+The initializer may also create the following deferred placeholders for later promotion, audit, or handoff:
 
 ```text
 work/
@@ -101,7 +112,7 @@ project/
     summarize.*
 ```
 
-Adapt names to the repository. The important part is that all harness-created files stay under one dedicated harness directory, and that best state, history, active plan, and machine-readable state survive chat compaction and process crashes.
+Adapt names to the repository. Keep harness-created files under one dedicated directory. In `fast` mode, read and update only the active working set; the rest exists for explicit checkpoints and audits.
 
 ## Typed Candidate Artifacts
 
@@ -250,30 +261,30 @@ For security-sensitive, production-sensitive, or user-requested review-first wor
 
 ## Progress Monitor
 
-For substantial optimization runs, maintain a live progress surface by default. The score ledger is `<harness>/progress.tsv`; token history comes from explicit, best-effort `get_goal` snapshots in `<harness>/log.md`, with the latest snapshot copied into `<harness>/state.json` when available.
+Maintain a live progress surface only when the contract requests it or a coordinator, sidecar, auditor, or handoff needs it. The score ledger is `<harness>/progress.tsv`; token history comes from explicit, best-effort `get_goal` snapshots in `<harness>/log.md` when those snapshots are already available.
 
 ```text
 <harness>/log.md          # human log plus explicit get_goal token snapshots
 <harness>/dashboard.html  # static dashboard for review and handoff
 <harness>/progress.tsv    # one row per measured candidate
-<harness>/progress.svg    # chart regenerated after each result unless Progress chart: off
+<harness>/progress.svg    # chart regenerated at sidecar checkpoints
 <harness>/review.md       # short human review snapshot unless Progress chart: off
 <harness>/state.json      # current best and latest usage snapshot
 ```
 
 During active search, candidate throughput is part of the optimization objective. Keep progress work split into three lanes:
 
-- Critical path: authoritative result or blocker, one `<harness>/progress.tsv` row, decision, and next direction.
+- Critical path: authoritative result or blocker, decision, and next direction. Add one `<harness>/progress.tsv` row when logging is enabled and immediately available.
 - Best-effort path: usage snapshot, raw evidence path, and compact log note. Leave these blank when unavailable.
 - Checkpoint/audit path: `<harness>/progress.svg`, `<harness>/dashboard.html`, `<harness>/review.md`, candidate JSON for rejected candidates, verifier details, promotion-ladder details, breakthrough summaries, and other derived/advisory artifacts.
 
-Do not block candidate iteration on rich logging, dashboard refresh, review text, rejected-candidate dossiers, breakthrough summaries, token accounting, or artifact cleanup. Sidecar work may run at promotion, reassessment, handoff, user request, every `N` candidates, or idle time. Promotion remains serial: never update `<harness>/best.md`, canonical promotion state, or final submission state from sidecar work.
+Do not block candidate iteration on logging, dashboard refresh, review text, rejected-candidate dossiers, breakthrough summaries, token accounting, checkpoint submissions, or artifact cleanup. Sidecar work may run at promotion, reassessment, handoff, user request, every `N` candidates, or idle time. Promotion remains serial: never update `<harness>/best.md`, canonical promotion state, or final submission state from sidecar work.
 
 In a single-agent run, sidecar work is deferred, not backgrounded. In a multi-agent run, an explicit sidecar or auditor session may refresh derived artifacts. Sidecar work must never mutate `<harness>/best.md`, canonical promotion state, or final submission state.
 
 Harness modes:
 
-- `fast`: default for active search. Per candidate: result or blocker, progress row, decision, and next direction. Everything else is deferred.
+- `fast`: default for active search. Per candidate: result or blocker, decision, and next direction; a compact progress row is optional when logging is disabled or would delay search. Everything else is deferred.
 - `minimal`: accepted as an alias for `fast`.
 - `standard`: fast path after each measured candidate, sidecar refresh at promotions, reassessments, handoff, user request, idle time, or every N candidates.
 - `audit`: full candidate JSON, verifier, dashboard, review, and breakthrough state before important decisions.
@@ -286,8 +297,11 @@ If harness work starts reducing candidate velocity, degrade logging before slowi
 - Candidate or submission rate is below the needed pace.
 - The next candidate is known and logging is the only remaining work.
 - Local screening is non-predictive and authoritative evaluations are the real search channel.
+- The optimizer is performing token, heartbeat, or same-artifact checkpoint work that a coordinator can own.
 
 In `fast` mode, leave token fields, raw paths, and rich artifacts blank when unavailable. Do not wait for them. Restore `standard` or `audit` mode at promotion, reassessment, handoff, user request, or when the sidecar/auditor catches up.
+
+Same-artifact verification, heartbeat, and service-required checkpoint submissions are operational events, not candidates. Label them `CHECKPOINT`, do not count them as promotions or reset stagnation, and delegate them when possible. Reuse existing correctness evidence when the contract permits instead of rerunning the verifier solely for bookkeeping.
 
 ## Sidecar Refresh
 
@@ -309,6 +323,7 @@ Forbidden on the fast path:
 - candidate JSON for ordinary rejects
 - breakthrough summary
 - waiting for token accounting
+- same-artifact checkpoint administration when a coordinator is available
 
 Regenerate both progress artifacts from `<harness>/progress.tsv` in one checkpoint step:
 
@@ -402,10 +417,10 @@ The dashboard is diagnostic. It can trigger push/reassess decisions, but it neve
 
 To disable chart rendering, record `Progress chart: off` in the `/goal` contract and set `progress.chart_enabled` to `false` in `<harness>/state.json`. Continue appending `<harness>/progress.tsv` and `<harness>/log.md` unless the user explicitly disables progress logging too.
 
-After every measured candidate:
+After each meaningful measured candidate when persistence is enabled:
 
 - Record the authoritative result or blocker.
-- Append `<harness>/progress.tsv` with `record_progress.py` when available.
+- Append `<harness>/progress.tsv` with `record_progress.py` when immediately available; otherwise preserve the result and continue.
 - Record decision and next direction.
 - Best-effort: append a raw or structured UTC usage snapshot to `<harness>/log.md`, copy it to `<harness>/state.json`, and save raw evidence paths when already available.
 - If the run is in `audit` mode, or this candidate is promoted, risky, surprising, or a reassessment trigger, refresh sidecar artifacts before the next important decision.
@@ -671,6 +686,20 @@ Small machine-readable state:
   "round": 0,
   "iterations": 0,
   "stagnation_count": 0,
+  "search_health": {
+    "accounting_unit": "measured_attempt",
+    "attempts_since_promotion": 0,
+    "same_family_misses": 0,
+    "active_budget_since_promotion": 0,
+    "same_family_miss_limit": 3,
+    "promotion_drought_budget_fraction": 0.1,
+    "current_family": null,
+    "plateau_triggered": false,
+    "force_off_hill_next": false,
+    "compound_structural_candidates_allowed": true,
+    "checkpoints_count_as_candidates": false,
+    "floor_requires_lower_bound": true
+  },
   "next_candidate_id": 1,
   "active_branches": [],
   "exhausted_branches": [],
@@ -681,11 +710,11 @@ Small machine-readable state:
     "chart_enabled": true,
     "critical_path_required": [
       "result_or_blocker",
-      "progress_row",
       "decision",
       "next_direction"
     ],
     "critical_path_best_effort": [
+      "progress_row",
       "usage_snapshot",
       "raw_evidence_path",
       "compact_log_note"
@@ -706,7 +735,8 @@ Small machine-readable state:
         "sidecar_work_exceeds_10_to_20_percent_of_active_run_time",
         "candidate_or_submission_rate_below_needed_pace",
         "next_candidate_known_and_logging_is_only_remaining_work",
-        "authoritative_evaluations_are_the_real_search_channel"
+        "authoritative_evaluations_are_the_real_search_channel",
+        "checkpoint_or_token_work_can_be_owned_by_a_coordinator"
       ],
       "fast_mode_behavior": "leave_optional_fields_blank_rather_than_waiting",
       "restore_standard_or_audit_at": [
@@ -733,7 +763,8 @@ Small machine-readable state:
         "review_refresh",
         "candidate_json_for_rejects",
         "breakthrough_summary",
-        "token_accounting_wait"
+        "token_accounting_wait",
+        "same_artifact_checkpoint_administration_when_delegable"
       ],
       "refresh_command": "python /path/to/problem-agnostic-optimization/scripts/render_progress.py work/optimization_harness/progress.tsv --chart-output work/optimization_harness/progress.svg --dashboard-output work/optimization_harness/dashboard.html",
       "safe_sidecar_outputs": ["work/optimization_harness/progress.svg", "work/optimization_harness/dashboard.html", "work/optimization_harness/review.md"],
@@ -799,13 +830,14 @@ idea -> hypothesis -> candidate file -> validation -> measurement -> rerun if ne
 Checklist:
 
 - Name the parent candidate.
-- State exactly one hypothesis.
+- State one mechanism hypothesis. Permit coordinated edits when the mechanism depends on their interaction; ablate after the combined probe shows a signal.
 - Predict which shape, row, counter, or metric should improve.
 - Validate correctness first when possible.
 - Measure with the same command used for comparable candidates.
+- Count every measured inner-loop configuration, seed, scheduler result, or generated artifact as an attempt even when the batch produces one ledger row.
 - Rerun if the result is close to noise or surprisingly good.
 - Promote only if it beats the stable baseline under the required validation mode.
-- Update `best.md`, `log.md`, `plan.md`, and `state.json`.
+- Update the protected best and reset promotion-drought counters only after a meaningful promotion outside noise.
 
 ## Crash Handling
 
@@ -838,15 +870,21 @@ After repeated same-route failures, stop making variants.
 Default rule:
 
 ```text
-If 5 consecutive candidates fail to improve the stable best, require a topology refresh:
-1. rewrite the bottleneck map
-2. list closed branches
-3. identify the primitive that must change
-4. propose 3 structural alternatives
-5. spend the next round only on structural probes
+Trigger when either threshold is reached:
+- 3 consecutive same-family measured candidates fail to improve outside noise
+- 10% of the available active-time, evaluation, submission, token, or spend budget
+  passes without a meaningful promotion
+
+At the trigger:
+1. stop the current sweep
+2. record total attempts, including all inner-loop evaluations
+3. rewrite or reject the bottleneck model
+4. mark the hill CLOSED or NARROWED
+5. propose 3 different mechanism families
+6. spend the next measured candidate off-hill
 ```
 
-This complements the local-optimum audit in `resource-models.md`.
+A same-artifact checkpoint, repeated verification, tiny movement within noise, or a new batch of equivalent seeds does not reset the trigger. Continue the old hill only with an explicit new premise. This complements the local-optimum audit in `resource-models.md`.
 
 ## Optional Coordinator
 
@@ -1011,12 +1049,11 @@ Use this as an extension of the typed candidate artifact, not a replacement for 
 At the start:
 
 - Read `<harness>/best.md`.
-- Read `<harness>/breakthroughs.md` if it exists and the run is plateaued, public-leaderboard driven, multi-agent, or near a resource tier.
-- Read the tail of `<harness>/log.md`.
 - Read `<harness>/plan.md`.
 - Read `<harness>/state.json`.
-- Read recent rows from `<harness>/progress.tsv` and the latest token snapshots in `<harness>/log.md` if `progress.logging_enabled` is not `false`.
-- Open `<harness>/dashboard.html`, `<harness>/progress.svg`, and `<harness>/review.md` if `progress.chart_enabled` is not `false`.
+- Read only recent `<harness>/progress.tsv` rows needed to recover the current family and promotion-drought counters.
+- Read `<harness>/breakthroughs.md` only during reassessment, frontier mining, or multi-agent allocation.
+- Open `<harness>/log.md`, dashboard, chart, and review only in `standard`/`audit` mode or at an explicit checkpoint.
 - Check pending jobs if using a remote system.
 
 Before editing:
@@ -1024,9 +1061,10 @@ Before editing:
 - State candidate parent.
 - State parent hash when available.
 - State mode.
-- State one hypothesis.
+- State one mechanism hypothesis and whether it requires coordinated edits.
 - State mechanism class and duplicate check.
 - State expected signal.
+- State the family attempt budget and current promotion-drought trigger.
 - State profiling basis and fallback if no useful profiler is available.
 - State validation and measurement command.
 - Create or plan the candidate JSON path under `<harness>/candidates/` only when this is a promotion candidate, risky/surprising candidate, audit-mode candidate, handoff artifact, or search-model-changing candidate.
@@ -1034,19 +1072,19 @@ Before editing:
 After running:
 
 - Record the authoritative result or blocker.
-- Append the measured candidate to `<harness>/progress.tsv` with `record_progress.py` if `progress.logging_enabled` is not `false` and the script is available.
-- Record decision and next direction.
+- Record decision, attempt count, promotion-drought status, and next direction.
+- Append the measured candidate to `<harness>/progress.tsv` only if logging is enabled and `record_progress.py` is immediately available.
 - Best-effort: append a compact `<harness>/log.md` note, capture `get_goal`, save raw paths, and copy the latest usage snapshot to `<harness>/state.json` only when those are immediately available.
 - Save or update the candidate JSON artifact under `<harness>/candidates/` when required by promotion, risk, surprise, audit mode, handoff, or search-model change.
 - Save profile/counter artifacts when available.
 - Update `<harness>/breakthroughs.md` when the result changes a tier, identifies a co-binder, calibrates a screen, uses a validation island, or rules out a tempting route.
 - Update `<harness>/plan.md` and `<harness>/breakthroughs.md` when a hill is closed, an escape burst starts, a feature-cell elite changes, an escape operator earns credit, or a divergence probe earns a new-hill commitment budget.
-- Update `<harness>/state.json` when the candidate changes state; do not block fast-path iteration on optional bookkeeping.
+- Update `<harness>/state.json` when the candidate changes promotion, family, or plateau state; do not block fast-path iteration on optional bookkeeping.
 - Update `<harness>/checkpoints/progress.json` with the current phase and terminal result when appropriate.
 - Run or record the fresh verifier gate before any stable promotion.
 - If `progress.chart_enabled` is not `false`, regenerate `<harness>/progress.svg`, regenerate `<harness>/dashboard.html`, and refresh `<harness>/review.md` only at sidecar checkpoints, not after every fast-mode candidate.
 - Update `<harness>/best.md` only if promotion rules pass.
-- Update `<harness>/plan.md` with next branch status.
+- Update `<harness>/plan.md` with next branch status. If the plateau trigger fired, the next measured candidate must be off-hill.
 
 ## Structural Reset Prompt
 

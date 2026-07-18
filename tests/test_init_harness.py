@@ -29,6 +29,8 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
             "no budget limit",
             "--validation",
             "official checker",
+            "--progress-chart",
+            "on",
         ],
         check=True,
         text=True,
@@ -74,6 +76,14 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["escape"]["diversity_map"] == []
     assert state["escape"]["operator_credit"] == {}
     assert state["escape"]["controlled_regression_allowed"] is False
+    assert state["search_health"]["accounting_unit"] == "measured_attempt"
+    assert state["search_health"]["attempts_since_promotion"] == 0
+    assert state["search_health"]["same_family_miss_limit"] == 3
+    assert state["search_health"]["promotion_drought_budget_fraction"] == 0.10
+    assert state["search_health"]["force_off_hill_next"] is False
+    assert state["search_health"]["compound_structural_candidates_allowed"] is True
+    assert state["search_health"]["checkpoints_count_as_candidates"] is False
+    assert state["search_health"]["floor_requires_lower_bound"] is True
     assert state["promotion_ladder"]["enabled"] is True
     assert state["promotion_ladder"]["gating_steps"] == [
         "apply_or_build",
@@ -89,11 +99,11 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["progress"]["chart_enabled"] is True
     assert state["progress"]["critical_path_required"] == [
         "result_or_blocker",
-        "progress_row",
         "decision",
         "next_direction",
     ]
     assert state["progress"]["critical_path_best_effort"] == [
+        "progress_row",
         "usage_snapshot",
         "raw_evidence_path",
         "compact_log_note",
@@ -102,11 +112,13 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert state["progress"]["throughput_guard"]["enabled"] is True
     assert state["progress"]["throughput_guard"]["degrade_to"] == "fast"
     assert "next_candidate_known_and_logging_is_only_remaining_work" in state["progress"]["throughput_guard"]["switch_when"]
+    assert "checkpoint_or_token_work_can_be_owned_by_a_coordinator" in state["progress"]["throughput_guard"]["switch_when"]
     assert state["progress"]["sidecar"]["enabled"] is False
     assert state["progress"]["sidecar"]["policy"] == "checkpoint_only"
     assert state["progress"]["sidecar"]["refresh_triggers"]["every_n_candidates"] == 10
     assert state["progress"]["sidecar"]["refresh_triggers"]["idle_only"] is True
     assert "token_accounting_wait" in state["progress"]["sidecar"]["forbidden_on_fast_path"]
+    assert "same_artifact_checkpoint_administration_when_delegable" in state["progress"]["sidecar"]["forbidden_on_fast_path"]
     assert state["progress"]["sidecar"]["semantics"].startswith("deferred_in_single_agent_runs")
     refresh_command = state["progress"]["sidecar"]["refresh_command"]
     assert refresh_command.startswith(f"python {shlex.quote(str(RENDER_SCRIPT))} ")
@@ -166,6 +178,10 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert template["screening"]["calibration"]["stacked_knob_cases"] == []
     assert template["validation_island"]["contract_allowed"] is False
     assert template["phase_owners"] == []
+    assert template["search_accounting"]["attempts_consumed"] == 0
+    assert template["search_accounting"]["coordinated_edits_required"] is False
+    assert template["search_accounting"]["same_artifact_checkpoint"] is False
+    assert template["search_accounting"]["force_off_hill_next"] is False
     assert template["escape"]["status"] == "tracking"
     assert template["escape"]["escape_operator"] is None
     assert template["escape"]["controlled_regression_allowed"] is False
@@ -198,6 +214,9 @@ def test_init_harness_default_uses_isolated_harness_dir(tmp_path: Path) -> None:
     assert not (tmp_path / "work" / "progress.tsv").exists()
     state = json.loads((harness / "state.json").read_text(encoding="utf-8"))
     assert state["progress"]["table"] == "work/optimization_harness/progress.tsv"
+    assert state["progress"]["chart_enabled"] is False
+    assert not (harness / "progress.svg").exists()
+    assert not (harness / "dashboard.html").exists()
     assert state["progress"]["sidecar"]["must_not_mutate"][0] == "work/optimization_harness/best.md"
     assert state["progress"]["sidecar"]["safe_sidecar_outputs"][0] == "work/optimization_harness/progress.svg"
 
@@ -252,10 +271,10 @@ def test_init_harness_accepts_minimal_alias_for_fast_mode(tmp_path: Path) -> Non
     assert state["requested_harness_mode"] == "minimal"
     assert state["progress"]["critical_path_required"] == [
         "result_or_blocker",
-        "progress_row",
         "decision",
         "next_direction",
     ]
+    assert "progress_row" in state["progress"]["critical_path_best_effort"]
     assert state["progress"]["sidecar"]["enabled"] is False
     assert "Harness mode: fast (requested alias: minimal)" in (work / "best.md").read_text(encoding="utf-8")
 
@@ -271,6 +290,8 @@ def test_init_harness_standard_mode_has_checkpoint_sidecar_triggers(tmp_path: Pa
             str(work),
             "--harness-mode",
             "standard",
+            "--progress-chart",
+            "on",
         ],
         check=True,
         text=True,
@@ -305,6 +326,8 @@ def test_init_harness_audit_mode_requires_full_reject_artifacts(tmp_path: Path) 
             str(work),
             "--harness-mode",
             "audit",
+            "--progress-chart",
+            "on",
         ],
         check=True,
         text=True,

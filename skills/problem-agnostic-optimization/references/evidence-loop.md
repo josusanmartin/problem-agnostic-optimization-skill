@@ -281,6 +281,7 @@ Rules:
 - State that the run is a variance call.
 - Keep the artifact unchanged (or, if the platform dedups submissions, the smallest distinct artifact per draw).
 - Record sample count, min, median, max, and dispersion when possible.
+- Count every draw as a measured attempt and charge it to the current family's budget even when the sweep produces one candidate record.
 - Do not describe same-file reruns as code improvement.
 - Stop variance calls when the distribution shows the target is implausible or the budget is no longer justified.
 
@@ -303,6 +304,7 @@ Write the sweep plan before sampling:
 - Per-sample cost (submissions, rate-limit time, eval budget) and the distinctness constraint: if the platform dedups, each draw needs the smallest contract-valid distinct artifact, which bounds the achievable sample count.
 - Objective: lower the recorded best-of-N / characterize the current draw family / detect a sub-region effect above noise.
 - Falsifiable stop, whichever fires first: recorded best stalls for `K` draws; the distribution places the target outside by the chosen margin (then close the current draw family and return to structural search); or the budget is spent.
+- Promotion-drought effect: only a meaningful authoritative improvement resets the drought; opening another seed batch does not.
 
 Order statistics give the stop teeth: expected gain from the next draw shrinks toward the distribution's lower tail as samples accumulate, so stop when marginal expected gain is below the per-sample cost. A converged sweep is a result: it ends by banking a best-of-N gain or by supplying the distribution that closes the current draw family, not the whole problem.
 
