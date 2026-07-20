@@ -13,7 +13,7 @@ Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, production
 - Classify every speedup before trusting it.
 - Use competitor clues as hypotheses, not truth.
 - Separate speed from stability: benchmark, ranked, secret, rerun variance, and statefulness can differ.
-- Keep a file-based search ledger.
+- Keep only enough active state to avoid duplicate candidates and protect the best; persistent logging is optional.
 - After every win, rewrite the bottleneck map.
 
 ## General GPU Patterns
@@ -40,7 +40,7 @@ Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, production
 
 ## Device Discovery
 
-Do not bake device facts into the skill. Discover them for the active run and record them in the ledger:
+Do not bake device facts into the skill. Discover them for the active run before relying on them:
 
 - Accelerator model, driver/runtime, compiler, library versions, clocks if available.
 - Compute-unit or multiprocessor count, subgroup width, max threads, shared memory/LDS, register limits, and occupancy constraints.

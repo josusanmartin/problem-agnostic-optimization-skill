@@ -4,15 +4,15 @@ Use this reference after a materially faster artifact, winning source, productio
 
 ## Preserve The Evidence
 
-Record before analysis:
+Establish before analysis, using the active plan or the active external harness when one exists:
 
 - Exact artifact, source snapshot, commit or submission ID, score, hardware, and contract.
 - Build and generation path, including downloaded or prelinked components.
 - Timed lifecycle boundary: import, compile, JIT, warmup, precompute, capture, replay, and teardown.
 - Which claims are observed in source or traces, which are author comments, and which are inference.
-- Current protected best and the ledger snapshot being compared.
+- Current protected best and the compact active state or external-harness record being compared.
 
-Do not rewrite old ledger entries to match hindsight. Append a superseding interpretation and retain the original evidence.
+If persistent history is active, append a superseding interpretation rather than rewriting old entries. Otherwise retain the original evidence and corrected interpretation together in the active context.
 
 ## Triangulate Multiple Frontiers
 
@@ -150,7 +150,7 @@ Use stage cuts to estimate ownership and critical-path changes. Never promote a 
 
 ## Run The Counterfactual Timeline
 
-For each enabling idea, record:
+For each enabling idea, identify:
 
 - First date or candidate when the clue existed.
 - Belief or anti-revisit rule that blocked it.
@@ -163,11 +163,11 @@ Judge the process using evidence available then, not only the final answer. Pres
 
 ## Convert Hindsight Into Candidates
 
-Produce three outputs:
+Carry three results into the next search decision:
 
 1. **Mechanism map**: cross-frontier consensus and architecture differences with causal/enabling labels.
 2. **Verdict corrections**: old closures narrowed, superseded, or retained with explicit evidence.
-3. **Next-run rules**: concrete trigger, architecture budget, probe, kill criterion, and durable ledger field.
+3. **Next-run rules**: concrete trigger, architecture budget, probe, and kill criterion; add a persistent field only when an observability module is active.
 
 For every transferable mechanism, define the cheapest falsifiable probe and an integrated target candidate. Do not reduce the lesson to "write more custom code" or "use the winner's library."
 

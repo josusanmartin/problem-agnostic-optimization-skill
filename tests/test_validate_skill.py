@@ -57,18 +57,18 @@ def test_invalid_openai_yaml_fails(tmp_path: Path) -> None:
 
 def test_non_ascii_reference_fails(tmp_path: Path) -> None:
     skill_dir = copy_skill(tmp_path)
-    ref = skill_dir / "references" / "templates.md"
+    ref = skill_dir / "references" / "evidence-loop.md"
     ref.write_text(ref.read_text(encoding="utf-8") + "\nCafe é\n", encoding="utf-8")
 
-    with pytest.raises(validate_skill.ValidationError, match="references/templates.md has non-ASCII"):
+    with pytest.raises(validate_skill.ValidationError, match="references/evidence-loop.md has non-ASCII"):
         validate_skill.validate_skill(skill_dir)
 
 
 def test_invalid_utf8_fails_without_traceback(tmp_path: Path) -> None:
     skill_dir = copy_skill(tmp_path)
-    (skill_dir / "references" / "templates.md").write_bytes(b"\xff")
+    (skill_dir / "references" / "evidence-loop.md").write_bytes(b"\xff")
 
-    with pytest.raises(validate_skill.ValidationError, match="references/templates.md is not valid UTF-8"):
+    with pytest.raises(validate_skill.ValidationError, match="references/evidence-loop.md is not valid UTF-8"):
         validate_skill.validate_skill(skill_dir)
 
 
@@ -88,7 +88,7 @@ def test_frontier_reference_preserves_integrated_search_doctrine() -> None:
         assert phrase in text
 
 
-@pytest.mark.parametrize("reference_name", ["auditor.md", "frontier-introspection.md", "gpu-architecture.md"])
+@pytest.mark.parametrize("reference_name", ["evidence-loop.md", "frontier-introspection.md", "gpu-architecture.md"])
 def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
     skill_dir = copy_skill(tmp_path)
     (skill_dir / "references" / reference_name).unlink()
@@ -97,10 +97,25 @@ def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
-@pytest.mark.parametrize("script_name", ["init_harness.py", "progress_chart.py", "progress_dashboard.py", "render_progress.py", "record_event.py", "record_progress.py"])
-def test_missing_skill_script_fails(tmp_path: Path, script_name: str) -> None:
-    skill_dir = copy_skill(tmp_path)
-    (skill_dir / "scripts" / script_name).unlink()
+def test_skill_payload_has_no_bundled_logging_module() -> None:
+    forbidden = [
+        "references/auditor.md",
+        "references/harness.md",
+        "references/templates.md",
+        "scripts/init_harness.py",
+        "scripts/progress_chart.py",
+        "scripts/progress_dashboard.py",
+        "scripts/render_progress.py",
+        "scripts/record_event.py",
+        "scripts/record_progress.py",
+    ]
 
-    with pytest.raises(validate_skill.ValidationError, match=f"missing required file: scripts/{script_name}"):
-        validate_skill.validate_skill(skill_dir)
+    assert not [relative for relative in forbidden if (SKILL_SRC / relative).exists()]
+
+
+def test_skill_defaults_to_no_logging_and_delegates_scorebench() -> None:
+    text = (SKILL_SRC / "SKILL.md").read_text(encoding="utf-8")
+
+    assert "Default behavior is no logging subsystem." in text
+    assert "When Scorebench is active" in text
+    assert "Do not create parallel PAO logs or dashboards" in text
