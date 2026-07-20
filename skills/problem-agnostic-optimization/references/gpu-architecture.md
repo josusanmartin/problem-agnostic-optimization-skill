@@ -85,17 +85,6 @@ Use counters to check occupancy, memory bandwidth, tensor/ALU utilization, share
 
 When target profiling is unavailable, use route-attested stage cuts or controlled prefix/suffix variants to estimate phase ownership. Keep setup and warmup comparable, and never promote from a stage-only result.
 
-## Attention And Decode Lessons
-
-Transferable lessons from attention/decode-style kernels:
-
-- Split exact shapes first. The winning route often differs by sequence length, batch, head count, page size, expert count, or routing mode.
-- Page size, tile size, and split count can move the bottleneck between metadata, atomics, memory bandwidth, and compute.
-- Persistent and non-persistent modes are different algorithms; validate each shape because one mode can be correct and fast on one case but invalid on another.
-- Skipping large zero/fill initialization after warmup is valid only when the contract proves the kernel fully overwrites the buffer; otherwise treat it as statefulness risk and validate against ranked behavior.
-- Very large page sizes can cause timeouts despite good microbenchmarks.
-- Environment variables can be part of the measured system; record them with results.
-
 ## Cross-GPU Transfer
 
 Do not assume a win on one GPU transfers to another:

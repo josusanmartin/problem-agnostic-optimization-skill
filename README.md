@@ -42,6 +42,25 @@ Only the authoritative metric promotes. Profiles, counters, local benchmarks, an
 
 For a tiny one-shot task, a `/goal` is optional. State the metric and constraints directly and let the skill run the same loop without creating process artifacts.
 
+## Route First
+
+The first skill action is routing, before candidate planning or reference loading. PAO selects exactly one primary challenge module, optionally one matching kernel-shape module, and only evidence-triggered add-ons. It never treats the references directory as a reading list.
+
+Examples:
+
+- A CUDA convolution loads `gpu-architecture.md` plus `kernel-stencils-convolution.md`. It does not load CPU, HighLoad/service, stochastic-policy, or VLIW guidance.
+- A HighLoad request server loads `service-throughput.md`. It re-routes an isolated phase to `cpu-architecture.md` only if measurement identifies a CPU hot loop, or adds `runtime-overhead.md` if setup/runtime cost dominates.
+- A stochastic simulator policy loads `stochastic-policy-search.md`; hardware modules stay unloaded unless hardware runtime is actually part of the scored path.
+- A VLIW cycle search loads `fixed-resource-scheduling.md`, then adds `resource-models.md` only when floor, tail, or resource-transfer analysis is active.
+
+The active context records one compact selection such as:
+
+```text
+Route: gpu; shape: kernel-stencils-convolution; add-ons: none
+```
+
+When evidence changes the bottleneck, PAO returns to the router and swaps or adds the newly justified module. References do not recursively load other references.
+
 ### Draft A Goal Without Starting
 
 ```text
@@ -163,7 +182,7 @@ cp -R skills/problem-agnostic-optimization "$CODEX_HOME/skills/"
 
 Restart Codex or start a new session after installing or updating the skill.
 
-The installed payload is intentionally small:
+The entrypoint is intentionally small, and the reference payload is split into narrow modules that load only when routed:
 
 ```text
 problem-agnostic-optimization/
@@ -172,10 +191,19 @@ problem-agnostic-optimization/
   references/
     cpu-architecture.md
     evidence-loop.md
+    fixed-resource-scheduling.md
     frontier-introspection.md
     gpu-architecture.md
-    problem-families.md
+    kernel-attention-moe.md
+    kernel-elementwise.md
+    kernel-histogram.md
+    kernel-matrix.md
+    kernel-quantized.md
+    kernel-reductions-scans.md
+    kernel-stencils-convolution.md
     resource-models.md
+    runtime-overhead.md
+    service-throughput.md
     stochastic-policy-search.md
 ```
 

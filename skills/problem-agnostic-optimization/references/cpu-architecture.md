@@ -1,11 +1,11 @@
 # CPU Optimization Reference
 
-Use this reference for CPU kernels, command/process benchmarks, cpu.mode-style single-shot submissions, highload.fun-style service/load tasks, SIMD code, intrinsics, generated assembly, and counter-driven diagnosis. Keep platform facts target-local: discover the active machine, runner, limits, and scoring contract before choosing tactics.
+Use this reference for CPU kernels, command/process benchmarks, cpu.mode-style single-shot submissions, SIMD code, intrinsics, generated assembly, and counter-driven diagnosis. Keep platform facts target-local: discover the active machine, runner, limits, and scoring contract before choosing tactics. This module deliberately excludes long-running request-service and load-test guidance.
 
 ## CPU Search Rules
 
 - Start with the contract: input source, output format, target metric, correctness scope, warmup, concurrency, allowed languages, flags, syscalls, and resource limits.
-- Classify the benchmark mode early: `single-shot process`, `batch/offline kernel`, `long-running service`, or `mixed`.
+- Classify the benchmark mode early: `single-shot process`, `batch/offline kernel`, or `mixed`.
 - Run the baseline before claiming wins.
 - Preserve the best artifact and command line.
 - Compute a rough lower bound: bytes moved, operations, syscalls, requests, serialization, or unavoidable latency divided by realistic throughput.
@@ -54,27 +54,6 @@ Typical traps:
 - Static linking, custom entrypoints, direct syscalls, or mmap can be rejected or slower on some judges.
 - Optimizing the hot loop is wasted when startup, parse, or output dominates.
 - A local sample runner may not include the same startup, filesystem, or sandbox overhead as the official scorer.
-
-## Long-Running Service And Load Benchmarks
-
-Examples: highload.fun-style services, HTTP/TCP/queue handlers, request/response workloads, throughput and latency competitions.
-
-High-signal candidates:
-
-- Identify whether the target metric is throughput, p50, p95/p99, tail latency under load, error rate, memory, or cost.
-- Keep the service warm and stable: avoid per-request initialization, descriptor churn, JIT/setup, and cold caches during measured load.
-- Control concurrency explicitly: event loop, worker count, thread pool, async runtime, sharding, queues, and backpressure.
-- Reduce per-request allocations, parsing, serialization, logging, locks, atomics, syscalls, and copies.
-- Batch where it lowers overhead without violating latency targets.
-- Pin or shard state only after measuring scheduler migration, lock contention, cache locality, or NUMA effects.
-- Treat kernel/network tuning, socket options, backlog, keep-alive, buffering, and load-generator behavior as part of the contract; change them only when allowed.
-
-Typical traps:
-
-- A faster mean can hide worse p99 or higher error rate.
-- More threads can reduce throughput through contention, cache misses, or context switching.
-- Async frameworks can lose to simpler blocking or thread-per-core designs when the workload is CPU-bound and the connection model is simple.
-- Local load generators can be the bottleneck; verify client-side saturation before changing server code.
 
 ## Memory-Bound Patterns
 
@@ -138,11 +117,9 @@ hyperfine './target < input'
 taskset -c 0 ./target
 ```
 
-For services, pair server-side counters with a load generator and confirm the client is not saturated.
-
 ## Public Clues And Harnesses
 
-Mine public source, crate names, papers, benchmark writeups, leaderboard diffs, and flamegraphs for hypotheses, not conclusions. This includes a competitor's *winning technique*, not only the contract clues below; to port an external mechanism faithfully and verify each sub-technique transferred, see "External Technique Intake" in `references/evidence-loop.md`.
+Mine public source, crate names, papers, benchmark writeups, leaderboard diffs, and flamegraphs for hypotheses, not conclusions. Treat a competitor's winning technique as a route-level evidence trigger; do not expand scope unless the router selects that add-on.
 
 Clean examples:
 

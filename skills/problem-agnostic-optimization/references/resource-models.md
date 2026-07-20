@@ -343,7 +343,7 @@ Probe across different axes, not many versions of one axis:
 - External intake: public source, competitor writeup, paper, or known better method ported as a mechanism.
 - Negative proof: a proof or counterexample that closes a tempting shortcut before implementation.
 
-Variance here means diversity of hypotheses. Draw or distribution sweeps count only when they satisfy `Variance Handling` in `references/evidence-loop.md`; otherwise they are churn.
+Variance here means diversity of hypotheses. Draw or distribution sweeps count only when the active evidence policy justifies them; otherwise they are churn.
 
 Use a small diversity map during the burst:
 

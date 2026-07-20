@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 from pathlib import Path
+import re
 import sys
 from typing import Any
 
@@ -12,15 +13,8 @@ except ModuleNotFoundError:  # pragma: no cover - exercised by users without dep
     yaml = None
 
 
-REQUIRED_REFERENCES = [
-    "cpu-architecture.md",
-    "evidence-loop.md",
-    "frontier-introspection.md",
-    "gpu-architecture.md",
-    "problem-families.md",
-    "resource-models.md",
-    "stochastic-policy-search.md",
-]
+ROUTED_REFERENCE_RE = re.compile(r"`references/([a-z0-9-]+\.md)`")
+REFERENCE_LINK_RE = re.compile(r"`(?:references/)?([a-z0-9-]+\.md)`")
 
 
 class ValidationError(Exception):
@@ -104,13 +98,25 @@ def parse_openai_yaml(text: str) -> dict[str, Any]:
     return data
 
 
-def required_files(skill_dir: Path) -> list[Path]:
-    files = [
-        skill_dir / "SKILL.md",
-        skill_dir / "agents" / "openai.yaml",
-    ]
-    files.extend(skill_dir / "references" / name for name in REQUIRED_REFERENCES)
-    return files
+def routed_reference_names(skill_text: str) -> list[str]:
+    matches = ROUTED_REFERENCE_RE.findall(skill_text)
+    if not matches:
+        fail("SKILL.md routes no reference modules")
+    duplicates = sorted(name for name in set(matches) if matches.count(name) > 1)
+    if duplicates:
+        fail(f"reference modules routed more than once: {', '.join(duplicates)}")
+    return sorted(matches)
+
+
+def validate_router(skill_text: str) -> None:
+    route_heading = "## Route First"
+    contract_heading = "## Contract"
+    if route_heading not in skill_text:
+        fail("SKILL.md missing route-first section")
+    if contract_heading not in skill_text or skill_text.index(route_heading) > skill_text.index(contract_heading):
+        fail("SKILL.md router must precede the optimization contract")
+    if "Do not read every reference" not in skill_text:
+        fail("SKILL.md router must forbid bulk reference loading")
 
 
 def validate_skill(skill_dir: Path) -> None:
@@ -120,11 +126,27 @@ def validate_skill(skill_dir: Path) -> None:
     if not skill_dir.is_dir():
         fail(f"skill path is not a directory: {skill_dir}")
 
-    files = required_files(skill_dir)
-    contents = {path: read_ascii(path, skill_dir) for path in files}
+    skill_path = skill_dir / "SKILL.md"
+    openai_path = skill_dir / "agents" / "openai.yaml"
+    skill_text = read_ascii(skill_path, skill_dir)
+    openai_text = read_ascii(openai_path, skill_dir)
 
-    parse_skill_frontmatter(contents[skill_dir / "SKILL.md"])
-    parse_openai_yaml(contents[skill_dir / "agents" / "openai.yaml"])
+    parse_skill_frontmatter(skill_text)
+    parse_openai_yaml(openai_text)
+    validate_router(skill_text)
+
+    routed = routed_reference_names(skill_text)
+    for name in routed:
+        module_text = read_ascii(skill_dir / "references" / name, skill_dir)
+        nested = REFERENCE_LINK_RE.findall(module_text)
+        if nested:
+            fail(f"reference module {name} links recursively: {', '.join(sorted(set(nested)))}")
+
+    reference_dir = skill_dir / "references"
+    actual = sorted(path.name for path in reference_dir.glob("*.md") if path.is_file())
+    unrouted = sorted(set(actual) - set(routed))
+    if unrouted:
+        fail(f"unrouted reference modules: {', '.join(unrouted)}")
 
 
 def main(argv: list[str] | None = None) -> int:

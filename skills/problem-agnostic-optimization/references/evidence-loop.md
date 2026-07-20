@@ -38,7 +38,7 @@ When porting an external mechanism:
 
 - Snapshot the source, build path, runtime lifecycle, and authoritative result before interpreting it.
 - When multiple sources exist, establish provenance and common ancestry, then use independent architectural agreement to rank hypotheses. Keep source-unique details unproven until ablated.
-- Run the architecture diff in `frontier-introspection.md`: compare algorithm, dependency DAG, hardware mapping, precision, repair, routing, state lifetime, setup boundary, and toolchain.
+- When the router also selected frontier introspection, run its architecture diff across algorithm, dependency DAG, hardware mapping, precision, repair, routing, state lifetime, setup boundary, and toolchain.
 - Decompose it into named sub-techniques and port them faithfully before tuning.
 - Verify each sub-technique transferred with a counter, ablation, or microbenchmark, not just the end-to-end score.
 - A faithful-looking reconstruction that regresses usually means one mis-transferred parameter (window size, stride, ordering, alignment, block count), not a refuted technique. Isolate the mis-transfer before discarding the mechanism.
