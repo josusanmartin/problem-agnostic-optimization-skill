@@ -35,11 +35,12 @@ Use the current workspace and user-provided evidence by default. Do not mine sib
 2. Preserve the current best artifact before risky edits.
 3. Build the cheapest useful bottleneck model from measurements, profiles, counters, case splits, or resource floors.
 4. Choose one falsifiable hypothesis and make the smallest edit that tests it.
-5. Validate correctness before performance when possible.
-6. Measure with the authoritative metric.
-7. Decide `PROMOTE`, `KEEP VARIANT`, `REJECT`, `BUG`, or `BLOCKED`.
-8. Update the bottleneck model after a promotion or surprising regression.
-9. Continue while the hill has signal; change hill when same-family candidates tie or regress.
+5. Prove the intended candidate path executed before interpreting correctness or timing.
+6. Validate correctness before performance when possible.
+7. Measure with the authoritative metric.
+8. Decide `PROMOTE`, `KEEP VARIANT`, `REJECT`, `BUG`, or `BLOCKED`.
+9. Update the bottleneck model after a promotion or surprising regression.
+10. Continue while the hill has signal; change hill when same-family candidates tie or regress.
 
 For a candidate, keep only the information needed to make the next decision: parent, hypothesis, expected signal, kill criterion, validation, measurement, and decision. A compact line or active plan is enough. Do not create per-candidate dossiers by default.
 
@@ -65,6 +66,8 @@ Classify the current gap before choosing a candidate:
 - `statistical gap`: the apparent movement may be noise.
 
 Do not micro-tune below a proven floor. Change work graph, representation, primitive, route, specialization, or a contract-valid approximation. Treat inherited gap classifications and closed hills as hypotheses unless backed by current evidence.
+
+Separate contract semantics, enforcement behavior, and the rejected implementation form. A scanner, compiler, sandbox, or policy rejection closes only the observed syntax, API, tool, or execution form unless the contract forbids the broader mechanism. Never evade forbidden semantics. When the semantics are allowed but enforcement is broader than the written rule, seek a transparent contract-valid representation and validate it authoritatively.
 
 Mechanism classes:
 
@@ -99,6 +102,10 @@ Reassess when three same-family candidates tie or regress, resource improvements
 
 After reassessment, spend the next candidate off-hill by default. Try a different representation, primitive, route, target split, specialization, search tool, or external mechanism. A plateau closes a hill, not the problem; only a lower-bound proof can establish that the target is unreachable.
 
+When a materially faster artifact or source becomes available, compare its algorithm, phase graph, representation, hardware mapping, precision, repair, routing, and lifecycle with the protected best. Audit prior negative verdicts against the new premises before choosing the next hill. See `references/frontier-introspection.md`.
+
+If about three independent wrapper, primitive, or isolated-phase substitutions fail to move the measured owner and the remaining gap exceeds their plausible gain, reserve a bounded branch for an integrated architecture. Define its phase contract, milestones, budget, route attestation, and kill criteria; diagnose components separately, but promote only end to end.
+
 For detailed floor analysis and escape operators, read `references/resource-models.md`. For measurement quality, variance, profiling, and external-technique intake, read `references/evidence-loop.md`.
 
 ## Multi-Agent Mode
@@ -116,6 +123,7 @@ Default reporting is concise: state the best artifact, authoritative result, val
 | Need | Read |
 |---|---|
 | Measurement, profiling, variance, blockers | `references/evidence-loop.md` |
+| Winning-source introspection and verdict audits | `references/frontier-introspection.md` |
 | Floors, tails, primitive inversion, local optima | `references/resource-models.md` |
 | Simulator, policy, hidden seeds | `references/stochastic-policy-search.md` |
 | CPU optimization | `references/cpu-architecture.md` |

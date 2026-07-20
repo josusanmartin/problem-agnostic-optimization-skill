@@ -15,6 +15,7 @@ except ModuleNotFoundError:  # pragma: no cover - exercised by users without dep
 REQUIRED_REFERENCES = [
     "cpu-architecture.md",
     "evidence-loop.md",
+    "frontier-introspection.md",
     "gpu-architecture.md",
     "problem-families.md",
     "resource-models.md",

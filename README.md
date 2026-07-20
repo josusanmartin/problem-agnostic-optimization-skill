@@ -159,6 +159,7 @@ problem-agnostic-optimization/
   references/
     cpu-architecture.md
     evidence-loop.md
+    frontier-introspection.md
     gpu-architecture.md
     problem-families.md
     resource-models.md

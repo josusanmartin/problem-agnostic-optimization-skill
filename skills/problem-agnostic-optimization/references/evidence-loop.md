@@ -11,6 +11,8 @@ Build this before coding:
 - Correctness tolerance and reference behavior.
 - Target metric: remote wall time, geomean, p95, throughput, score, counters, memory, or cost.
 - Target hardware, compiler/runtime, flags, source limits, language limits, and sandbox constraints.
+- Timed boundary: import, build, JIT, warmup, precompute, capture, allocation, teardown, and which of them count.
+- Contract semantics, policy intent, and observed scanner/checker enforcement as separate facts.
 - Budget: submissions, API calls, GPU minutes, wall-clock, or production risk.
 - Editable files and immutable reference, harness, evaluation, data, or scoring files.
 - Scoreboard semantics and draw/noise model: is the recorded result single-shot, an aggregate, or `best-of-N` over submissions (the board keeps your best ever)? What varies between samples: rerun noise, seed/nonce/route selector, hidden queue state, or structurally distinct artifact? Record measured spread across draws or reruns. These decide whether a sweep can ever help; see Variance Handling.
@@ -34,9 +36,13 @@ Objective Evidence finds the best known *result*. Also seek the best known *meth
 
 When porting an external mechanism:
 
+- Snapshot the source, build path, runtime lifecycle, and authoritative result before interpreting it.
+- When multiple sources exist, establish provenance and common ancestry, then use independent architectural agreement to rank hypotheses. Keep source-unique details unproven until ablated.
+- Run the architecture diff in `frontier-introspection.md`: compare algorithm, dependency DAG, hardware mapping, precision, repair, routing, state lifetime, setup boundary, and toolchain.
 - Decompose it into named sub-techniques and port them faithfully before tuning.
 - Verify each sub-technique transferred with a counter, ablation, or microbenchmark, not just the end-to-end score.
 - A faithful-looking reconstruction that regresses usually means one mis-transferred parameter (window size, stride, ordering, alignment, block count), not a refuted technique. Isolate the mis-transfer before discarding the mechanism.
+- Audit old `CLOSED` verdicts against the new premises. Distinguish an algorithm loss from an immature implementation, integration error, unchanged parent bottleneck, blocked representation, or invalid measurement.
 - Re-derive and cite the mechanism; do not copy locked or proprietary source as your own, and never use leaked outputs or hidden-test constants.
 
 ## Breakthrough Mining
@@ -73,10 +79,12 @@ Turn mined mechanisms into candidates by class:
 - **Algebraic fusion**: look for adjacent operations with no intervening reader, inverse pairs, duplicated predicates, or equivalent branch decisions. Fuse only after proving the intermediate state is not required.
 - **Paired-phase fusion**: when a forward phase and its reverse/apply mirror both pay a similar carry, cleanup, synchronization, or materialization cost, check whether the reverse controls can be recovered from the output state and both phases can share one primitive. This is higher risk than local fusion; prove phase cleanliness, not just value equality.
 - **Primitive swap**: replace an expensive cleanup, branch, conversion, allocation, or synchronization primitive with a contract-valid cheaper primitive. Check that the new primitive preserves correctness state, not just counts.
+- **Completion by construction**: check whether one factorization, transform, traversal, or decomposition already produces a required complement, inverse view, ordering, certificate, or second output. Delete the separately constructed output only after proving the relationship.
+- **Certificate and selective repair**: run a cheaper representation or route, certify each independent work unit, and repair only failures on the accurate path. Price the certificate, routing synchronization, and worst-case fallback rate.
 - **Reachable-support truncation**: a worst-case width, bound, search space, or iteration count may be loose for the contract-declared scored distribution. Treat the truncated path as a hypothesis requiring full validation, not as a proof from sampled cleanliness or hidden-test leakage.
 - **Search-tool breakthrough**: if the authoritative run is too slow for the needed sweep, build a cheaper bit-exact or conservative screen for the dirty condition. The screen proposes candidates; the authoritative metric still decides.
 - **Post-breakthrough slack reclamation**: structural wins often relax guards, margins, windows, seeds, or conservative knobs to find a clean route quickly. After promotion, revisit those relaxed knobs on the new base before declaring the route exhausted.
-- **Negative breakthrough**: an attractive route can be ruled out by measured resource tradeoff, not just correctness failure. Record why it looked promising, the blocker, and the condition that would reopen it.
+- **Negative breakthrough**: an attractive route can be ruled out by measured resource tradeoff, not just correctness failure. Scope the verdict to algorithm, implementation, integration, attachment graph, enforcement form, or measurement validity; record why it looked promising, the blocker, and the condition that would reopen it.
 
 Do not copy a winning artifact blindly. Extract the mechanism, parent assumptions, knobs, and validator, then rebuild the candidate against the current protected best.
 
@@ -173,11 +181,13 @@ Fallback tools:
 - Static models: compiler output, instruction mix, occupancy estimates, `llvm-mca`, roofline-style math, kernel launch count, or query plans.
 - Surrogate profiles: local `perf`, language profilers, flamegraphs, tracing logs, simulator output, or a smaller reproducible workload.
 - Differential timing: compare parent and candidate under identical commands, seeds, input order, and warmup protocol.
+- Stage-cut diagnostics: run an attested prefix, controlled suffix replacement, or phase-only route to estimate ownership when the full profiler is unavailable.
 
 Fallback discipline:
 
 - Promote only by the authoritative metric, even if a weak profiler says the candidate should win.
 - Use weak evidence to choose the next candidate, not to claim the bottleneck is proven.
+- Treat stage cuts as diagnosis only. Do not promote them, add timings from incompatible cuts, or infer an end-to-end win from an isolated phase.
 - If weak evidence repeatedly mispredicts the authoritative score, downgrade or discard that screening model.
 - A weak screen produces false negatives, not just false positives: it can veto a real win. Once you have downgraded a screen, do not let it reject a candidate; let the authoritative metric decide that candidate.
 - When local screening is non-predictive, the authoritative metric becomes the screen. Budget exploratory authoritative evaluations for screening instead of throttling exploration to conserve them; an unspent submission or eval budget is worth less than a discovered improvement.
