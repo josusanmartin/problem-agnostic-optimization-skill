@@ -146,6 +146,84 @@ Next off-hill probe:
 - Reopen condition:
 ```
 
+### Frontier Architecture Diff
+
+```markdown
+## Frontier Architecture Diff: source or evidence lineage
+
+- Source snapshot / result:
+- Provenance / common ancestry:
+- Protected best:
+- Contract match:
+- Timed boundary:
+
+| dimension | protected best | frontier | evidence | causal / enabling / incidental / unknown | cheapest probe |
+|---|---|---|---|---|---|
+| contract and enforcement |  |  |  |  |  |
+| timed lifecycle |  |  |  |  |  |
+| algorithm |  |  |  |  |  |
+| dependency DAG |  |  |  |  |  |
+| hardware mapping |  |  |  |  |  |
+| representation / precision |  |  |  |  |  |
+| specialization / routing |  |  |  |  |  |
+| state / lifetime |  |  |  |  |  |
+| toolchain / generation |  |  |  |  |  |
+| correctness recovery |  |  |  |  |  |
+```
+
+### Frontier Consensus Matrix
+
+```markdown
+| source / lineage | contract + hardware | result | ancestry / independence | shared mechanisms | unique details | confidence |
+|---|---|---:|---|---|---|---|
+|  |  |  |  |  |  |  |
+
+- Protected-best gap:
+- Frontier-to-frontier spread:
+- Highest-confidence shared hypothesis:
+- Source-unique unknowns needing ablation:
+```
+
+### Negative Verdict Audit
+
+```markdown
+| prior verdict | original evidence | scope: algorithm / implementation / mapping / integration / attachment / availability / enforcement / invalid measurement | new premise | keep / narrow / supersede | cheapest falsifier | reopen condition |
+|---|---|---|---|---|---|---|
+```
+
+### Architecture Branch Contract
+
+```markdown
+## Architecture Branch: name
+
+- Trigger: repeated local substitutions + remaining gap + integrated frontier/resource hypothesis
+- Protected parent:
+- Target integrated phase graph:
+- Cheapest representative end-to-end case:
+- Candidate / time / submission budget:
+- Route-attestation method:
+- Correctness invariant:
+- Milestone 1, build and route:
+- Milestone 2, phase contract and stage ownership:
+- Milestone 3, integrated correctness:
+- Milestone 4, authoritative measurement:
+- Kill criteria:
+- Promotion gate: integrated authoritative result only
+```
+
+### Phase Contract And Precision Ledger
+
+```markdown
+| phase | input -> output representation/layout | carrier/storage | products/accumulation | critical scalars | metadata/complement | owner + lifetime | certificate | repair/fallback |
+|---|---|---|---|---|---|---|---|---|
+|  |  |  |  |  |  |  |  |  |
+
+- Cross-phase work deleted:
+- Conversion/materialization retained:
+- Stage-cut diagnostic and route marker:
+- Worst-case repair/fallback cost:
+```
+
 ### Escape Ladder
 
 ```markdown

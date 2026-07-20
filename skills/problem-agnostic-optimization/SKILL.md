@@ -20,10 +20,11 @@ Only the authoritative metric promotes. Everything else explains.
 3. Preserve the current best artifact.
 4. Define editable and immutable files.
 5. Test one hypothesis per candidate.
-6. Validate correctness before performance when possible.
-7. Promote only by the authoritative metric.
-8. If same-family candidates tie or regress, change hill.
-9. Reject wrong-answer, leaked-answer, stale-state, harness/grader, or invalid-contract wins.
+6. Prove the intended candidate path executed before interpreting timing.
+7. Validate correctness before performance when possible.
+8. Promote only by the authoritative metric.
+9. If same-family candidates tie or regress, change hill.
+10. Reject wrong-answer, leaked-answer, stale-state, harness/grader, or invalid-contract wins.
 
 ## Contract
 
@@ -99,9 +100,13 @@ Do not micro-tune below the current floor. Move to work deletion, fusion, specia
 
 A gap classification is a revisable hypothesis, not a fact, especially when inherited from a prior session, handoff, or ledger. `floor gap` means "no known path reaches target," not "the target is unreachable": that verdict needs a lower-bound proof (a resource floor at or above target), never a plateau of failed candidates. Re-test an inherited negative conclusion when a new premise appears: a user hint, an external writeup, a new tool, compiler, or hardware.
 
+Separate contract semantics, enforcement behavior, and the rejected implementation form. A scanner, compiler, sandbox, or policy rejection closes only the observed syntax, API, tool, or execution form unless the actual contract forbids the broader mechanism. Never evade forbidden semantics. When the semantics are allowed but enforcement is broader than the written rule, seek a transparent contract-valid representation and validate it authoritatively.
+
 ## Candidate
 
 For each candidate, state: parent, parent hash when available, hypothesis, mechanism, duplicate check, expected signal, kill criterion, smallest edit, validation, measurement, and decision. Candidate JSON under `<harness>/candidates/` is required before stable promotion, for risky or surprising candidates, audit mode, handoff, or when the candidate changes the search model. For ordinary rejected candidates in fast mode, a progress row plus one-line learning is enough.
+
+For conditional dispatch, optional extensions, JIT compilation, fallbacks, graph replay, cached artifacts, or remote wrappers, add an execution-attestation gate: fail loud once, emit a route marker, inspect a trace, or otherwise prove the intended path ran. A fallback timing is not evidence about the candidate mechanism.
 
 Mechanism class: work deletion | resource transfer | tail/dependency | scheduler/variance | representation/primitive/route change | contract specialization | approximation | forbidden shortcut.
 
@@ -136,6 +141,8 @@ After reassessment, either continue with a narrower hypothesis and kill criterio
 
 For plateaued, high-stakes, public-leaderboard, or multi-agent runs, mine the frontier for breakthrough patterns before another local sweep and preserve the map in `<harness>/breakthroughs.md`. Read "Breakthrough Mining" in `references/evidence-loop.md`.
 
+If about three independent wrapper, primitive, or isolated-phase substitutions fail to move the measured owner and the remaining gap exceeds their plausible gain, protect the best and reserve a bounded branch for an integrated architecture. Define its phase contract, milestones, budget, route attestation, and kill criteria before implementation; diagnose components separately, but promote only end to end. See `references/frontier-introspection.md`.
+
 Exception: when a `best-of-N` scoreboard or contract-allowed draw distribution can vary the recorded result, a *budgeted* distribution sweep (written plan + falsifiable stop, see `references/evidence-loop.md`) is sanctioned rather than churn. It either banks a best-of-N gain or supplies family-specific distribution evidence to close that draw family. It must self-terminate by its stop rule, not run open-ended.
 
 ## Escape
@@ -154,7 +161,7 @@ If the audit says the run is stuck, use the escape ladder in `references/resourc
 
 Invert the primitive when compact work counts hide a target-specific bottleneck. Use negative audits to kill seductive shortcuts before implementing them.
 
-A `CLOSED` hill is a local verdict, not a global one: closing every known hill does not prove the target unreachable. When the search has exhausted self-generated ideas, intake an external mechanism (a competitor writeup, public source, or paper) and port it before concluding a floor. See "External Technique Intake" in `references/evidence-loop.md`.
+A `CLOSED` hill is a local verdict, not a global one: closing every known hill does not prove the target unreachable. When the search has exhausted self-generated ideas, intake an external mechanism (a competitor writeup, public source, or paper) and port it before concluding a floor. When a materially faster artifact or its source becomes available, run an architecture diff and audit prior negative verdicts before choosing the next hill. See `references/frontier-introspection.md` and "External Technique Intake" in `references/evidence-loop.md`.
 
 ## Integrity
 
@@ -170,6 +177,7 @@ When uncertain, keep the candidate separate and report the risk.
 | Audit an active run from a second session | `references/auditor.md` |
 | Floors, tails, primitive inversion, local optima | `references/resource-models.md` |
 | Measurement, profiling, variance, blockers | `references/evidence-loop.md` |
+| Winning-source introspection and verdict audits | `references/frontier-introspection.md` |
 | Simulator/policy/hidden seeds | `references/stochastic-policy-search.md` |
 | CPU/GPU/domain probes | `references/cpu-architecture.md`, `references/gpu-architecture.md`, `references/problem-families.md` |
 | Logs/handoffs | `references/templates.md` |

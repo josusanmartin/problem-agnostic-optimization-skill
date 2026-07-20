@@ -801,6 +801,7 @@ Checklist:
 - Name the parent candidate.
 - State exactly one hypothesis.
 - Predict which shape, row, counter, or metric should improve.
+- Prove conditional dispatch, optional compilation, cached artifacts, graph replay, and fallback behavior selected the intended candidate path.
 - Validate correctness first when possible.
 - Measure with the same command used for comparable candidates.
 - Rerun if the result is close to noise or surprisingly good.
@@ -829,7 +830,7 @@ Each branch should have:
 - Next probe.
 - Budget and stop condition.
 
-Close branches aggressively when evidence is strong. Reopen only if a new mechanism changes the premise.
+Close branches aggressively when evidence is strong. Scope the closure to algorithm, implementation, integration, attachment graph, enforcement form, or measurement validity. Reopen only if a new mechanism changes the premise.
 
 ## Stagnation Rule
 

@@ -144,6 +144,8 @@ def test_init_harness_creates_progress_artifacts(tmp_path: Path) -> None:
     assert "Promotion Ladder" in (work / "promotion_ladder.md").read_text(encoding="utf-8")
     breakthroughs = (work / "breakthroughs.md").read_text(encoding="utf-8")
     assert "Breakthrough Rows" in breakthroughs
+    assert "Frontier Architecture Diffs" in breakthroughs
+    assert "Negative Verdict Audit" in breakthroughs
     assert "Diversity Map / Feature Cells" in breakthroughs
     assert "Escape Operator Credit" in breakthroughs
     assert "Closed Hills / New-Hill Commitments" in breakthroughs

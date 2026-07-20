@@ -26,6 +26,18 @@ Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, production
 - Treat approximate math as a tolerance-gated candidate, not a default.
 - Inspect generated code when register pressure, spills, instruction selection, or missed vectorization plausibly dominates.
 
+## Execution Topology And Lifecycle
+
+- Model the dependency DAG, not just source order or kernel count. Independent graph nodes, batch chunks, producer-consumer phases, cooperative clusters, and fused kernels expose different overlap.
+- Treat concurrency as a mechanism class, not one API. A ban or failure of extra streams, threads, workers, or processes closes that form only when the broader contract still permits concurrency.
+- Separate written policy from lexical scanners and runtime enforcement. Never disguise forbidden work; when semantics are allowed but one representation is overblocked, test a transparent contract-valid form.
+- Record import, build, JIT, warmup, allocation, graph capture, replay, and teardown boundaries. Moving work outside the timed path is valid only when the contract permits it and every invocation receives fresh correct state.
+- For captured or cached routes, prove pointer lifetime, workspace isolation, output alias safety, input refresh, and route execution.
+- Treat code generation, fixed-shape instantiation, offline compilation, and prelinked device code as optimization axes when source and deployment rules allow them.
+- Co-design the algorithm and schedule. A new decomposition can lose when attached to an old reduction, materialization, or backtransform even if the integrated architecture wins.
+- Write the phase contract before a multi-kernel rewrite: representation, layout, precision, metadata, ownership, synchronization, buffer lifetime, certificate, and repair at every boundary.
+- If repeated wrapper or isolated primitive swaps do not move end-to-end time and the gap exceeds their plausible gain, protect the best and reserve a bounded branch for the integrated phase graph.
+
 ## Device Discovery
 
 Do not bake device facts into the skill. Discover them for the active run and record them in the ledger:
@@ -49,6 +61,15 @@ Treat every discovered fact as a hypothesis until measured on the authoritative 
 - Use block swizzling, persistent kernels, or work reordering only when cache locality, load balance, or launch overhead is the measured problem.
 - Keep enough blocks/workgroups to fill the target device, but do not increase grid size past the point where overhead, atomics, or tail imbalance dominate.
 
+## Precision And Recovery
+
+- Budget precision by state: storage, products, accumulation, critical scalar solves, final output, and verifier need not share one dtype.
+- Keep a precision ledger per phase: carrier/storage, products/accumulation, critical scalars, output conversion, certificate, and repair/fallback.
+- Normalize or scale before low-precision storage when range is the blocker.
+- Pair approximate carriers with a mathematically justified repair such as residual correction, refinement, reorthogonalization, purification, or accurate terminal solve.
+- Prefer per-item certificates and selective repair when failures are sparse and independently routable. Include certificate cost, synchronization, compaction, and worst-case fallback in the model.
+- Do not infer that a low-precision family is invalid from an unscaled or unrepaired prototype; scope the verdict to the tested precision boundary.
+
 ## Profiling
 
 Use the profiler available on the target system. Examples:
@@ -61,6 +82,8 @@ hipcc --save-temps my_kernel.cpp
 ```
 
 Use counters to check occupancy, memory bandwidth, tensor/ALU utilization, shared-memory conflicts, cache behavior, atomics, stalls, and launch overhead. Counter wins do not override authoritative wall time.
+
+When target profiling is unavailable, use route-attested stage cuts or controlled prefix/suffix variants to estimate phase ownership. Keep setup and warmup comparable, and never promote from a stage-only result.
 
 ## Attention And Decode Lessons
 

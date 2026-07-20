@@ -16,6 +16,7 @@ REQUIRED_REFERENCES = [
     "auditor.md",
     "cpu-architecture.md",
     "evidence-loop.md",
+    "frontier-introspection.md",
     "gpu-architecture.md",
     "harness.md",
     "problem-families.md",

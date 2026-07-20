@@ -628,6 +628,16 @@ Keep it compact and durable; detailed raw logs belong under this harness directo
 | source | snapshot/time | contract match | notes |
 |---|---|---|---|
 
+## Frontier Architecture Diffs
+
+| source | dimension | protected best | frontier | evidence | causal/enabling/incidental/unknown | cheapest probe |
+|---|---|---|---|---|---|---|
+
+## Negative Verdict Audit
+
+| prior verdict | original evidence | scope | new premise | keep/narrow/supersede | cheapest falsifier | reopen condition |
+|---|---|---|---|---|---|---|
+
 ## Breakthrough Rows
 
 | row | parent -> candidate | score/resources | active floor | delta | mechanism | proof/invariant | search tool | validation | slack/dependency |

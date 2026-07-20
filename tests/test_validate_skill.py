@@ -72,7 +72,23 @@ def test_invalid_utf8_fails_without_traceback(tmp_path: Path) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
-@pytest.mark.parametrize("reference_name", ["auditor.md", "gpu-architecture.md"])
+def test_frontier_reference_preserves_integrated_search_doctrine() -> None:
+    text = (SKILL_SRC / "references" / "frontier-introspection.md").read_text(encoding="utf-8")
+
+    required = (
+        "## Triangulate Multiple Frontiers",
+        "`mapping-negative`",
+        "`availability-negative`",
+        "## Write The Phase Contract",
+        "## Keep A Precision Ledger",
+        "## Reserve An Architecture Budget",
+        "## Diagnose With Stage Cuts",
+    )
+    for phrase in required:
+        assert phrase in text
+
+
+@pytest.mark.parametrize("reference_name", ["auditor.md", "frontier-introspection.md", "gpu-architecture.md"])
 def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
     skill_dir = copy_skill(tmp_path)
     (skill_dir / "references" / reference_name).unlink()
