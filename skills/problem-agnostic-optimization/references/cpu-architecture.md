@@ -2,6 +2,12 @@
 
 Use this reference for CPU kernels, command/process benchmarks, cpu.mode-style single-shot submissions, SIMD code, intrinsics, generated assembly, and counter-driven diagnosis. Keep platform facts target-local: discover the active machine, runner, limits, and scoring contract before choosing tactics. This module deliberately excludes long-running request-service and load-test guidance.
 
+## Contents
+
+- Target discovery, build, and process costs
+- Memory, compute, primitive, parsing, and I/O candidates
+- Counter interpretation, public clues, and low-level transfer
+
 ## CPU Search Rules
 
 - Start with the contract: input source, output format, target metric, correctness scope, warmup, concurrency, allowed languages, flags, syscalls, and resource limits.
@@ -119,7 +125,7 @@ taskset -c 0 ./target
 
 ## Public Clues And Harnesses
 
-Mine public source, crate names, papers, benchmark writeups, leaderboard diffs, and flamegraphs for hypotheses, not conclusions. Treat a competitor's winning technique as a route-level evidence trigger; do not expand scope unless the router selects that add-on.
+Mine public source, crate names, papers, benchmark writeups, leaderboard diffs, and flamegraphs for hypotheses, not conclusions. Return to the core router when a competitor method or artifact justifies an intake add-on; do not expand scope speculatively.
 
 Clean examples:
 

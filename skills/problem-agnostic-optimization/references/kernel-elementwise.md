@@ -5,7 +5,7 @@ Use this module for activations, scalar transforms, vector add/multiply, streami
 ## First Candidates
 
 - Dispatch exact shapes when the contract fixes benchmark sizes.
-- Match packetized IO to natural alignment and vector width.
+- Match packetized IO such as `float4`, `uint4`, or `int4` to natural alignment and vector width.
 - Use exact-grid launches when official sizes do not need a grid-stride loop.
 - Separate full blocks from tail handling.
 - Test approximate math only after tolerance and edge-case checks.

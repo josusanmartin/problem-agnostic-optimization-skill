@@ -1,6 +1,12 @@
 # GPU Optimization Reference
 
-Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, production GPU services, and leaderboard GPU work. Keep the guidance architecture-agnostic by default; discover hardware facts from the active target and prove them with measurements.
+Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, GPU library paths, and leaderboard GPU work. Keep guidance architecture-agnostic by default; discover target facts and prove them with measurements. Route end-to-end request services separately.
+
+## Contents
+
+- GPU search and execution topology
+- Device discovery and backend portability
+- Precision, profiling, and cross-GPU transfer
 
 ## GPU Search Rules
 
@@ -18,10 +24,10 @@ Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, production
 
 ## General GPU Patterns
 
-- Use packetized IO and exact grids for streaming kernels.
+- Test naturally aligned packetized IO such as `float4`, `uint4`, or `int4`, plus exact grids for streaming kernels.
 - Keep tail handling outside the hot path when the contract allows it.
 - For reductions, compare atomics, partial reductions, subgroup/block reductions, vendor libraries, and graph wrappers empirically.
-- For GEMM, convolution, FFT, scan, sort, and attention-like primitives, try vendor libraries and template kernels before hand-written direct kernels.
+- For GEMM, convolution, FFT, scan, sort, and attention-like primitives, establish relevant vendor-library or generated-kernel baselines before hand-written direct kernels.
 - Use graph capture only when repeated launch overhead is material and argument lifetime/statefulness is safe.
 - Treat approximate math as a tolerance-gated candidate, not a default.
 - Inspect generated code when register pressure, spills, instruction selection, or missed vectorization plausibly dominates.

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
-import re
 import shutil
 
 import pytest
@@ -18,6 +17,11 @@ validate_skill = importlib.util.module_from_spec(spec)
 assert spec.loader is not None
 spec.loader.exec_module(validate_skill)
 
+SKILL_TEXT = (SKILL_SRC / "SKILL.md").read_text(encoding="utf-8")
+ROUTER_ROWS = tuple(validate_skill.parse_router_rows(SKILL_TEXT))
+ROUTER_ROWS_WITH_MODULE = tuple(row for row in ROUTER_ROWS if row.reference is not None)
+ROUTED_REFERENCES = tuple(sorted(row.reference for row in ROUTER_ROWS_WITH_MODULE))
+
 
 def copy_skill(tmp_path: Path) -> Path:
     skill_dir = tmp_path / "problem-agnostic-optimization"
@@ -25,26 +29,70 @@ def copy_skill(tmp_path: Path) -> Path:
     return skill_dir
 
 
+def remove_router_row(skill_dir: Path, row: validate_skill.RouterRow) -> None:
+    skill_path = skill_dir / "SKILL.md"
+    lines = skill_path.read_text(encoding="utf-8").splitlines()
+    assert row.line in lines
+    lines.remove(row.line)
+    skill_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def reference_text(name: str) -> str:
+    return (SKILL_SRC / "references" / name).read_text(encoding="utf-8")
+
+
 def test_valid_skill_passes(tmp_path: Path) -> None:
-    skill_dir = copy_skill(tmp_path)
-
-    validate_skill.validate_skill(skill_dir)
+    validate_skill.validate_skill(copy_skill(tmp_path))
 
 
-def test_core_skill_keeps_search_policy_concise_and_enforceable() -> None:
-    text = (SKILL_SRC / "SKILL.md").read_text(encoding="utf-8")
+def test_core_skill_is_lean_and_search_policy_is_unambiguous() -> None:
+    assert len(SKILL_TEXT.split()) <= validate_skill.MAX_SKILL_WORDS
+    required = (
+        "A search epoch opens only after the authoritative baseline",
+        "Three consecutive comparable same-family candidate decisions miss.",
+        "Ten percent of the active contract budget is consumed in the open epoch",
+        "Samples count as attempts, while the bounded sweep outcome is one candidate-family decision.",
+        "do not increment or reset the miss streak",
+        "an explained implementation bug leaves a faithful test untried",
+        "spend the next measured candidate off-hill by default",
+        "meaningful authoritative promotion",
+        "A plateau is not a floor proof.",
+        "One mechanism may require coordinated edits.",
+    )
+    for phrase in required:
+        assert phrase in SKILL_TEXT
 
-    assert len(text.split()) < 1400
-    assert "Ten percent of the active contract budget" in text
-    assert "Three consecutive same-family measured candidates" in text
-    assert "wrapping thousands of evaluations in one candidate does not reset stagnation" in text
-    assert "A plateau is not a floor proof." in text
-    assert "One mechanism may require coordinated edits." in text
-    assert "checkpoint" in text.lower()
-    assert "operational work, not optimization candidates or promotions" in text
-    assert "spend the next measured candidate off-hill" in text
-    assert "The user may override either direction" in text
-    assert "A written sweep or family attempt budget is exhausted" in text
+
+def test_router_precedence_uses_scored_artifact_semantics() -> None:
+    primary = [row for row in ROUTER_ROWS if row.section == "### Primary Route"]
+
+    assert [row.route_id for row in primary] == [
+        "policy",
+        "service",
+        "fixed-resource",
+        "gpu",
+        "cpu",
+        "other",
+    ]
+    assert "Scored-artifact semantics outrank" in SKILL_TEXT
+    assert "even when implemented on CPU/GPU" in primary[0].line
+    assert "request/response" in primary[1].line
+    assert "HighLoad" not in primary[1].line
+    assert "Use this table only with the `gpu` primary route." in SKILL_TEXT
+    assert "replace obsolete primary/shape modules" in SKILL_TEXT
+    assert "Do not accumulate routes." in SKILL_TEXT
+
+
+def test_gpu_and_service_routes_are_isolated() -> None:
+    gpu = reference_text("gpu-architecture.md")
+    cpu = reference_text("cpu-architecture.md")
+    service = reference_text("service-throughput.md")
+
+    assert "production GPU services" not in gpu
+    assert "Route end-to-end request services separately." in gpu
+    assert "HighLoad" not in gpu
+    assert "HighLoad" not in cpu
+    assert "HighLoad" in service
 
 
 def test_default_prompt_explicitly_invokes_skill() -> None:
@@ -54,67 +102,357 @@ def test_default_prompt_explicitly_invokes_skill() -> None:
     assert "route this challenge first" in text
 
 
-def test_router_is_first_and_forbids_bulk_loading() -> None:
-    text = (SKILL_SRC / "SKILL.md").read_text(encoding="utf-8")
+def test_every_reference_is_routed_once() -> None:
+    actual = tuple(validate_skill.actual_reference_paths(SKILL_SRC / "references"))
 
-    assert text.index("## Route First") < text.index("## Contract")
-    assert "select exactly one primary route" in text
-    assert "Do not read every reference" in text
-    assert "References are opt-in modules, not a reading list." in text
-    assert "follow references recursively" in text
-
-
-def test_gpu_and_service_routes_are_isolated() -> None:
-    text = (SKILL_SRC / "SKILL.md").read_text(encoding="utf-8")
-    lines = text.splitlines()
-    gpu_row = next(line for line in lines if "CUDA, HIP/ROCm" in line)
-    service_row = next(line for line in lines if "HighLoad-style" in line)
-
-    assert "references/gpu-architecture.md" in gpu_row
-    assert "cpu-architecture" not in gpu_row
-    assert "service-throughput" not in gpu_row
-    assert "references/service-throughput.md" in service_row
-    assert "gpu-architecture" not in service_row
-
-    gpu = (SKILL_SRC / "references" / "gpu-architecture.md").read_text(encoding="utf-8")
-    cpu = (SKILL_SRC / "references" / "cpu-architecture.md").read_text(encoding="utf-8")
-    service = (SKILL_SRC / "references" / "service-throughput.md").read_text(encoding="utf-8")
-    assert "highload" not in gpu.lower()
-    assert "highload" not in cpu.lower()
-    assert "highload" in service.lower()
-
-
-def test_every_reference_is_routed_once_without_recursive_links() -> None:
-    text = (SKILL_SRC / "SKILL.md").read_text(encoding="utf-8")
-    routed_matches = re.findall(r"`references/([a-z0-9-]+\.md)`", text)
-    routed = set(routed_matches)
-    actual = {path.name for path in (SKILL_SRC / "references").glob("*.md")}
-
-    assert len(routed_matches) == len(routed)
-    assert routed == actual
+    assert ROUTED_REFERENCES == actual
+    assert len(ROUTED_REFERENCES) == len(set(ROUTED_REFERENCES))
     assert "problem-families.md" not in actual
-    for path in (SKILL_SRC / "references").glob("*.md"):
-        module_text = path.read_text(encoding="utf-8")
-        assert not re.search(r"(?:references/)?[a-z0-9-]+\.md", module_text), path.name
 
 
-def test_operation_modules_stay_small() -> None:
-    module_names = [
-        "fixed-resource-scheduling.md",
-        "kernel-attention-moe.md",
-        "kernel-elementwise.md",
-        "kernel-histogram.md",
-        "kernel-matrix.md",
-        "kernel-quantized.md",
-        "kernel-reductions-scans.md",
-        "kernel-stencils-convolution.md",
-        "runtime-overhead.md",
-        "service-throughput.md",
-    ]
+def test_reference_size_budgets_cover_every_module() -> None:
+    shape_modules = {
+        row.reference
+        for row in ROUTER_ROWS
+        if row.section == "### GPU Kernel Shape" and row.reference is not None
+    }
+    for name in ROUTED_REFERENCES:
+        words = len(reference_text(name).split())
+        limit = validate_skill.MAX_SHAPE_WORDS if name in shape_modules else validate_skill.MAX_REFERENCE_WORDS
+        assert words <= limit, f"{name}: {words} > {limit}"
 
-    for name in module_names:
-        text = (SKILL_SRC / "references" / name).read_text(encoding="utf-8")
-        assert len(text.split()) < 400, name
+
+def test_long_references_have_contents_map() -> None:
+    for name in ROUTED_REFERENCES:
+        text = reference_text(name)
+        if len(text.splitlines()) > 100:
+            assert "## Contents" in text, name
+
+
+@pytest.mark.parametrize("reference_name", ROUTED_REFERENCES)
+def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
+    skill_dir = copy_skill(tmp_path)
+    (skill_dir / "references" / reference_name).unlink()
+
+    with pytest.raises(validate_skill.ValidationError, match="missing routed reference modules"):
+        validate_skill.validate_skill(skill_dir)
+
+
+@pytest.mark.parametrize("row", ROUTER_ROWS_WITH_MODULE, ids=lambda row: row.route_id)
+def test_missing_router_row_fails(tmp_path: Path, row: validate_skill.RouterRow) -> None:
+    skill_dir = copy_skill(tmp_path)
+    remove_router_row(skill_dir, row)
+
+    with pytest.raises(validate_skill.ValidationError, match="missing ids"):
+        validate_skill.validate_skill(skill_dir)
+
+
+@pytest.mark.parametrize("row", ROUTER_ROWS_WITH_MODULE, ids=lambda row: row.route_id)
+def test_paired_module_and_router_row_deletion_still_fails(
+    tmp_path: Path, row: validate_skill.RouterRow
+) -> None:
+    skill_dir = copy_skill(tmp_path)
+    assert row.reference is not None
+    (skill_dir / "references" / row.reference).unlink()
+    remove_router_row(skill_dir, row)
+
+    with pytest.raises(validate_skill.ValidationError, match="missing ids"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_prose_reference_outside_router_does_not_duplicate_route(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    skill.write_text(
+        skill.read_text(encoding="utf-8")
+        + "\nCompatibility prose may mention `references/gpu-architecture.md` without routing it.\n",
+        encoding="utf-8",
+    )
+
+    validate_skill.validate_skill(skill_dir)
+
+
+def test_duplicate_router_row_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    row = ROUTER_ROWS_WITH_MODULE[0]
+    text = skill.read_text(encoding="utf-8")
+    skill.write_text(text.replace(row.line, f"{row.line}\n{row.line}", 1), encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="duplicate router id"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_other_route_cannot_load_a_module(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    row = next(row for row in ROUTER_ROWS if row.route_id == "other")
+    replacement = row.line.replace(
+        "No primary module; use the core until evidence selects one",
+        "`references/cpu-architecture.md`",
+    )
+    skill.write_text(
+        skill.read_text(encoding="utf-8").replace(row.line, replacement, 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="other must not load a module"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_same_module_cannot_be_routed_twice(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    source = next(row for row in ROUTER_ROWS_WITH_MODULE if row.route_id == "elementwise")
+    target = next(row for row in ROUTER_ROWS_WITH_MODULE if row.route_id == "matrix")
+    assert source.reference is not None
+    assert target.reference is not None
+    replacement = source.line.replace(
+        f"`references/{source.reference}`",
+        f"`references/{target.reference}`",
+    )
+    skill.write_text(
+        skill.read_text(encoding="utf-8").replace(source.line, replacement, 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="reference modules routed more than once"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_router_row_cannot_load_two_modules(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    row = next(row for row in ROUTER_ROWS_WITH_MODULE if row.route_id == "measurement")
+    assert row.reference is not None
+    replacement = row.line.replace(
+        f"`references/{row.reference}`",
+        f"`references/{row.reference}` and `references/resource-models.md`",
+    )
+    skill.write_text(
+        skill.read_text(encoding="utf-8").replace(row.line, replacement, 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="measurement must load exactly one module"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_router_subsections_must_keep_order(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    text = skill.read_text(encoding="utf-8")
+    text = text.replace("### Primary Route", "@@PRIMARY@@", 1)
+    text = text.replace("### Evidence-Triggered Add-ons", "### Primary Route", 1)
+    text = text.replace("@@PRIMARY@@", "### Evidence-Triggered Add-ons", 1)
+    skill.write_text(text, encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="router subsections are out of order"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_nested_dangling_router_path_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    row = ROUTER_ROWS_WITH_MODULE[0]
+    assert row.reference is not None
+    text = skill.read_text(encoding="utf-8")
+    skill.write_text(
+        text.replace(f"references/{row.reference}", "references/nested/missing.md", 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="missing routed reference modules: nested/missing.md"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_router_path_traversal_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    row = ROUTER_ROWS_WITH_MODULE[0]
+    assert row.reference is not None
+    text = skill.read_text(encoding="utf-8")
+    skill.write_text(
+        text.replace(f"references/{row.reference}", "references/../escape.md", 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="invalid router reference path"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_router_anchor_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    row = ROUTER_ROWS_WITH_MODULE[0]
+    assert row.reference is not None
+    text = skill.read_text(encoding="utf-8")
+    skill.write_text(
+        text.replace(f"references/{row.reference}", f"references/{row.reference}#section", 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="must load a whole module"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_route_heading_must_be_exact_h2(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    text = skill.read_text(encoding="utf-8").replace("## Route First", "### Route First", 1)
+    skill.write_text(text, encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="missing exact heading: ## Route First"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_contract_heading_must_be_exact_h2(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    text = skill.read_text(encoding="utf-8").replace("## Contract", "### Contract", 1)
+    skill.write_text(text, encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="missing exact heading: ## Contract"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_router_must_be_first_h2(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    text = skill.read_text(encoding="utf-8").replace("## Route First", "## Prelude\n\n## Route First", 1)
+    skill.write_text(text, encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="router must be the first H2"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_contract_must_immediately_follow_router(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    text = skill.read_text(encoding="utf-8").replace("## Contract", "## Interlude\n\n## Contract", 1)
+    skill.write_text(text, encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="contract must immediately follow"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_router_must_forbid_bulk_loading(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    text = skill.read_text(encoding="utf-8").replace("Do not read every reference", "Avoid bulk loading", 1)
+    skill.write_text(text, encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="must forbid bulk reference loading"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_explicit_recursive_reference_with_anchor_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    module = skill_dir / "references" / "gpu-architecture.md"
+    module.write_text(
+        module.read_text(encoding="utf-8") + "\nRead references/service-throughput.md#contract.\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="gpu-architecture.md links recursively"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_markdown_recursive_reference_with_anchor_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    module = skill_dir / "references" / "gpu-architecture.md"
+    module.write_text(
+        module.read_text(encoding="utf-8") + "\nRead [service](service-throughput.md#contract).\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="gpu-architecture.md links recursively"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_backticked_actual_module_name_is_recursive(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    module = skill_dir / "references" / "gpu-architecture.md"
+    module.write_text(
+        module.read_text(encoding="utf-8") + "\nRead `service-throughput.md`.\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="gpu-architecture.md links recursively"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_plain_actual_module_name_is_recursive(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    module = skill_dir / "references" / "gpu-architecture.md"
+    module.write_text(
+        module.read_text(encoding="utf-8") + "\nRead service-throughput.md before continuing.\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="gpu-architecture.md links recursively"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_relative_reference_traversal_back_into_modules_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    module = skill_dir / "references" / "gpu-architecture.md"
+    module.write_text(
+        module.read_text(encoding="utf-8")
+        + "\nRead [service](../references/service-throughput.md#contract).\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(validate_skill.ValidationError, match="gpu-architecture.md links recursively"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_harmless_md_prose_is_allowed(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    module = skill_dir / "references" / "gpu-architecture.md"
+    module.write_text(
+        module.read_text(encoding="utf-8") + "\nKeep compact notes in `notes.md` only when requested.\n",
+        encoding="utf-8",
+    )
+
+    validate_skill.validate_skill(skill_dir)
+
+
+def test_external_url_ending_in_module_name_is_allowed(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    module = skill_dir / "references" / "gpu-architecture.md"
+    module.write_text(
+        module.read_text(encoding="utf-8")
+        + "\nBackground: https://example.com/docs/service-throughput.md\n",
+        encoding="utf-8",
+    )
+
+    validate_skill.validate_skill(skill_dir)
+
+
+def test_unrouted_reference_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    (skill_dir / "references" / "orphan.md").write_text("# Orphan\n", encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="unrouted reference modules: orphan.md"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_non_ascii_reference_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    ref = skill_dir / "references" / "evidence-loop.md"
+    ref.write_text(ref.read_text(encoding="utf-8") + "\nCafe e\N{COMBINING ACUTE ACCENT}\n", encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="references/evidence-loop.md has non-ASCII"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_invalid_utf8_fails_without_traceback(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    (skill_dir / "references" / "evidence-loop.md").write_bytes(b"\xff")
+
+    with pytest.raises(validate_skill.ValidationError, match="references/evidence-loop.md is not valid UTF-8"):
+        validate_skill.validate_skill(skill_dir)
 
 
 def test_missing_openai_yaml_is_structured_error(tmp_path: Path) -> None:
@@ -134,6 +472,16 @@ def test_invalid_skill_frontmatter_yaml_fails(tmp_path: Path) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
+def test_skill_frontmatter_rejects_extra_keys(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    skill = skill_dir / "SKILL.md"
+    text = skill.read_text(encoding="utf-8").replace("description:", "version: 1\ndescription:", 1)
+    skill.write_text(text, encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="must contain only name and description"):
+        validate_skill.validate_skill(skill_dir)
+
+
 def test_invalid_openai_yaml_fails(tmp_path: Path) -> None:
     skill_dir = copy_skill(tmp_path)
     (skill_dir / "agents" / "openai.yaml").write_text("interface: [unterminated\n", encoding="utf-8")
@@ -142,57 +490,37 @@ def test_invalid_openai_yaml_fails(tmp_path: Path) -> None:
         validate_skill.validate_skill(skill_dir)
 
 
-def test_non_ascii_reference_fails(tmp_path: Path) -> None:
-    skill_dir = copy_skill(tmp_path)
-    ref = skill_dir / "references" / "evidence-loop.md"
-    ref.write_text(ref.read_text(encoding="utf-8") + "\nCafe é\n", encoding="utf-8")
+def test_split_modules_keep_common_loads_narrow() -> None:
+    evidence = reference_text("evidence-loop.md")
+    resources = reference_text("resource-models.md")
 
-    with pytest.raises(validate_skill.ValidationError, match="references/evidence-loop.md has non-ASCII"):
-        validate_skill.validate_skill(skill_dir)
-
-
-def test_invalid_utf8_fails_without_traceback(tmp_path: Path) -> None:
-    skill_dir = copy_skill(tmp_path)
-    (skill_dir / "references" / "evidence-loop.md").write_bytes(b"\xff")
-
-    with pytest.raises(validate_skill.ValidationError, match="references/evidence-loop.md is not valid UTF-8"):
-        validate_skill.validate_skill(skill_dir)
+    assert "## Variance Handling" not in evidence
+    assert "## Breakthrough Mining" not in evidence
+    assert "## Plateau Rules" not in resources
+    assert "## Sweep Contract" in reference_text("variance-and-sweeps.md")
+    assert "## Breakthrough Mining" in reference_text("technique-intake.md")
+    assert "## Reassess Before Closing" in reference_text("plateau-escape.md")
 
 
-def test_unrouted_reference_fails(tmp_path: Path) -> None:
-    skill_dir = copy_skill(tmp_path)
-    (skill_dir / "references" / "orphan.md").write_text("# Orphan\n", encoding="utf-8")
+def test_sweep_and_plateau_modules_share_epoch_reset_rule() -> None:
+    variance = reference_text("variance-and-sweeps.md")
+    plateau = reference_text("plateau-escape.md")
 
-    with pytest.raises(validate_skill.ValidationError, match="unrouted reference modules: orphan.md"):
-        validate_skill.validate_skill(skill_dir)
-
-
-def test_recursive_reference_link_fails(tmp_path: Path) -> None:
-    skill_dir = copy_skill(tmp_path)
-    module = skill_dir / "references" / "gpu-architecture.md"
-    module.write_text(
-        module.read_text(encoding="utf-8") + "\nRead `service-throughput.md`.\n",
-        encoding="utf-8",
-    )
-
-    with pytest.raises(validate_skill.ValidationError, match="gpu-architecture.md links recursively"):
-        validate_skill.validate_skill(skill_dir)
+    assert "meaningful authoritative promotion or a genuine hill change" in variance
+    assert "A genuine hill change resets the search epoch" in plateau
+    assert "promotion drought" not in plateau
 
 
-def test_router_must_precede_contract(tmp_path: Path) -> None:
-    skill_dir = copy_skill(tmp_path)
-    skill = skill_dir / "SKILL.md"
-    text = skill.read_text(encoding="utf-8")
-    text = text.replace("## Route First", "## Deferred Router", 1)
-    skill.write_text(text + "\n## Route First\n", encoding="utf-8")
-
-    with pytest.raises(validate_skill.ValidationError, match="router must precede"):
-        validate_skill.validate_skill(skill_dir)
+def test_gpu_modules_preserve_named_baselines() -> None:
+    assert all(name in reference_text("kernel-matrix.md") for name in ("cuBLASLt", "cuBLAS", "CUTLASS", "Triton"))
+    assert "CUB" in reference_text("kernel-reductions-scans.md")
+    assert "float4" in reference_text("kernel-elementwise.md")
+    assert "exact FP32" in reference_text("kernel-matrix.md")
+    assert "residual TF32/BF16" in reference_text("kernel-matrix.md")
 
 
 def test_frontier_reference_preserves_integrated_search_doctrine() -> None:
-    text = (SKILL_SRC / "references" / "frontier-introspection.md").read_text(encoding="utf-8")
-
+    text = reference_text("frontier-introspection.md")
     required = (
         "## Triangulate Multiple Frontiers",
         "`mapping-negative`",
@@ -204,18 +532,6 @@ def test_frontier_reference_preserves_integrated_search_doctrine() -> None:
     )
     for phrase in required:
         assert phrase in text
-
-
-@pytest.mark.parametrize(
-    "reference_name",
-    ["evidence-loop.md", "frontier-introspection.md", "gpu-architecture.md", "service-throughput.md"],
-)
-def test_missing_reference_fails(tmp_path: Path, reference_name: str) -> None:
-    skill_dir = copy_skill(tmp_path)
-    (skill_dir / "references" / reference_name).unlink()
-
-    with pytest.raises(validate_skill.ValidationError, match=f"missing required file: references/{reference_name}"):
-        validate_skill.validate_skill(skill_dir)
 
 
 def test_skill_payload_has_no_bundled_logging_module() -> None:
@@ -234,22 +550,34 @@ def test_skill_payload_has_no_bundled_logging_module() -> None:
     assert not [relative for relative in forbidden if (SKILL_SRC / relative).exists()]
 
 
-def test_skill_defaults_to_no_logging_and_delegates_scorebench() -> None:
-    text = (SKILL_SRC / "SKILL.md").read_text(encoding="utf-8")
+def test_skill_defaults_to_no_logging_and_defines_scorebench_activation() -> None:
+    required = (
+        "Default behavior is no logging subsystem.",
+        "Normal benchmark output, profiler captures, submitted artifacts",
+        "Scorebench is active when the user invokes it",
+        "derive attempts, budget use, promotion history, and best state from Scorebench",
+        "Do not create parallel PAO logs or dashboards",
+        "A logger or renderer failure must not block optimization",
+    )
+    for phrase in required:
+        assert phrase in SKILL_TEXT
 
-    assert "Default behavior is no logging subsystem." in text
-    assert "Search-health accounting is active decision state, not a logging requirement." in text
-    assert "When Scorebench is active" in text
-    assert "derive attempts, budget use, promotion history, and best state from Scorebench" in text
-    assert "Do not create parallel PAO logs or dashboards" in text
+
+def test_multi_agent_coordinator_contract_is_preserved() -> None:
+    assert "protects the canonical best" in SKILL_TEXT
+    assert "checks parent staleness" in SKILL_TEXT
+    assert "serializes promotion" in SKILL_TEXT
+    assert "workers return only an artifact or patch plus compact evidence" in SKILL_TEXT
 
 
-def test_readme_keeps_scorebench_boundary_and_attempt_accounting_clear() -> None:
+def test_readme_keeps_router_and_observability_boundaries_clear() -> None:
     text = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
     assert "Scorebench exclusively owns" in text
     assert "5,000 measured configurations consumes 5,000 attempts" in text
+    assert "## Route First" in text
+    assert "scored-artifact semantics" in text
+    assert "variance-and-sweeps.md" in text
+    assert "plateau-escape.md" in text
     assert "Progress chart: on" not in text
     assert "scripts/init_harness.py" not in text
-    assert "## Route First" in text
-    assert "does not load CPU, HighLoad/service" in text

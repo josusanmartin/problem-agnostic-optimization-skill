@@ -4,7 +4,7 @@ Use this module for VLIW cycle searches, packet schedulers, DSP kernels, compile
 
 ## First Candidates
 
-- Build resource-floor models before schedule sweeps.
+- Compute a rough per-engine floor (`required work / plausible throughput`) before schedule sweeps. Return to the core router for detailed resource modeling only when that floor, a tail, a transfer, or co-binders decide the next candidate.
 - Count constrained engines separately: vector, scalar, memory, branch/control, gather, shuffle, store, and special units.
 - Compare the actual schedule to the maximum resource floor.
 - Audit final-tail resource use, not only total counts.

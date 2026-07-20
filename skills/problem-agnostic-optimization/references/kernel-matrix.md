@@ -5,10 +5,10 @@ Use this module for GEMM, GEMV, batched matrix multiplication, triangular or sym
 ## First Candidates
 
 - Flatten the math to GEMM, GEMV, or TRMM when possible.
-- Establish vendor-library and generated-kernel baselines before writing a direct kernel.
+- Establish cuBLASLt, cuBLAS, cuDNN, cuFFT, CUTLASS, CK, AITER, or Triton baselines as relevant before writing a direct kernel.
 - Cache descriptors, handles, workspaces, and algorithm choices only when the contract permits reuse.
 - Fuse epilogues through library support or a vectorized post-pass.
-- Choose compute precision from the correctness tolerance and validate residual or repair paths authoritatively.
+- Choose precision from tolerance: exact FP32, residual TF32/BF16, or an explicitly approximate route, with repair and authoritative validation where needed.
 
 ## Typical Traps
 

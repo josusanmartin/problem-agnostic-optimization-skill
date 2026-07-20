@@ -12,7 +12,7 @@ Use this module for sums, means, norms, losses, min/max, argmin/argmax, normaliz
 
 ## Scan Candidates
 
-- Establish a library baseline for correctness.
+- Establish a CUB or corresponding backend-library baseline for correctness and performance.
 - Test cooperative single-grid scan for fixed sizes.
 - Test a fixed-tile two-pass scan when official sizes are exact multiples.
 - Use decoupled lookback only when its residency assumptions hold.

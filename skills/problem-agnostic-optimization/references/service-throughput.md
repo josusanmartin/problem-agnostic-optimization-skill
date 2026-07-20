@@ -1,6 +1,6 @@
 # Service Throughput And Load
 
-Use this reference for HighLoad-style services, HTTP/TCP/queue handlers, request/response workloads, production services, and throughput or latency-under-load competitions. Do not load it for kernels, offline programs, simulators, or fixed-resource schedulers.
+Use this reference for live HTTP/TCP/queue handlers, request/response workloads, production services, and service load competitions such as HighLoad. Do not load it for kernels, offline programs, simulators, or fixed-resource schedulers.
 
 ## Contract And Baseline
 
