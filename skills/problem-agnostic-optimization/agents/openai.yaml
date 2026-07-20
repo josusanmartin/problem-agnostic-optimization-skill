@@ -1,4 +1,4 @@
 interface:
   display_name: "Problem-Agnostic Optimization"
-  short_description: "Throughput-first measured optimization with plateau escapes."
-  default_prompt: "Use this skill to set an ambitious objective, protect the best artifact, prioritize authoritative candidate throughput, count actual search attempts, and force an off-hill probe when the current mechanism family plateaus."
+  short_description: "Lean throughput-first optimization with escapes"
+  default_prompt: "Use $problem-agnostic-optimization to improve this measured artifact with authoritative validation, measured-attempt accounting, and forced off-hill escapes."

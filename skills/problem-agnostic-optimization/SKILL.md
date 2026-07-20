@@ -1,139 +1,143 @@
 ---
 name: problem-agnostic-optimization
-description: "Use when improving a measured artifact under a correctness or scoring contract: performance, latency, throughput, leaderboard score, CPU/GPU kernel time, or stochastic policy quality. Protects the best result while prioritizing candidate throughput, authoritative measurement, explicit search-budget accounting, and enforced escapes from unproductive search families."
+description: "Use when improving a measured artifact under a correctness or scoring contract: performance, latency, throughput, leaderboard score, CPU/GPU kernel time, or stochastic policy quality. Runs a lean, throughput-aware evidence loop with a protected best, measured-attempt accounting, authoritative promotion, and forced off-hill escapes. Logging and reporting are optional external concerns; when Scorebench is active, Scorebench owns them."
 ---
 
 # Problem-Agnostic Optimization
 
+Optimize the artifact. Keep process machinery off the critical path.
+
 ```text
-contract -> baseline -> model -> candidate -> validate/measure -> promote, learn, or escape
+contract -> baseline -> bottleneck model -> candidate -> validate/measure -> decide -> iterate or escape
 ```
 
-Only the authoritative metric promotes. Everything else explains. The process must cost less than the search capacity it saves.
-
-## Always
-
-1. Set the objective, authoritative metric, validation gate, edit surface, and budget before editing.
-2. Reproduce or establish the baseline promptly; use `unknown, reproduce first` when needed.
-3. Preserve the current best artifact outside risky candidate work.
-4. Optimize candidate throughput as well as candidate quality. Defer bookkeeping that delays the next useful measurement.
-5. Test one mechanism per candidate by default. A mechanism may require coordinated edits; do not split an interacting structural change into misleading micro-candidates.
-6. Validate correctness before performance when practical.
-7. Promote only by the authoritative metric.
-8. Count actual measured attempts, including inner-loop configurations, seeds, and scheduler evaluations.
-9. Force a different search family after the plateau trigger; do not document the same hill more thoroughly instead.
-10. Reject wrong-answer, leaked-answer, stale-state, harness/grader, or invalid-contract wins.
+Only the authoritative metric promotes. Profiles, counters, local benchmarks, and models explain.
 
 ## Contract
 
-Record the objective, run state, authoritative metric, target, baseline, protected best, editable and immutable files, budget, validation, evidence availability, stop condition, progress ownership, and `Multi-agent mode: on|off`.
+Before editing, establish:
 
-Run state is `prepare-only`, `active-run`, or `audit`. Create or update an active goal only when the user explicitly asks to start the optimization run now.
+- Objective and authoritative metric, including direction and target.
+- Current baseline, or `unknown, reproduce first`.
+- Artifact to protect, editable files, and immutable files.
+- Correctness and validation requirements.
+- Budget or stopping rule.
+- Target hardware, workload, seeds, shapes, or production conditions when relevant.
+- Search-health thresholds, defaulting to the policy below.
+- Multi-agent mode, defaulting to `off`.
 
-If asked to draft a goal for later, return a copy-paste prompt beginning with `Use problem-agnostic-optimization.` and a filled `/goal` block. Do not activate it.
+Use `/goal` for substantial or long-running optimization. If asked for a goal "for later", return a copy-paste prompt beginning with `Use problem-agnostic-optimization.` and a filled `/goal` block; activate only when explicitly asked.
 
-If no target is given, use a comparable public best, prior local best, production SLO, or justified theoretical bound. Otherwise choose an ambitious measurable target and label its uncertainty.
+Use current workspace and user evidence by default. Mine sibling workspaces, old candidates, or prior submissions only for requested transfer or continuation.
 
-## Persistence Modes
+## Core Loop
 
-Use the lightest mode that preserves the run:
+1. Reproduce the baseline with the authoritative command or service.
+2. Preserve the current best artifact before risky edits.
+3. Build the cheapest useful bottleneck model from measurements, profiles, counters, case splits, or resource floors.
+4. Choose one falsifiable mechanism and make the smallest candidate that faithfully tests it.
+5. Prove the intended candidate path executed before interpreting correctness or timing.
+6. Validate correctness before performance when possible.
+7. Measure with the authoritative metric.
+8. Decide `PROMOTE`, `KEEP VARIANT`, `REJECT`, `BUG`, or `BLOCKED`.
+9. Update the bottleneck model after a promotion or surprising regression.
+10. Count actual measured attempts and change hill when the search-health trigger fires.
 
-- `fast`: default, including long single-agent and leaderboard search. Keep the protected best and a compact score/decision/next-direction record. Progress charts are off unless requested. Do not read the full harness reference or initialize rich artifacts before the baseline unless the run cannot be resumed safely without them.
-- `standard`: use for asynchronous or noisy remote work, explicit durable progress requests, handoffs, or runs likely to span sessions. Read `references/harness.md` and initialize the harness, but keep derived artifacts off the active-search path.
-- `audit`: use when reviewing a run, investigating integrity, or preparing a high-stakes promotion. Rich evidence is allowed because the task is analysis rather than candidate throughput.
+For each candidate, retain: parent, mechanism family, hypothesis, expected signal, attempt budget, kill criterion, validation, measurement, and decision. Keep one compact active-state entry; no dossier by default.
 
-`minimal` is an alias for `fast`. A coordinator or sidecar should own token polling, heartbeat/checkpoint submissions, charts, dashboards, and report rendering whenever one exists. These activities must not consume the optimizer's search budget.
+One mechanism may require coordinated edits. Prefer the smallest faithful mechanism test, not the smallest textual diff. Use follow-up ablations after a compound structural candidate shows an authoritative signal.
 
-## Baseline And Model
+## Optional Observability
 
-Run the cheapest authoritative or contract-faithful baseline first. Then write a short bottleneck model that predicts what must change for the target to move.
+Optimization and observability are separate modules.
 
-Classify the current gap as:
+Default behavior is no logging subsystem. Do not initialize a local harness or create `progress.tsv`, `events.jsonl`, `log.md`, `state.json`, charts, dashboards, audits, token ledgers, or candidate JSON unless explicitly requested. Benchmark outputs, profiler captures, submissions, and contract-required files are not optional logging.
 
-- `floor gap`: a justified lower bound blocks the target for this graph or family.
-- `schedule gap`: the graph may reach the target but packing, tail, dependencies, allocation, or variance wastes capacity.
+Search-health accounting is active decision state, not a logging requirement. In plain PAO, keep it in the current plan or reasoning context. When Scorebench is active - because the user invokes it, provides a scoped Scorebench run, or the task is assigned through Scorebench - derive attempts, budget use, promotion history, and best state from Scorebench. Do not mirror them into PAO files.
+
+Follow the `scorebench` skill for run lifecycle, submissions, token accounting, history, best-state tracking, logging, and reports. Do not create parallel PAO logs or dashboards, do not duplicate token accounting, and do not submit directly to the underlying venue. PAO supplies only optimization strategy and candidate decisions.
+
+If the user explicitly requests local persistent logging while Scorebench is inactive, use a separate logging skill or module selected for that task. Keep it sidecar to the candidate loop. A logger or renderer failure must not block optimization unless logging is part of the user's stated contract.
+
+Never run local and Scorebench logging in parallel. If a run moves to Scorebench, stop local logging rather than backfilling or mirroring it.
+
+## Gap And Candidate Choice
+
+Classify the current gap before choosing a candidate:
+
+- `floor gap`: a proven lower bound blocks the target for the current graph or family.
+- `schedule gap`: the graph may reach the target, but packing, tail, dependencies, resource pressure, synchronization, allocation, or variance wastes capacity.
 - `evidence gap`: the model or measurements are too weak to choose reliably.
 - `statistical gap`: apparent movement may be noise.
 
-A plateau is not a floor proof. Treat resource floors as hypotheses unless their counts, throughput assumptions, dependencies, and unavoidable costs form a valid lower bound. If a better predicted floor fails to improve the authoritative metric twice, classify the model as incomplete and change the graph, route, or evidence source.
+A plateau is not a floor proof. Use `proven lower bound` only when required-work counts, throughput assumptions, dependencies, and unavoidable costs establish the bound. Otherwise call the result a `model floor` or `observed plateau` and keep structural alternatives open.
 
-## Candidates
+Do not micro-tune below a proven floor. Change work graph, representation, primitive, route, specialization, or a contract-valid approximation. Treat inherited gap classifications and closed hills as hypotheses unless backed by current evidence.
 
-Before a meaningful candidate, state only what guides the experiment:
+Separate contract semantics, enforcement behavior, and the rejected implementation form. A scanner, compiler, sandbox, or policy rejection closes only the observed syntax, API, tool, or execution form unless the contract forbids the broader mechanism. Never evade forbidden semantics. When the semantics are allowed but enforcement is broader than the written rule, seek a transparent contract-valid representation and validate it authoritatively.
 
-- parent and protected-best relationship
-- mechanism family and hypothesis
-- expected authoritative signal
-- kill criterion
-- correctness and measurement commands
+Mechanism families include work deletion or fusion, resource transfer, tail or dependency change, scheduler or variance change, representation or primitive or route change, contract specialization, tolerance-gated approximation, and forbidden shortcut.
 
-Use an isolated branch or artifact for risky structural work. Prefer the smallest candidate that faithfully tests the mechanism, not the smallest textual diff. Compound changes are appropriate when an invariant, representation, schedule, or resource transfer works only as a coordinated unit; use follow-up ablations after it shows a signal.
+## Search Health
 
-Mechanism families include work deletion, resource transfer, tail/dependency change, scheduler/variance, representation/primitive/route change, contract specialization, approximation, and forbidden shortcut.
+Track the current mechanism family, actual measured attempts in that family, consecutive same-family candidates without meaningful promotion, active contract budget since meaningful promotion, and whether the next candidate must be off-hill.
 
-## Search Accounting
+A measured attempt is each configuration, seed or draw, scheduler result, generated artifact, or authoritative evaluation consumed to choose or defend a search family. A batch or sweep reports its total attempts; wrapping thousands of evaluations in one candidate does not reset stagnation. Fixed correctness samples still consume contract budget, but do not create fake candidate promotions.
 
-Track search health in attempts and budget, not ledger rows:
+Same-artifact checkpoints, repeated verification, pings, token snapshots, and report refreshes are operational work, not optimization candidates or promotions. They do not reset the promotion drought.
 
-- One attempt is each measured configuration, seed, scheduler result, generated candidate, or authoritative evaluation used to support a search-family conclusion.
-- A batch or sweep reports its total attempts; wrapping thousands of evaluations in one candidate does not reset stagnation.
-- A same-artifact checkpoint, repeated verification, heartbeat, or token snapshot is operational work, not a candidate or promotion.
-- A sub-noise score movement does not reset the promotion drought.
+Unless the user explicitly sets different thresholds, trigger reassessment when any condition holds:
 
-Default plateau trigger: force reassessment when either condition is met:
+1. Three consecutive same-family measured candidates fail to improve the authoritative metric outside noise.
+2. Ten percent of the active contract budget passes without a meaningful promotion.
+3. A written sweep or family attempt budget is exhausted.
 
-1. Three consecutive same-family measured candidates fail to improve outside noise.
-2. Ten percent of the available active-time, evaluation, submission, token, or spend budget passes without a meaningful promotion.
+The user may override either direction when the contract justifies it. Set an attempt budget and stop rule before every sweep.
 
-Use the stricter user-supplied limit when present. A sweep must have a written attempt budget and stop rule before it starts.
-
-At the trigger:
-
-1. Stop the current sweep and mark the hill `CLOSED` or `NARROWED`.
-2. Record the failed prediction or missing evidence in one sentence.
-3. Name at least three genuinely different mechanism families.
-4. Spend the next measured candidate off-hill. It may be a controlled regression or compound structural probe.
-
-Continue the old hill only when a new premise is explicit: new evidence, a changed graph, a calibrated search tool, or a previously untested range justified by the model. More seeds or configurations alone are not a new premise.
-
-For detailed resource, escape, and stochastic-search methods, read `references/resource-models.md`, `references/evidence-loop.md`, or `references/stochastic-policy-search.md` only when that issue is active.
-
-## Progress
-
-The active-search critical path is:
-
-1. authoritative result or blocker
-2. promotion decision
-3. next direction, including whether the plateau trigger fired
-
-Append one compact `<harness>/progress.tsv` row when persistence is requested and the writer is immediately available. Leave optional token, raw-evidence, and narrative fields blank instead of waiting. Refresh charts, dashboards, candidate dossiers, reviews, and usage summaries only at promotion, reassessment, handoff, user request, or in a sidecar.
-
-Do not resubmit or reverify an identical artifact merely to create a candidate record. If an external service requires periodic checkpoints, label them `CHECKPOINT`, exclude them from search accounting, and let the coordinator perform them when possible.
+At the trigger, stop the current sweep, mark the hill `CLOSED` or `NARROWED`, state the failed prediction or missing evidence in one sentence, name at least three genuinely different mechanism families, and spend the next measured candidate off-hill. Continue the old family only with an explicit new premise such as new evidence, a changed graph, a calibrated search tool, or a previously untested range justified by the model. More equivalent seeds or configurations are not a new premise.
 
 ## Promotion
 
-Never promote from a screening metric. A meaningful promotion passes required correctness, the authoritative metric, applicable regression or adversarial checks, and a fresh verifier when the contract or risk requires it. Near ties favor the simpler and less stateful artifact.
+Never promote from a screening metric. Promote only when the candidate:
 
-After promotion, update the protected best and reset the promotion-drought counters. After a surprising regression, update or reject the bottleneck model before choosing another candidate.
+- Computes the required output for valid inputs.
+- Passes the required correctness scope or authoritative acceptance gate.
+- Improves the authoritative metric outside known noise.
+- Survives relevant shapes, seeds, hardware, hidden cases, or production guardrails.
+- Remains valid under the stated contract.
+
+After a meaningful promotion, update the protected best and reset the promotion-drought state. Near ties favor the simpler, smaller, less stateful artifact. Keep target-specific variants separate when one candidate wins only a lane, shape, seed regime, or hardware target.
+
+Reject wrong-answer speedups, leaked or hardcoded answers, stale-state wins, hidden-test detection, skipped required work, grader or harness modifications, and any contract-invalid shortcut.
+
+## Push, Reassess, Escape
+
+Keep pushing a hill while the authoritative metric improves, a proven bottleneck signal moves as predicted, implementation bugs explain failures, or a justified bracket remains within its attempt budget. When the search-health trigger fires, obey the off-hill transition instead of documenting or relabeling the same family.
+
+When a materially faster artifact or source becomes available, compare its algorithm, phase graph, representation, hardware mapping, precision, repair, routing, and lifecycle with the protected best. Audit prior negative verdicts against the new premises before choosing the next hill. See `references/frontier-introspection.md`.
+
+If repeated wrapper, primitive, or isolated-phase substitutions fail to move the measured owner and the remaining gap exceeds their plausible gain, reserve a bounded branch for an integrated architecture. Define its phase contract, milestones, budget, route attestation, and kill criteria; diagnose components separately, but promote only end to end.
+
+For detailed floor analysis and escape operators, read `references/resource-models.md`. For measurement quality, variance, profiling, search accounting, and external-technique intake, read `references/evidence-loop.md`.
 
 ## Multi-Agent Mode
 
-Default is `off`. Enable only when requested. The coordinator owns canonical files and serial promotion; workers receive isolated mechanism families from a named parent. After a plateau, allocate at least one worker to a different representation, primitive, route, target split, or specialization rather than multiplying the same tuning sweep. Read `references/harness.md` for the worker protocol.
+Default is `off`. Enable only when the user asks or the `/goal` says `Multi-agent mode: on`.
 
-## Integrity And Handoff
+Give each worker one isolated mechanism hypothesis from a named parent. The coordinator protects the canonical best, checks parent staleness, and serializes promotion through correctness and the authoritative metric. After a plateau trigger, allocate at least one worker off-hill. When Scorebench is active, it owns run coordination metadata and observability; do not add a second local ledger.
 
-Before promotion, confirm the candidate computes the required output for valid inputs, passes the required correctness scope, improves outside noise, uses current evidence, and remains valid across allowed input, seed, hardware, and hidden-case variation.
+## Finish
 
-At handoff, report the protected best, authoritative metric, validation status, changed files, remaining gap, attempts and active budget since the last promotion, closed hills, live hypotheses, blockers, and next off-hill candidate. Distinguish `budget exhausted`, `blocked`, `plateau`, and `no valid target evidence`.
+Default reporting is concise: state the best artifact, authoritative result, validation status, and the next blocker or direction. If the run stops on a plateau, state the closed or narrowed hill and the next off-hill candidate. Produce a durable handoff, audit, dashboard, or detailed experiment report only when the user explicitly requests one or an active external harness requires it.
 
 ## References
 
 | Need | Read |
 |---|---|
-| Durable, remote, resumable, or multi-agent harness | `references/harness.md` |
-| Audit an active run | `references/auditor.md` |
+| Measurement, profiling, variance, blockers | `references/evidence-loop.md` |
+| Winning-source introspection and verdict audits | `references/frontier-introspection.md` |
 | Floors, tails, primitive inversion, local optima | `references/resource-models.md` |
-| Measurement, variance, frontier mining, blockers | `references/evidence-loop.md` |
-| Simulator, policy, or hidden seeds | `references/stochastic-policy-search.md` |
-| CPU/GPU/domain probes | `references/cpu-architecture.md`, `references/gpu-architecture.md`, `references/problem-families.md` |
-| Optional durable templates | `references/templates.md` |
+| Simulator, policy, hidden seeds | `references/stochastic-policy-search.md` |
+| CPU optimization | `references/cpu-architecture.md` |
+| GPU optimization | `references/gpu-architecture.md` |
+| Common problem families | `references/problem-families.md` |

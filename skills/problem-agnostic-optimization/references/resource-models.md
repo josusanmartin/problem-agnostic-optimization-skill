@@ -123,7 +123,7 @@ phase/resource owner | height/cost | next floor | evidence | proposed stack
 
 The table should name the useful work that owns the floor, not just the final store, free, or return. If the next floor is close, the winning candidate may need to spend extra work to cross the peak tier and then reclaim operation count afterward.
 
-Negative resource trades are also useful. If a deeper route saves operation count but grows transcript, memory, live width, latency tail, or synchronization enough to lose the product metric, log it as a negative breakthrough and state what would make it worth reopening.
+Negative resource trades are also useful. If a deeper route saves operation count but grows transcript, memory, live width, latency tail, or synchronization enough to lose the product metric, retain the counterexample and state what would make it worth reopening.
 
 ## Primitive Inversion Audit
 
@@ -156,7 +156,7 @@ Some high-leverage ideas are best tested by proof or counterexample before imple
 - Shape specialization: do fixed sizes, seeds, layouts, or unobserved outputs prove a path can be skipped?
 - Collision/dedup model: does the best-case distribution save enough work after gather/scatter/compact overhead?
 
-A negative audit is a result. Log the counterexample or proof obligation it fails, then close that shortcut family until a new precondition appears.
+A negative audit is a result. Retain the counterexample or failed proof obligation, then close that shortcut family until a new precondition appears.
 
 ## Contract-Aware Omission
 
@@ -286,7 +286,7 @@ Declare `STUCK` when several of these are true:
 - Frontier mismatch: public or local breakthrough rows improve through mechanisms you are not testing.
 - Floor proof: the target is below the current hill's resource, tail, or statistical floor.
 
-Write the stuck signal into `<harness>/plan.md`, where `<harness>` defaults to `work/optimization_harness`, and, for harnessed runs, mark the hill `CLOSED` or `NARROWED` with the evidence.
+Mark the current hill `CLOSED` or `NARROWED` in the active search state. If Scorebench or another observability module is active, store the evidence there; do not create a local plan file solely for this marker.
 
 Record the closed basin, not just the failed candidate:
 

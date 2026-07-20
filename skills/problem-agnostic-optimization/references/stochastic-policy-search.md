@@ -144,9 +144,9 @@ Reject or verify carefully when:
 - Parameter sweep finds a sharp spike rather than a broad plateau.
 - Win disappears under renamed, reordered, or independent scenarios.
 
-## Handoff
+## Optional Handoff
 
-Record:
+When the user requests a durable handoff, include:
 
 - Best artifact.
 - Parent artifact.
