@@ -53,6 +53,7 @@ Use this table only with the `gpu` primary route.
 | `plateau` | Search-health trigger, local-optimum audit, or off-hill escape design | `references/plateau-escape.md` |
 | `frontier` | Faster external artifact, multiple frontiers, or stale negative verdict | `references/frontier-introspection.md` |
 | `runtime` | Startup, allocation, JIT, dispatch, I/O, launch, or setup dominates | `references/runtime-overhead.md` |
+| `portfolio` | Multi-agent mode with parallel mechanism families, adversarial review, or worker reallocation | `references/multi-agent-portfolio.md` |
 
 When the bottleneck changes, replace obsolete primary/shape modules and remove stale add-ons. Do not accumulate routes. Keep an end-to-end service on the service route; route an isolated GPU/CPU stage as a child scope.
 
@@ -119,6 +120,6 @@ If the user explicitly requests local persistence while Scorebench is inactive, 
 
 ## Multi-Agent And Finish
 
-Enable multi-agent mode only when requested. Give each worker one isolated mechanism from a named parent. The coordinator protects the canonical best, checks parent staleness, and serializes promotion through correctness and the authoritative metric; workers return only an artifact or patch plus compact evidence. After a plateau trigger, allocate at least one worker off-hill.
+Enable multi-agent mode only when requested; then load the `portfolio` add-on. The coordinator alone promotes through correctness and authority; workers never replace the protected best directly.
 
 Report only the best artifact, authoritative result, validation status, and next blocker or direction by default. Produce a durable handoff, audit, dashboard, or detailed report only when requested or required by an external harness.

@@ -63,7 +63,7 @@ Route: gpu; shape: kernel-stencils-convolution; add-ons: none
 
 When evidence changes the bottleneck, PAO returns to the router, replaces obsolete primary/shape modules, and removes add-ons whose triggers no longer apply. It does not accumulate routes, and references do not recursively load other references.
 
-Cross-cutting guidance is split by trigger: measurement/profiling, variance and bounded sweeps, public-technique intake, resource models, plateau escape, frontier introspection, and runtime overhead. A common profiling question no longer loads sweep, breakthrough-mining, and plateau machinery together.
+Cross-cutting guidance is split by trigger: measurement/profiling, variance and bounded sweeps, public-technique intake, resource models, plateau escape, frontier introspection, runtime overhead, and multi-agent portfolio coordination. A common profiling question no longer loads sweep, breakthrough-mining, plateau, or multi-agent machinery together.
 
 ### Draft A Goal Without Starting
 
@@ -126,6 +126,14 @@ At the trigger, PAO stops and loads only the plateau-escape add-on. It may conti
 A plateau is not a resource floor. Reserve `proven lower bound` for models whose required-work counts, throughput assumptions, dependencies, and unavoidable costs establish the bound. Otherwise use `model floor` or `observed plateau` and keep structural alternatives open.
 
 Search-health accounting is decision state, not a local logging requirement. During Scorebench runs, derive it from Scorebench history and do not mirror it into PAO files.
+
+## Multi-Agent Portfolio
+
+Multi-agent mode remains off unless the user requests it. When parallel workers explore competing mechanism families or perform independent review, PAO loads `multi-agent-portfolio.md` as an evidence-triggered add-on.
+
+The module begins with an independent round, groups work by causal mechanism, redirects workers away from crowded families, delays cross-pollination until concrete packets arrive, and gives high-impact candidates an independent adversarial check. A reduction to an unresolved claim equivalent in strength to the original target is `BLOCKED`, not progress.
+
+The coordinator alone protects and promotes the canonical best. The compact portfolio registry stays in active context or Scorebench; it does not create a new local log.
 
 ## Prompt Templates
 
@@ -205,6 +213,7 @@ problem-agnostic-optimization/
     kernel-quantized.md
     kernel-reductions-scans.md
     kernel-stencils-convolution.md
+    multi-agent-portfolio.md
     plateau-escape.md
     resource-models.md
     runtime-overhead.md

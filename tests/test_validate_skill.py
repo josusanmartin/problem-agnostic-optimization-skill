@@ -564,10 +564,20 @@ def test_skill_defaults_to_no_logging_and_defines_scorebench_activation() -> Non
 
 
 def test_multi_agent_coordinator_contract_is_preserved() -> None:
-    assert "protects the canonical best" in SKILL_TEXT
-    assert "checks parent staleness" in SKILL_TEXT
-    assert "serializes promotion" in SKILL_TEXT
-    assert "workers return only an artifact or patch plus compact evidence" in SKILL_TEXT
+    portfolio = reference_text("multi-agent-portfolio.md")
+
+    assert "load the `portfolio` add-on" in SKILL_TEXT
+    assert "Multi-agent mode with parallel mechanism families" in SKILL_TEXT
+    assert "Set no fixed worker quota by strategy." in portfolio
+    assert "Preserve An Early Independent Round" in portfolio
+    assert "Maintain A Mechanism Registry" in portfolio
+    assert "equivalent in strength to the original target" in portfolio
+    assert "Cross-Pollinate After Evidence" in portfolio
+    assert "Assign Adversarial Review" in portfolio
+    assert "invalidate stale parents" in portfolio
+    assert "Serialize promotion" in portfolio
+    assert "Reject vague optimism and status-only reports." in portfolio
+    assert "do not mirror them locally" in portfolio
 
 
 def test_readme_keeps_router_and_observability_boundaries_clear() -> None:
@@ -579,5 +589,6 @@ def test_readme_keeps_router_and_observability_boundaries_clear() -> None:
     assert "scored-artifact semantics" in text
     assert "variance-and-sweeps.md" in text
     assert "plateau-escape.md" in text
+    assert "multi-agent-portfolio.md" in text
     assert "Progress chart: on" not in text
     assert "scripts/init_harness.py" not in text

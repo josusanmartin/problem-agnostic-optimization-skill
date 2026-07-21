@@ -30,7 +30,16 @@ ROUTER_TABLES = {
         }
     ),
     "### Evidence-Triggered Add-ons": frozenset(
-        {"measurement", "variance", "technique", "resource", "plateau", "frontier", "runtime"}
+        {
+            "measurement",
+            "variance",
+            "technique",
+            "resource",
+            "plateau",
+            "frontier",
+            "runtime",
+            "portfolio",
+        }
     ),
 }
 ROUTER_IDS_WITHOUT_MODULE = frozenset({"other"})
