@@ -54,11 +54,15 @@ CODE_MD_RE = re.compile(r"`([^`\n\s]+\.md(?:#[^`\n\s]+)?)`")
 BARE_MD_RE = re.compile(
     r"(?<![A-Za-z0-9_./:-])((?:[a-z0-9][a-z0-9._-]*/)*[a-z0-9][a-z0-9._-]*\.md(?:#[A-Za-z0-9_.-]+)?)"
 )
-MAX_SKILL_WORDS = 1450
+MAX_SKILL_WORDS = 1400
 MAX_REFERENCE_WORDS = 1900
 MAX_SHAPE_WORDS = 450
 MAX_PRIMARY_CONTEXT_WORDS = 3000
 MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS = 4200
+SPECIAL_REFERENCE_WORD_LIMITS = {
+    "multi-agent-portfolio.md": 450,
+    "plateau-escape.md": 500,
+}
 
 
 class ValidationError(Exception):
@@ -306,7 +310,10 @@ def validate_size_budgets(skill_text: str, module_texts: dict[str, str], rows: l
     }
     for name, text in module_texts.items():
         words = len(text.split())
-        limit = MAX_SHAPE_WORDS if name in shape_modules else MAX_REFERENCE_WORDS
+        limit = SPECIAL_REFERENCE_WORD_LIMITS.get(
+            name,
+            MAX_SHAPE_WORDS if name in shape_modules else MAX_REFERENCE_WORDS,
+        )
         if words > limit:
             fail(f"references/{name} exceeds {limit} words: {words}")
 

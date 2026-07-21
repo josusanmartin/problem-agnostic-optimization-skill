@@ -41,6 +41,26 @@ def reference_text(name: str) -> str:
     return (SKILL_SRC / "references" / name).read_text(encoding="utf-8")
 
 
+def primary_loaded_context_words() -> dict[str, int]:
+    shape_modules = {
+        row.reference
+        for row in ROUTER_ROWS
+        if row.section == "### GPU Kernel Shape" and row.reference is not None
+    }
+    max_shape_words = max(len(reference_text(name).split()) for name in shape_modules)
+    contexts: dict[str, int] = {}
+    for row in ROUTER_ROWS:
+        if row.section != "### Primary Route":
+            continue
+        words = len(SKILL_TEXT.split())
+        if row.reference is not None:
+            words += len(reference_text(row.reference).split())
+        if row.route_id == "gpu":
+            words += max_shape_words
+        contexts[row.route_id] = words
+    return contexts
+
+
 def test_valid_skill_passes(tmp_path: Path) -> None:
     validate_skill.validate_skill(copy_skill(tmp_path))
 
@@ -48,10 +68,18 @@ def test_valid_skill_passes(tmp_path: Path) -> None:
 def test_core_skill_is_lean_and_search_policy_is_unambiguous() -> None:
     assert len(SKILL_TEXT.split()) <= validate_skill.MAX_SKILL_WORDS
     required = (
+        "Scope before floors:",
+        "Structure before local tuning:",
+        "Screen many, gate few:",
+        "full correctness and authority gate every promotion",
+        "Use `/goal` when the user requests a substantial run.",
         "A search epoch opens only after the authoritative baseline",
+        "A candidate miss is one valid, comparable authoritative decision",
+        "Screen rejections, `BUG`, `BLOCKED`",
         "Three consecutive comparable same-family candidate decisions miss.",
         "At least three measured attempts have occurred and ten percent of the active contract budget has been consumed",
         "Samples count as attempts, while the bounded sweep outcome is one candidate-family decision.",
+        "before every sweep or screening round",
         "do not increment or reset the miss streak",
         "an explained implementation bug leaves a faithful test untried",
         "spend the next measured candidate off-hill by default",
@@ -61,6 +89,8 @@ def test_core_skill_is_lean_and_search_policy_is_unambiguous() -> None:
     )
     for phrase in required:
         assert phrase in SKILL_TEXT
+    assert "Random search is a finisher, not an architect" not in SKILL_TEXT
+    assert "Use `/goal` for substantial work." not in SKILL_TEXT
 
 
 def test_router_precedence_uses_scored_artifact_semantics() -> None:
@@ -84,8 +114,8 @@ def test_router_precedence_uses_scored_artifact_semantics() -> None:
     assert "profiling-protocol uncertainty" in next(row for row in ROUTER_ROWS if row.route_id == "measurement").line
     assert "profiling need" not in next(row for row in ROUTER_ROWS if row.route_id == "measurement").line
     assert "Use this table only with the `gpu` primary route." in SKILL_TEXT
-    assert "replace obsolete primary/shape modules" in SKILL_TEXT
-    assert "Do not accumulate routes." in SKILL_TEXT
+    assert "Replace stale modules when the bottleneck changes" in SKILL_TEXT
+    assert "do not accumulate routes." in SKILL_TEXT
 
 
 def test_gpu_and_service_routes_are_isolated() -> None:
@@ -123,27 +153,64 @@ def test_reference_size_budgets_cover_every_module() -> None:
     }
     for name in ROUTED_REFERENCES:
         words = len(reference_text(name).split())
-        limit = validate_skill.MAX_SHAPE_WORDS if name in shape_modules else validate_skill.MAX_REFERENCE_WORDS
+        limit = validate_skill.SPECIAL_REFERENCE_WORD_LIMITS.get(
+            name,
+            validate_skill.MAX_SHAPE_WORDS if name in shape_modules else validate_skill.MAX_REFERENCE_WORDS,
+        )
         assert words <= limit, f"{name}: {words} > {limit}"
 
 
-def test_primary_route_loaded_context_budget_fails(tmp_path: Path) -> None:
+@pytest.mark.parametrize("reference_name", sorted(validate_skill.SPECIAL_REFERENCE_WORD_LIMITS))
+def test_special_reference_size_budget_fails(tmp_path: Path, reference_name: str) -> None:
     skill_dir = copy_skill(tmp_path)
-    cpu = skill_dir / "references" / "cpu-architecture.md"
-    cpu.write_text(cpu.read_text(encoding="utf-8") + "\n" + "filler " * 200, encoding="utf-8")
-
-    with pytest.raises(validate_skill.ValidationError, match="primary route cpu exceeds 3000 loaded words"):
-        validate_skill.validate_skill(skill_dir)
-
-
-def test_primary_plus_measurement_loaded_context_budget_fails(tmp_path: Path) -> None:
-    skill_dir = copy_skill(tmp_path)
-    evidence = skill_dir / "references" / "evidence-loop.md"
-    evidence.write_text(evidence.read_text(encoding="utf-8") + "\n" + "filler " * 210, encoding="utf-8")
+    reference = skill_dir / "references" / reference_name
+    limit = validate_skill.SPECIAL_REFERENCE_WORD_LIMITS[reference_name]
+    overflow_words = limit - len(reference.read_text(encoding="utf-8").split()) + 1
+    assert overflow_words > 0
+    reference.write_text(
+        reference.read_text(encoding="utf-8") + "\n" + "filler " * overflow_words,
+        encoding="utf-8",
+    )
 
     with pytest.raises(
         validate_skill.ValidationError,
-        match="primary route cpu plus measurement exceeds 4200 loaded words",
+        match=rf"references/{reference_name} exceeds {limit} words",
+    ):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_primary_route_loaded_context_budget_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    skill_dir = copy_skill(tmp_path)
+    route_id, loaded_words = max(primary_loaded_context_words().items(), key=lambda item: item[1])
+    limit = loaded_words - 1
+    monkeypatch.setattr(validate_skill, "MAX_PRIMARY_CONTEXT_WORDS", limit)
+
+    with pytest.raises(
+        validate_skill.ValidationError,
+        match=rf"primary route {route_id} exceeds {limit} loaded words",
+    ):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_primary_plus_measurement_loaded_context_budget_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    skill_dir = copy_skill(tmp_path)
+    measurement_words = len(reference_text("evidence-loop.md").split())
+    route_id, loaded_words = max(
+        (
+            (route_id, route_words + measurement_words)
+            for route_id, route_words in primary_loaded_context_words().items()
+        ),
+        key=lambda item: item[1],
+    )
+    limit = loaded_words - 1
+    monkeypatch.setattr(validate_skill, "MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS", limit)
+
+    with pytest.raises(
+        validate_skill.ValidationError,
+        match=rf"primary route {route_id} plus measurement exceeds {limit} loaded words",
     ):
         validate_skill.validate_skill(skill_dir)
 
@@ -537,8 +604,32 @@ def test_sweep_and_plateau_modules_share_epoch_reset_rule() -> None:
     plateau = reference_text("plateau-escape.md")
 
     assert "meaningful authoritative promotion or a genuine hill change" in variance
+    assert "meaningful authoritative promotion or a genuine hill change" in SKILL_TEXT
     assert "A genuine hill change resets the search epoch" in plateau
     assert "promotion drought" not in plateau
+
+
+def test_search_escape_modules_stay_lean_and_scope_local_search() -> None:
+    plateau = reference_text("plateau-escape.md")
+    portfolio = reference_text("multi-agent-portfolio.md")
+
+    assert len(plateau.split()) <= validate_skill.SPECIAL_REFERENCE_WORD_LIMITS["plateau-escape.md"]
+    assert len(portfolio.split()) <= validate_skill.SPECIAL_REFERENCE_WORD_LIMITS["multi-agent-portfolio.md"]
+    for phrase in (
+        "Pick A Distinct Family Or Scale",
+        "broad discovery may start immediately",
+        "may predeclare one budgeted larger-radius probe",
+        "stays in the same family",
+        "resets neither the miss streak nor epoch",
+        "contract-valid specialization",
+        "external method intake",
+        "negative proof",
+        "every survivor needs full correctness and authoritative measurement",
+    ):
+        assert phrase in plateau
+    assert "Scope before floors:" not in plateau
+    assert "Structure before local tuning:" not in plateau
+    assert "Random search is a finisher, not an architect" not in plateau
 
 
 def test_gpu_modules_preserve_named_baselines() -> None:
@@ -593,21 +684,29 @@ def test_skill_defaults_to_no_logging_and_defines_scorebench_activation() -> Non
         assert phrase in SKILL_TEXT
 
 
-def test_multi_agent_coordinator_contract_is_preserved() -> None:
+def test_multi_agent_coordinator_contract_is_lean() -> None:
     portfolio = reference_text("multi-agent-portfolio.md")
 
     assert "load the `portfolio` add-on" in SKILL_TEXT
     assert "Multi-agent mode with parallel mechanism families" in SKILL_TEXT
-    assert "Set no fixed worker quota by strategy." in portfolio
-    assert "Preserve An Early Independent Round" in portfolio
-    assert "Maintain A Mechanism Registry" in portfolio
+    assert "independently or adversarially review high-risk claims" in portfolio
+    assert "Parallelism Must Buy Overlap" in portfolio
+    assert "Delegate Experiments, Not Narration" in portfolio
+    assert "Serialize Promotion, Not Exploration" in portfolio
+    assert "If coordination costs more than candidate work, collapse to solo." in portfolio
+    assert "Fix the shared contract and protected parent" in portfolio
+    assert "Before the first concrete return, share validated facts" in portfolio
     assert "equivalent in strength to the original target" in portfolio
-    assert "Cross-Pollinate After Evidence" in portfolio
-    assert "Assign Adversarial Review" in portfolio
-    assert "invalidate stale parents" in portfolio
+    assert "new fact required to reopen it" in portfolio
+    assert "invalidates stale parents" in portfolio
     assert "Serialize promotion" in portfolio
-    assert "Reject vague optimism and status-only reports." in portfolio
+    assert "Status-only reports earn no follow-up budget." in portfolio
+    assert "full-checks only plausible survivors" in portfolio
+    assert "claimed proof or counterexample" in portfolio
+    assert "candidate or information yield" in portfolio
+    assert "Cross-pollinate only after evidence." in portfolio
     assert "do not mirror them locally" in portfolio
+    assert portfolio.count("```text") == 1
 
 
 def test_readme_keeps_router_and_observability_boundaries_clear() -> None:
@@ -621,5 +720,7 @@ def test_readme_keeps_router_and_observability_boundaries_clear() -> None:
     assert "plateau-escape.md" in text
     assert "multi-agent-portfolio.md" in text
     assert "both at least three measured attempts and 10% of the contract budget" in text
+    assert "Screen rejections, bugs, blockers" in text
+    assert "Whether the next candidate must be off-hill" not in text
     assert "Progress chart: on" not in text
     assert "scripts/init_harness.py" not in text

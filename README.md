@@ -109,7 +109,7 @@ The skill keeps only enough active state to choose the next experiment:
 - Current mechanism family, hypothesis, and kill criterion.
 - Actual measured attempts and budget consumed in the current search epoch.
 - Validation, measurement, and decision.
-- Whether the next candidate must be off-hill.
+- Next decision.
 
 It does not require a file-based ledger, progress chart, dashboard, audit session, token snapshots, or a formal handoff. Those are separate capabilities and should be enabled only when requested.
 
@@ -119,7 +119,7 @@ At completion, the default report is short: best artifact, authoritative result,
 
 PAO counts actual search work rather than candidate labels. A scheduler sweep containing 5,000 measured configurations consumes 5,000 attempts even if it produces one candidate artifact. Its bounded outcome is one candidate-family decision, so individual draws do not become thousands of same-family misses. Checkpoints, verifier reruns, pings, token snapshots, and report refreshes are operational work rather than candidates or promotions.
 
-The search epoch opens only after an authoritative baseline and the first valid comparable candidate or planned sweep draw on a hill. Unless the user sets different thresholds, PAO reassesses after three comparable same-family misses, after both at least three measured attempts and 10% of the contract budget have been consumed without meaningful authoritative promotion, or after exhaustion of a written sweep/family budget. Bugs, blockers, invalid measurements, and unresolved noise consume budget but are not misses.
+The search epoch opens only after an authoritative baseline and the first valid comparable candidate or planned sweep draw on a hill. Unless the user sets different thresholds, PAO reassesses after three comparable same-family misses, after both at least three measured attempts and 10% of the contract budget have been consumed without meaningful authoritative promotion, or after exhaustion of a written sweep/family budget. Screen rejections, bugs, blockers, invalid measurements, and unresolved noise consume budget but are not misses.
 
 At the trigger, PAO stops and loads only the plateau-escape add-on. It may continue a narrowed hill when an explained implementation bug leaves a faithful test untried or a predeclared bracket remains plausibly valuable. Otherwise it closes or narrows the hill and spends the next measured candidate off-hill by default. A meaningful authoritative promotion or a genuine hill change resets the epoch; equivalent seeds, batches, or renamed families do not.
 
@@ -131,9 +131,9 @@ Search-health accounting is decision state, not a local logging requirement. Dur
 
 Multi-agent mode remains off unless the user requests it. When parallel workers explore competing mechanism families or perform independent review, PAO loads `multi-agent-portfolio.md` as an evidence-triggered add-on.
 
-The module begins with an independent round, groups work by causal mechanism, redirects workers away from crowded families, delays cross-pollination until concrete packets arrive, and gives high-impact candidates an independent adversarial check. A reduction to an unresolved claim equivalent in strength to the original target is `BLOCKED`, not progress.
+The module makes parallelism earn its cost: after the shared contract and protected parent are fixed, workers start immediately on distinct mechanisms, return one compact evidence packet, and use cheap screens while the coordinator full-checks only plausible survivors. Cross-pollination follows evidence; claimed proofs or counterexamples, contract changes, and high-risk winners receive independent review.
 
-The coordinator alone protects and promotes the canonical best. The compact portfolio registry stays in active context or Scorebench; it does not create a new local log.
+The coordinator alone protects and promotes the canonical best. Exploration stays concurrent, the compact registry stays in active context or Scorebench, and a worker is stopped when coordination costs more than its candidate or information yield.
 
 ## Prompt Templates
 

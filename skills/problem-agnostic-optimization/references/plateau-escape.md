@@ -1,99 +1,46 @@
 # Plateau Reassessment And Escape
 
-Use this reference when a core search-health trigger fires or current evidence says the active hill no longer predicts authoritative improvement.
-
-## Contents
-
-- Reassessment and closure rules
-- Local-optimum audit
-- Off-hill mechanism families and escape operators
-- Divergence and new-hill commitment
+Use this reference when a search-health trigger fires or the active hill stops predicting authoritative improvement.
 
 ## Reassess Before Closing
 
-A trigger pauses the current sweep; it does not prove a floor or automatically close a useful written experiment.
+A trigger pauses the hill; it proves neither a floor nor failure.
 
-Check first:
+Check only what can change the next decision:
 
-- Did the intended candidate path execute?
-- Were the results valid, comparable, authoritative, and outside known noise?
-- Does a specific implementation bug explain the misses, with a faithful test still untried?
-- Does a predeclared bracket remain, and is its expected information or gain still worth the narrowed budget?
-- Did the bottleneck prediction move, even if the authoritative result did not?
-- Did current evidence invalidate an inherited closure or premise?
+- Did the intended path execute, and were results valid, comparable, and authoritative where required?
+- Does one explained bug leave a faithful test untried?
+- Is a predeclared bracket still worth a narrower budget?
+- Did the bottleneck move or an inherited premise fail?
 
-`BUG`, `BLOCKED`, invalid measurement, and unresolved noise consume attempt and contract budget but are not same-family misses. Continue only for an explained bug or a still-valuable written bracket; state the reason, next discriminating test, and narrower budget. Otherwise close or narrow the hill.
-
-## Local-Optimum Audit
-
-Record only what is needed to choose the next hill:
+Continue only for that bug or bracket. Otherwise mark the hill `CLOSED` or `NARROWED` and record:
 
 ```text
-hill | best authoritative result | failed prediction | remaining plausible gain | why insufficient | reopen premise
+hill | failed prediction | best result | reopen premise
 ```
 
-Mark `CLOSED` when equivalent local work is no longer justified. Mark `NARROWED` when one specific bracket or premise remains. A plateau closes a hill, not the problem; only a valid lower-bound proof can close the target as unreachable.
+A plateau closes a hill, not the target. Only required-work counts, valid throughput, dependencies, and unavoidable costs can prove a floor.
 
-After closure, the next measured candidate is off-hill by default. Continuing locally requires an explicit current-evidence reason, not more equivalent seeds, constants, or configurations.
+## Pick A Distinct Family Or Scale
 
-## Name Different Mechanism Families
+Start from the failed prediction. Useful families include required-work change, representation, primitive or algorithm, policy logic, resource transfer, dependency tail, execution route, target split, contract-valid specialization, external method intake, evidence tool, and negative proof. A new constant, seed, ordering, or selector is not a new family.
 
-Choose at least three genuinely different families before selecting the cheapest probe:
+When parameters are the only editable artifact, broad discovery may start immediately. A stochastic local sweep may predeclare one budgeted larger-radius probe. It stays in the same family and resets neither the miss streak nor epoch; without that bracket, or if it misses, change family.
 
-- **Work graph**: delete, fuse, split, recompute, delay materialization, or share paired phases.
-- **Representation**: pack, transpose, compress, precompute metadata, or change state/scratch layout.
-- **Primitive or algorithm**: library route, hardware primitive, decomposition, direct versus transform method, or exact versus repaired route.
-- **Resource or tail**: transfer work to measured slack, remove a co-binder, or shorten a dependency chain.
-- **Schedule or execution route**: persistence, placement, batching, compiler/codegen, or concurrency form.
-- **Target split**: per-shape, per-device, per-seed, per-mode, or per-size specialization.
-- **Evidence or search tool**: calibrated screen, simulator, lower-bound model, microbenchmark, or phase-owner instrumentation.
-- **Contract-valid precision or specialization**: tolerance-gated approximation, fixed shape, declared distribution support, or unobserved output.
-- **External method**: public source, paper, competitor mechanism, or production architecture.
-- **Negative proof**: counterexample or resource tradeoff that cheaply closes a tempting basin.
+## Run A Bounded Escape
 
-Changing a constant, tile, seed, ordering, or selector inside the same mechanism is not a new hill.
-
-## Escape Operators
-
-Assign one operator to each off-hill probe:
-
-- `neighborhood_shift`: change representation, primitive, route, target split, or edit region.
-- `perturb_reoptimize`: make one disruptive contract-valid change, then locally repair it before judging the hill.
-- `destroy_repair`: remove a binding structure, then repair correctness or resource damage inside a fixed budget.
-- `surrogate_uncertainty`: probe where the bottleneck model is weakest, then verify authoritatively.
-- `tabu_anti_revisit`: forbid a closed basin unless its written aspiration rule fires.
-- `diversity_archive`: preserve the best artifact per distinct feature cell rather than collapsing every probe into one incumbent.
-- `external_intake`: transfer a known-better method before inventing more local variants.
-- `negative_proof`: close a family by proof or counterexample before implementation.
-
-Allow a temporary authoritative regression only when it opens a named new hill, has a strict repair/stop budget, and never replaces the protected best.
-
-## Bounded Divergence
-
-Spend a small novelty budget across different mechanism families, not many variants of one family. The contract controls size; three to six cheap probes or isolated worker packets is usually enough.
-
-Each probe states:
+Choose the cheapest distinct probe and state:
 
 ```text
-new hill | family/operator | why distinct | expected signal | validation/measurement | budget | kill | reopen rule
+family | prediction | screen | budget/kill | reopen rule
 ```
 
-Every configuration, draw, generated artifact, or authoritative evaluation still counts as a measured attempt. Diversity means hypothesis diversity; it does not excuse an unbounded draw or parameter sweep.
+Use a cheap faithful screen inside sweeps; every survivor needs full correctness and authoritative measurement before promotion. Report aggregate draws once. Spend a small novelty budget across distinct families, then stop scattering when one shows signal.
 
-Use Scorebench or another active external harness for persistent state when present. Otherwise keep only compact active context; do not create a local logging subsystem for the escape.
+A temporary regression is valid only when it opens a named hill, has a repair budget, and never replaces the protected best.
 
-## Commit To A New Hill
+## Commit Or Close
 
-When a probe opens a credible hill, stop scattering and allocate a short commitment budget, normally two to four follow-up candidates. An explicit hill change starts a new search epoch; renaming the old family does not.
+When a probe changes a floor, bottleneck, searchable region, or separable target lane, stop scattering and give it a short written follow-up budget. Do not abandon a real mechanism signal after one rough result; do not fund it after its kill criterion fires.
 
-Commit when at least one is true:
-
-- A meaningful authoritative promotion occurs.
-- The probe changes an active floor, peak/tail owner, validation island, or searchable region.
-- A diagnostic signal moves a well-supported bottleneck and the remaining loss is plausibly repairable.
-- The probe wins one separable lane, shape, seed regime, target, or product-metric axis.
-- A faithfully transferred external mechanism has one identifiable integration defect.
-
-Do not abandon a new hill after one rough result when its mechanism signal is real and the kill criterion has not fired. Close it when correctness fails intrinsically, its resource trade cannot cross the next floor, or authority and diagnostics both refute it after the commitment budget.
-
-A genuine hill change resets the search epoch because the mechanism changed. Only a meaningful authoritative promotion updates the protected best, and the global contract budget remains consumed.
+A genuine hill change resets the search epoch. Only a meaningful authoritative promotion updates the protected best; all work still consumes the global budget.
