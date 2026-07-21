@@ -2,6 +2,13 @@
 
 Use this reference when total runtime alone is not enough to decide what to try next. The goal is to distinguish "the schedule is bad" from "the operation graph cannot reach the target."
 
+## Contents
+
+- Resource floors and schedule gaps
+- Tail, engine-balance, and co-binder audits
+- Primitive inversion and contract-aware omission
+- Cheap models and mechanism composition
+
 ## Resource Floors
 
 Convert the workload into constrained-resource lower bounds:
@@ -10,6 +17,14 @@ Convert the workload into constrained-resource lower bounds:
 - Divide each count by plausible throughput.
 - Add unavoidable latency or launch/setup costs.
 - The maximum lower bound is the best possible runtime without deleting work, moving work, or changing the representation.
+
+Label the result correctly:
+
+- `proven lower bound`: counts cover all required work, throughput assumptions are valid, and unavoidable dependencies and setup are included.
+- `model floor`: useful estimate with incomplete packing, dependency, lifetime, or route assumptions.
+- `observed plateau`: failed search history only; never call this a floor.
+
+A large configuration sweep proves only that the sampled search procedure did not find a better result. It does not prove the graph, scheduler family, or target is resource-pinned. If a later structural candidate could invalidate an assumption, keep that assumption explicit and the floor revisable.
 
 Use the gap to estimate minimum useful change. If the target is below several resource floors, a candidate must reduce all blocking floors enough to matter; deleting a few operations on one resource is not a breakthrough if another floor remains above target.
 
@@ -45,6 +60,8 @@ Classify each candidate before spending a large budget:
 - `representation/primitive change`: a different data layout, algorithm, or hardware primitive changes the floor model.
 
 When the target is below the current floors, prioritize work deletion, representation, primitive, or contract-valid omission over scheduler-only search.
+
+If a candidate lowers a model floor but the authoritative result fails to improve twice, stop optimizing that floor. Audit dependencies, tails, and omitted resource owners, then use an off-hill graph, representation, route, or evidence probe.
 
 ## Tail Audit
 
@@ -197,196 +214,3 @@ Bad composition:
 - Bundling knobs before knowing their effects.
 - Combining two changes that both overload the same destination resource.
 - Trusting a lower floor without checking dependencies and tail.
-
-## Plateau Rules
-
-Stop broad local search when:
-
-- Best variants repeatedly tie the baseline.
-- Lower bounds already exceed the target.
-- Exhaustive or randomized masks find only parity.
-- Count reductions repeatedly worsen scheduled runtime.
-- The same family fails under multiple independent formulations.
-
-Then change representation, primitive, route, or contract specialization level.
-
-## Local-Optimum Audit
-
-Run this audit when the search keeps improving local details but not the authoritative target.
-
-Triggers:
-
-- Three or more variants in the same family tie, regress, or move less than noise.
-- A sweep curve is flat or has already found the local sweet spot.
-- The current lower bound is above the target.
-- A lower floor repeatedly fails to become a runtime win.
-- The same mechanism loses across different implementations or targets.
-- Same-artifact variance samples show the target is outside the plausible distribution.
-
-Audit:
-
-```markdown
-## Local Optimum Audit
-
-- Current hill:
-- Why it looked promising:
-- Best verified result on this hill:
-- Plateau evidence:
-- Resource floor or tail blocker:
-- What this hill can still plausibly gain:
-- Why that is insufficient:
-
-Different hills:
-- Hill 1:
-- Hill 2:
-- Hill 3:
-
-Next off-hill probe:
-- Cheapest falsifiable test:
-- Expected signal:
-- Kill criterion:
-```
-
-Different-hill examples:
-
-- Change primitive family: direct kernel to library/FFT/GEMM, cooperative scan to two-pass scan, atomics to sort/reduce, scalar loop to vectorized representation.
-- Change representation: packed data, transposed layout, precomputed metadata, page grouping, block ordering, scratch layout, compressed state.
-- Change route/config: persistent to non-persistent, CPU to GPU path, one library heuristic to another, exact path to residual approximate path.
-- Delete/fuse work: remove materialization, combine stages, omit contract-unobserved state, skip setup only when the contract proves it safe.
-- Split target: per-shape, per-GPU, per-seed, per-mode, or per-size policy instead of one global implementation.
-
-Rule:
-
-- After the audit, the next candidate should be off-hill by default. Return to micro-tuning only if the off-hill probe fails or the user explicitly asks to keep grinding.
-- A plateau closes a hill, not the problem. "Every hill I tried tied" is evidence to change hills or intake an external mechanism, never a proof that the target is unreachable. Only a lower-bound proof (a Resource Floor at or above target) closes the problem.
-
-## Escape Ladder
-
-Use this when the local-optimum audit says the current hill is closed or nearly closed. The goal is not random mutation. It is to create enough hypothesis variance to find a new climbable hill, then stop scattering effort and climb it.
-
-### 1. Recognize Stuck
-
-Declare `STUCK` when several of these are true:
-
-- Promotion drought: no stable-best improvement after the recorded stagnation threshold.
-- Same-family failures: candidates keep changing only knobs, order, constants, seeds, tile sizes, or selectors around the same mechanism.
-- Model mismatch: the bottleneck model stops predicting results, or better floors/counters repeatedly fail to improve the authoritative metric.
-- Low novelty: new candidates duplicate an existing branch, parent, worker packet, or draw family.
-- Residual-only work: only variance pushes, selector notches, cleanup, or polish remain on the active hill.
-- Frontier mismatch: public or local breakthrough rows improve through mechanisms you are not testing.
-- Floor proof: the target is below the current hill's resource, tail, or statistical floor.
-
-Mark the current hill `CLOSED` or `NARROWED` in the active search state. If Scorebench or another observability module is active, store the evidence there; do not create a local plan file solely for this marker.
-
-Record the closed basin, not just the failed candidate:
-
-- Hill id:
-- Feature cell: resource axis, route, representation, primitive, target split, or selector family.
-- Best result in basin:
-- Why closed:
-- Anti-revisit rule:
-- Aspiration rule: what evidence is strong enough to reopen it.
-
-### Escape Operators
-
-Choose one explicit operator for each divergence probe:
-
-- `perturb_reoptimize`: make a disruptive but contract-valid perturbation, then locally re-optimize the new artifact before judging the hill.
-- `neighborhood_shift`: change representation, primitive, route, target split, or edit neighborhood so nearby moves are no longer the old knob family.
-- `destroy_repair`: remove or relax a binding structure, then repair correctness or resource damage inside a fixed budget.
-- `annealed_regression`: allow a temporary authoritative regression only when it opens a named new hill, with a cooling/stop budget and no stable promotion.
-- `tabu_anti_revisit`: forbid recently closed hills, duplicate worker packets, or exhausted draw families unless an aspiration rule fires.
-- `surrogate_uncertainty`: spend a cheap model, screen, microbenchmark, or uncertainty probe where evidence is weakest, then verify authoritatively.
-- `diversity_archive`: keep the best artifact per feature cell instead of collapsing everything to one global incumbent.
-- `adaptive_operator`: allocate future probes toward operators that previously produced mechanism signals, not only score wins.
-- `external_intake`: port a known better public method, paper, or competitor mechanism before inventing more local variants.
-- `negative_proof`: close a tempting basin by proof, counterexample, or measured resource tradeoff before implementation.
-
-### 2. Divergence Burst
-
-Spend a bounded novelty budget before returning to tuning. A normal burst is 5-10 cheap probes or worker packets, but the contract budget controls the exact size.
-
-Each probe must name:
-
-- New hill:
-- Escape operator:
-- Hill id:
-- Feature cell:
-- New active floor or resource axis:
-- Mechanism class:
-- Why this is not the current hill:
-- Controlled regression allowed: yes/no and why.
-- Cheapest falsifiable signal:
-- Validation and measurement path:
-- Anti-revisit rule:
-- Aspiration rule:
-- Kill criterion:
-
-Probe across different axes, not many versions of one axis:
-
-- Representation: data layout, state encoding, precomputation, compression, scratch/live-state shape.
-- Primitive: library route, hardware primitive, decomposed primitive, algorithm family, exact versus residual route.
-- Work graph: omission, fusion, split, recompute, delayed materialization, paired-phase sharing.
-- Schedule/route: target split, per-shape policy, per-seed route, compiler/config, placement, worker batch shape.
-- Evidence tool: calibrated screen, simulator, lower-bound model, microbenchmark, phase-owner instrumentation.
-- Contract specialization: fixed shape, distribution support, unobserved output, tolerance, allowed selector or reroll.
-- External intake: public source, competitor writeup, paper, or known better method ported as a mechanism.
-- Negative proof: a proof or counterexample that closes a tempting shortcut before implementation.
-
-Variance here means diversity of hypotheses. Draw or distribution sweeps count only when they satisfy `Variance Handling` in `references/evidence-loop.md`; otherwise they are churn.
-
-Use a small diversity map during the burst:
-
-```text
-feature cell | best artifact | best score | operator | signal | status
-```
-
-Feature cells should separate mechanisms that can plausibly climb different hills: resource axis, primitive, representation, target split, selector family, search tool, external route, or proof family.
-
-### 3. Commit To A New Hill
-
-When a divergence probe opens a credible new hill, stop scattering and allocate a short commitment budget. A normal commitment is 2-4 follow-up candidates, enough to fix first-pass implementation errors, retune co-binders, calibrate the screen, and reclaim slack that was spent to land the structural route.
-
-Commit when at least one is true:
-
-- The probe changes an active floor, peak owner, tail owner, validation island, or searchable region.
-- The authoritative metric improves, even if the implementation is rough.
-- A diagnostic signal improves a proven bottleneck and the remaining gap is plausibly reclaimable.
-- The probe regresses globally but wins a lane, shape, seed regime, target split, or product-metric axis that can be routed or composed.
-- The probe faithfully ports an external mechanism but one transfer parameter is still suspect.
-- The probe is a stepping stone: it enters a new feature cell, exposes a new validator/search tool, or creates a path to a co-binder teardown that the old basin could not access.
-
-Do not abandon a new hill after the first rough result if the mechanism signal is real. Abandon it when the written kill criterion fires, the route fails correctness for intrinsic reasons, the resource trade cannot cross the next floor, or the authoritative metric and diagnostics both refute the mechanism after the commitment budget.
-
-After the commitment, update operator credit:
-
-- `positive`: improved the stable best or opened a new hill with a verified mechanism signal.
-- `mixed`: produced a useful screen, proof, feature-cell elite, or negative result but no climbable hill.
-- `negative`: duplicated a closed basin, failed its own signal, or consumed budget without new information.
-
-Use operator credit to bias the next divergence burst. It is advisory search allocation, not promotion evidence.
-
-Commitment packet:
-
-```markdown
-## New-Hill Commitment
-
-- Source probe:
-- Parent:
-- New hill:
-- Escape operator:
-- Hill id:
-- Feature cell:
-- Mechanism signal:
-- Stepping-stone evidence:
-- Current loss or rough edge:
-- Commitment budget:
-- Follow-up 1:
-- Follow-up 2:
-- Follow-up 3:
-- Kill criterion:
-- Anti-revisit rule if closed:
-- Operator credit update:
-- Promotion gate:
-- Reopen condition after closure:
-```

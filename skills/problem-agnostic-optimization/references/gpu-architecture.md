@@ -1,6 +1,12 @@
 # GPU Optimization Reference
 
-Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, production GPU services, and leaderboard GPU work. Keep the guidance architecture-agnostic by default; discover hardware facts from the active target and prove them with measurements.
+Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, GPU library paths, and leaderboard GPU work. Keep guidance architecture-agnostic by default; discover target facts and prove them with measurements. Route end-to-end request services separately.
+
+## Contents
+
+- GPU search and execution topology
+- Device discovery and backend portability
+- Precision, profiling, and cross-GPU transfer
 
 ## GPU Search Rules
 
@@ -18,10 +24,10 @@ Use this reference for CUDA, HIP/ROCm, Triton, GPU challenge kernels, production
 
 ## General GPU Patterns
 
-- Use packetized IO and exact grids for streaming kernels.
+- Test naturally aligned packetized IO such as `float4`, `uint4`, or `int4`, plus exact grids for streaming kernels.
 - Keep tail handling outside the hot path when the contract allows it.
 - For reductions, compare atomics, partial reductions, subgroup/block reductions, vendor libraries, and graph wrappers empirically.
-- For GEMM, convolution, FFT, scan, sort, and attention-like primitives, try vendor libraries and template kernels before hand-written direct kernels.
+- For GEMM, convolution, FFT, scan, sort, and attention-like primitives, establish relevant vendor-library or generated-kernel baselines before hand-written direct kernels.
 - Use graph capture only when repeated launch overhead is material and argument lifetime/statefulness is safe.
 - Treat approximate math as a tolerance-gated candidate, not a default.
 - Inspect generated code when register pressure, spills, instruction selection, or missed vectorization plausibly dominates.
@@ -84,17 +90,6 @@ hipcc --save-temps my_kernel.cpp
 Use counters to check occupancy, memory bandwidth, tensor/ALU utilization, shared-memory conflicts, cache behavior, atomics, stalls, and launch overhead. Counter wins do not override authoritative wall time.
 
 When target profiling is unavailable, use route-attested stage cuts or controlled prefix/suffix variants to estimate phase ownership. Keep setup and warmup comparable, and never promote from a stage-only result.
-
-## Attention And Decode Lessons
-
-Transferable lessons from attention/decode-style kernels:
-
-- Split exact shapes first. The winning route often differs by sequence length, batch, head count, page size, expert count, or routing mode.
-- Page size, tile size, and split count can move the bottleneck between metadata, atomics, memory bandwidth, and compute.
-- Persistent and non-persistent modes are different algorithms; validate each shape because one mode can be correct and fast on one case but invalid on another.
-- Skipping large zero/fill initialization after warmup is valid only when the contract proves the kernel fully overwrites the buffer; otherwise treat it as statefulness risk and validate against ranked behavior.
-- Very large page sizes can cause timeouts despite good microbenchmarks.
-- Environment variables can be part of the measured system; record them with results.
 
 ## Cross-GPU Transfer
 

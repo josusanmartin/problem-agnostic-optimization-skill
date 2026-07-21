@@ -2,6 +2,13 @@
 
 Use this reference after a materially faster artifact, winning source, production rewrite, paper implementation, or postmortem becomes available. Convert hindsight into new search behavior instead of merely explaining the result.
 
+## Contents
+
+- Evidence preservation and multi-frontier triangulation
+- Architecture diff, verdict audit, and execution attestation
+- Co-designed phases, precision, and architecture budgets
+- Counterfactual lessons and integrity gate
+
 ## Preserve The Evidence
 
 Establish before analysis, using the active plan or the active external harness when one exists:

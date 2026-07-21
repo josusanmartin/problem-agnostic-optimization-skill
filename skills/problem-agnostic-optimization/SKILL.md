@@ -1,131 +1,124 @@
 ---
 name: problem-agnostic-optimization
-description: "Use when improving a measured artifact under a correctness or scoring contract: performance, latency, throughput, leaderboard score, CPU/GPU kernel time, or stochastic policy quality. Runs a lean evidence loop: objective, baseline, protected best, bottleneck model, one-hypothesis candidates, authoritative promotion, and plateau escapes. Logging and reporting are optional external concerns; when Scorebench is active, Scorebench owns them."
+description: "Use when improving a measured artifact under a correctness or scoring contract: performance, latency, throughput, leaderboard score, CPU/GPU kernel time, service load, fixed-resource schedules, or stochastic policy quality. Route by scored-artifact semantics, load only relevant modules, then run a lean evidence loop with protected-best promotion and bounded plateau escapes. Logging and reporting are optional; when Scorebench is active, Scorebench owns them."
 ---
 
 # Problem-Agnostic Optimization
 
-Optimize the artifact. Keep process machinery off the critical path.
+Optimize the artifact. Keep process machinery and irrelevant domain guidance off the critical path.
 
-```text
-contract -> baseline -> bottleneck model -> candidate -> validate/measure -> decide -> iterate or escape
-```
+## Route First
 
-Only the authoritative metric promotes. Profiles, counters, local benchmarks, and models explain.
+Route before planning candidates or opening references. This core always applies; references are opt-in modules, not a reading list.
+
+1. Use the first matching primary row for what the scorer rewards. Scored-artifact semantics outrank language, hardware, or venue branding.
+2. Select one primary route. A GPU route adds one shape module; add a second only if the scored artifact spans both shapes.
+3. Add only modules whose current evidence trigger matches, then state `Route: <primary>; shape: <module or none>; add-ons: <modules or none>` once.
+4. Do not read every reference, preload possible modules, or follow references recursively.
+
+### Primary Route
+
+| Route id | First matching scored-artifact semantics | Load exactly this primary module |
+|---|---|---|
+| `policy` | Policy/controller action quality over stochastic, hidden, or adversarial scenarios, even when implemented on CPU/GPU | `references/stochastic-policy-search.md` |
+| `service` | Live request/response, network, or queue service under concurrent load | `references/service-throughput.md` |
+| `fixed-resource` | Cycle count of a generated schedule, packet placement, or packing quality on fixed engines such as VLIW, DSP, or custom accelerators | `references/fixed-resource-scheduling.md` |
+| `gpu` | GPU kernel or GPU library route whose device work is the scored artifact | `references/gpu-architecture.md` |
+| `cpu` | Offline executable, command benchmark, CPU kernel, SIMD path, or CPU hot loop | `references/cpu-architecture.md` |
+| `other` | Other measured artifact | No primary module; use the core until evidence selects one |
+
+### GPU Kernel Shape
+
+Use this table only with the `gpu` primary route.
+
+| Shape id | Operation shape | Optional module |
+|---|---|---|
+| `elementwise` | Elementwise or streaming transform | `references/kernel-elementwise.md` |
+| `reduction-scan` | Reduction, norm, loss, scan, or prefix operation | `references/kernel-reductions-scans.md` |
+| `stencil-convolution` | Pooling, stencil, or convolution | `references/kernel-stencils-convolution.md` |
+| `matrix` | GEMM, GEMV, or batched matrix composition | `references/kernel-matrix.md` |
+| `histogram` | Histogram, atomic aggregation, or sparse update | `references/kernel-histogram.md` |
+| `quantized` | Quantized format, decode, or block scaling | `references/kernel-quantized.md` |
+| `attention-moe` | Attention, MLA, MoE, paged KV, or expert routing | `references/kernel-attention-moe.md` |
+
+### Evidence-Triggered Add-ons
+
+| Add-on id | Current evidence trigger | Load only then |
+|---|---|---|
+| `measurement` | Metric or profiling-protocol uncertainty, weak or unavailable profiling, or platform blocker | `references/evidence-loop.md` |
+| `variance` | Noisy samples, stochastic comparison, selector/draw search, or planned best-of-N sweep | `references/variance-and-sweeps.md` |
+| `technique` | Public-method intake, breakthrough mining, or cheap-screen calibration | `references/technique-intake.md` |
+| `resource` | Resource floor, tail, transfer, primitive inversion, or co-binder analysis | `references/resource-models.md` |
+| `plateau` | Search-health trigger, local-optimum audit, or off-hill escape design | `references/plateau-escape.md` |
+| `frontier` | Faster external artifact, multiple frontiers, or stale negative verdict | `references/frontier-introspection.md` |
+| `runtime` | Startup, allocation, JIT, dispatch, I/O, launch, or setup dominates | `references/runtime-overhead.md` |
+| `portfolio` | Multi-agent mode with parallel mechanism families, adversarial review, or worker reallocation | `references/multi-agent-portfolio.md` |
+
+When the bottleneck changes, replace obsolete primary/shape modules and remove stale add-ons. Do not accumulate routes. Keep an end-to-end service on the service route; route an isolated GPU/CPU stage as a child scope.
 
 ## Contract
 
-Before editing, establish:
+Before editing, establish objective and authority, baseline, protected artifact, editable/immutable files, correctness gate, budget, target conditions, search-health thresholds, and multi-agent mode (`off` by default).
 
-- Objective and authoritative metric, including direction and target.
-- Current baseline, or `unknown, reproduce first`.
-- Artifact to protect, editable files, and immutable files.
-- Correctness and validation requirements.
-- Budget or stopping rule.
-- Target hardware, workload, seeds, shapes, or production conditions when relevant.
-- Multi-agent mode, defaulting to `off`.
+Use current workspace and user evidence. Mine sibling workspaces or prior candidates only for requested transfer. Treat inherited gap labels and closed hills as hypotheses until current evidence supports them.
 
-Use `/goal` for a substantial or long-running optimization. If the user asks for a goal "for later", return a copy-paste prompt beginning with `Use problem-agnostic-optimization.` and a filled `/goal` block; do not activate a goal unless explicitly asked.
+Separate contract semantics, observed enforcement, and the rejected representation. A scanner or sandbox rejection closes only the observed form unless the contract forbids the mechanism. Never evade forbidden semantics; when semantics are allowed, test only transparent contract-valid representations.
 
-Use the current workspace and user-provided evidence by default. Do not mine sibling workspaces, old candidates, or prior submissions unless the user asks for transfer or continuation.
+Use `/goal` when the user requests a substantial run. For a goal "for later", return a copy-paste prompt beginning with `Use problem-agnostic-optimization.` and a filled `/goal` block; activate only when explicitly asked.
 
 ## Core Loop
 
-1. Reproduce the baseline with the authoritative command or service.
-2. Preserve the current best artifact before risky edits.
-3. Build the cheapest useful bottleneck model from measurements, profiles, counters, case splits, or resource floors.
-4. Choose one falsifiable hypothesis and make the smallest edit that tests it.
+1. Reproduce the baseline authoritatively.
+2. Preserve the current best before risky edits.
+3. Build the cheapest useful bottleneck model.
+4. Choose one falsifiable mechanism and make the smallest candidate that faithfully tests it.
 5. Prove the intended candidate path executed before interpreting correctness or timing.
 6. Validate correctness before performance when possible.
 7. Measure with the authoritative metric.
 8. Decide `PROMOTE`, `KEEP VARIANT`, `REJECT`, `BUG`, or `BLOCKED`.
-9. Update the bottleneck model after a promotion or surprising regression.
-10. Continue while the hill has signal; change hill when same-family candidates tie or regress.
+9. Update the model after a promotion or surprising result.
+10. Count actual measured attempts and reassess when a search-health trigger fires.
 
-For a candidate, keep only the information needed to make the next decision: parent, hypothesis, expected signal, kill criterion, validation, measurement, and decision. A compact line or active plan is enough. Do not create per-candidate dossiers by default.
+Retain only parent, mechanism family, hypothesis, expected signal, budget/kill, validation, measurement, and decision in one compact active-state entry.
+
+One mechanism may require coordinated edits. Prefer the smallest faithful mechanism test, not the smallest textual diff. Ablate after a compound structural candidate shows authoritative signal.
+
+## Gap And Promotion
+
+Classify the gap as `proven floor`, `schedule`, `evidence`, or `statistical`. A plateau is not a floor proof. Use `proven lower bound` only when required-work counts, valid throughput, dependencies, and unavoidable costs establish it; otherwise use `model floor` or `observed plateau`.
+
+Only the authoritative metric promotes. Require valid output, correctness, improvement outside noise, relevant target/shape/seed coverage, and contract validity. Reject wrong-answer speedups, leaked or hardcoded answers, stale-state wins, hidden-test detection, skipped required work, grader changes, and forbidden shortcuts.
+
+Near ties favor the simpler, smaller, less stateful artifact. Keep target-specific variants separate when a candidate wins only one lane, shape, seed regime, or hardware target. A `meaningful authoritative promotion` is a contract-valid result outside noise that becomes the protected best or a separately retained target-specific best.
+
+## Search Health
+
+Track the active hill and mechanism family, measured attempts, consecutive comparable misses, epoch budget use, and whether the next candidate should be off-hill.
+
+A measured attempt is each configuration, seed/draw, scheduler result, generated artifact, or authoritative evaluation used to choose or defend a family. A batch reports its total. A candidate miss is one valid, comparable authoritative decision that fails to improve outside noise. `BUG`, `BLOCKED`, invalid measurements, and unresolved in-noise results consume attempts and budget but do not increment or reset the miss streak.
+
+A search epoch opens only after the authoritative baseline and the first valid comparable candidate or planned sweep draw on a hill. It resets on a meaningful authoritative promotion or an explicit hill change that changes the mechanism, not on renaming, another batch, or equivalent seeds/configurations.
+
+Unless the user sets different thresholds, reassess when any condition holds:
+
+1. Three consecutive comparable same-family candidate decisions miss.
+2. At least three measured attempts have occurred and ten percent of the active contract budget has been consumed in the open epoch without a meaningful authoritative promotion.
+3. A written sweep or family attempt budget is exhausted.
+
+Set an attempt budget and stop rule before every sweep. Samples count as attempts, while the bounded sweep outcome is one candidate-family decision.
+
+At a trigger, load the plateau add-on. Continue only when an explained implementation bug leaves a faithful test untried or a predeclared bracket remains valuable; narrow its budget. Otherwise mark the hill `CLOSED` or `NARROWED`, state the failed prediction, and spend the next measured candidate off-hill by default. Reopen only from a new evidence-backed premise.
 
 ## Optional Observability
 
-Optimization and observability are separate modules.
+Default behavior is no logging subsystem. Keep search-health accounting in active decision state. Normal benchmark output, profiler captures, submitted artifacts, and contract-required files are not optional logging.
 
-Default behavior is no logging subsystem. Do not initialize a local optimization harness or create `progress.tsv`, `events.jsonl`, `log.md`, `state.json`, charts, dashboards, audit reports, token ledgers, or candidate JSON files unless the user explicitly requests local persistence. Normal benchmark outputs, profiler captures, submitted artifacts, and files required by the target contract are not optional logging.
+Scorebench is active when the user invokes it, supplies a scoped run, or assigns the task through Scorebench. Derive attempts, budget use, promotions, and best state there; follow the `scorebench` skill for lifecycle, submissions, usage, history, logging, and reports. Do not mirror PAO logs, dashboards, or token accounting, or submit directly to the venue.
 
-When Scorebench is active - because the user invokes it, provides a scoped Scorebench run, or the task is assigned through Scorebench - follow the `scorebench` skill for run lifecycle, submissions, token accounting, history, best-state tracking, logging, and reports. Do not create parallel PAO logs or dashboards, do not duplicate token accounting, and do not submit directly to the underlying venue. PAO supplies only the optimization strategy and candidate decisions.
+If the user requests local persistence while Scorebench is inactive, use a separate sidecar. Never run it beside Scorebench. A logger failure must not block optimization unless logging is contractual.
 
-If the user explicitly requests local persistent logging while Scorebench is inactive, use a separate logging skill or module selected for that task. Keep it sidecar to the candidate loop. A logger or renderer failure must not block optimization unless logging is part of the user's stated contract.
+## Multi-Agent And Finish
 
-Never run local and Scorebench logging in parallel. If a run moves to Scorebench, stop local logging rather than backfilling or mirroring it.
+Enable multi-agent mode only when requested and load the `portfolio` add-on. Only the coordinator promotes; workers never replace the protected best directly.
 
-## Gap And Candidate Choice
-
-Classify the current gap before choosing a candidate:
-
-- `floor gap`: the current graph or family cannot reach the target under the current resource model.
-- `schedule gap`: the graph can reach the target, but runtime is lost to packing, tail, dependencies, resource pressure, synchronization, allocation, or variance.
-- `evidence gap`: measurements are too weak to select a mechanism confidently.
-- `statistical gap`: the apparent movement may be noise.
-
-Do not micro-tune below a proven floor. Change work graph, representation, primitive, route, specialization, or a contract-valid approximation. Treat inherited gap classifications and closed hills as hypotheses unless backed by current evidence.
-
-Separate contract semantics, enforcement behavior, and the rejected implementation form. A scanner, compiler, sandbox, or policy rejection closes only the observed syntax, API, tool, or execution form unless the contract forbids the broader mechanism. Never evade forbidden semantics. When the semantics are allowed but enforcement is broader than the written rule, seek a transparent contract-valid representation and validate it authoritatively.
-
-Mechanism classes:
-
-- Work deletion or fusion.
-- Resource transfer.
-- Tail or dependency reduction.
-- Scheduler or variance change.
-- Representation, primitive, or route change.
-- Contract specialization.
-- Tolerance-gated approximation.
-- Forbidden shortcut.
-
-## Promotion
-
-Never promote from a screening metric. Promote only when the candidate:
-
-- Computes the required output for valid inputs.
-- Passes the required correctness scope or authoritative acceptance gate.
-- Improves the authoritative metric outside known noise.
-- Survives relevant shapes, seeds, hardware, hidden cases, or production guardrails.
-- Remains valid under the stated contract.
-
-Near ties favor the simpler, smaller, less stateful artifact. Keep target-specific variants separate when one candidate wins only a lane, shape, seed regime, or hardware target.
-
-Reject wrong-answer speedups, leaked or hardcoded answers, stale-state wins, hidden-test detection, skipped required work, grader or harness modifications, and any contract-invalid shortcut.
-
-## Push, Reassess, Escape
-
-Keep pushing a hill when the authoritative metric improves, a proven bottleneck signal moves in the predicted direction, implementation bugs explain failures, or an untested bracket remains.
-
-Reassess when three same-family candidates tie or regress, resource improvements repeatedly fail to move the target, reruns put the target outside plausible variance, or the bottleneck model stops predicting results.
-
-After reassessment, spend the next candidate off-hill by default. Try a different representation, primitive, route, target split, specialization, search tool, or external mechanism. A plateau closes a hill, not the problem; only a lower-bound proof can establish that the target is unreachable.
-
-When a materially faster artifact or source becomes available, compare its algorithm, phase graph, representation, hardware mapping, precision, repair, routing, and lifecycle with the protected best. Audit prior negative verdicts against the new premises before choosing the next hill. See `references/frontier-introspection.md`.
-
-If about three independent wrapper, primitive, or isolated-phase substitutions fail to move the measured owner and the remaining gap exceeds their plausible gain, reserve a bounded branch for an integrated architecture. Define its phase contract, milestones, budget, route attestation, and kill criteria; diagnose components separately, but promote only end to end.
-
-For detailed floor analysis and escape operators, read `references/resource-models.md`. For measurement quality, variance, profiling, and external-technique intake, read `references/evidence-loop.md`.
-
-## Multi-Agent Mode
-
-Default is `off`. Enable only when the user asks or the `/goal` says `Multi-agent mode: on`.
-
-Give each worker one isolated hypothesis from a named parent. The coordinator protects the canonical best, checks parent staleness, and serializes promotion through correctness and the authoritative metric. Workers return only the candidate artifact or patch plus compact evidence. When Scorebench is active, it owns run coordination metadata and observability; do not add a second local ledger.
-
-## Finish
-
-Default reporting is concise: state the best artifact, authoritative result, validation status, and the next blocker or direction. Produce a durable handoff, audit, dashboard, or detailed experiment report only when the user explicitly requests one or an active external harness requires it.
-
-## References
-
-| Need | Read |
-|---|---|
-| Measurement, profiling, variance, blockers | `references/evidence-loop.md` |
-| Winning-source introspection and verdict audits | `references/frontier-introspection.md` |
-| Floors, tails, primitive inversion, local optima | `references/resource-models.md` |
-| Simulator, policy, hidden seeds | `references/stochastic-policy-search.md` |
-| CPU optimization | `references/cpu-architecture.md` |
-| GPU optimization | `references/gpu-architecture.md` |
-| Common problem families | `references/problem-families.md` |
+Report only the best artifact, authoritative result, validation status, and next blocker or direction by default. Produce a durable handoff, audit, dashboard, or detailed report only when requested or required by an external harness.

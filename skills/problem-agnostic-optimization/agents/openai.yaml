@@ -1,4 +1,4 @@
 interface:
   display_name: "Problem-Agnostic Optimization"
-  short_description: "Lean evidence-driven optimization loop"
-  default_prompt: "Use $problem-agnostic-optimization to improve this measured artifact through controlled candidates and authoritative validation."
+  short_description: "Route-first modular optimization"
+  default_prompt: "Use $problem-agnostic-optimization to route this challenge first, load only relevant modules, and improve the artifact through authoritative validation."

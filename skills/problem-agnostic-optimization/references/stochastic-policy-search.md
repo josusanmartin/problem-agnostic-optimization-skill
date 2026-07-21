@@ -4,6 +4,12 @@ Use this reference when the submitted artifact is a policy, controller, strategy
 
 This is a target family, not a domain-specific playbook. Only add a specific strategy when it maps to a reusable mechanism such as regime estimation, adaptive margins, flow/event classification, exposure control, participation control, competitor tracking, cooldown/decay, or tail-risk guarding.
 
+## Contents
+
+- Contract, scenarios, and evaluation protocol
+- Metrics, decomposition, and candidate types
+- General strategy families, parameter search, and overfit rules
+
 ## First Checks
 
 Build the contract table:
