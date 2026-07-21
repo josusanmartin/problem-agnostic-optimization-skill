@@ -12,10 +12,9 @@ Optimize the artifact. Keep process machinery and irrelevant domain guidance off
 Route before planning candidates or opening references. This core always applies; references are opt-in modules, not a reading list.
 
 1. Use the first matching primary row for what the scorer rewards. Scored-artifact semantics outrank language, hardware, or venue branding.
-2. Select exactly one primary route. Only a GPU route gets a shape module: one initially, another only if the artifact spans both shapes.
-3. Add a cross-cutting module only when current evidence matches its trigger.
-4. State `Route: <primary>; shape: <module or none>; add-ons: <modules or none>` once in active context.
-5. Do not read every reference, preload possible modules, or follow references recursively.
+2. Select one primary route. A GPU route adds one shape module; add a second only if the scored artifact spans both shapes.
+3. Add only modules whose current evidence trigger matches, then state `Route: <primary>; shape: <module or none>; add-ons: <modules or none>` once.
+4. Do not read every reference, preload possible modules, or follow references recursively.
 
 ### Primary Route
 
@@ -23,7 +22,7 @@ Route before planning candidates or opening references. This core always applies
 |---|---|---|
 | `policy` | Policy/controller action quality over stochastic, hidden, or adversarial scenarios, even when implemented on CPU/GPU | `references/stochastic-policy-search.md` |
 | `service` | Live request/response, network, or queue service under concurrent load | `references/service-throughput.md` |
-| `fixed-resource` | Schedule, cycle count, packet placement, or packing quality on fixed execution engines | `references/fixed-resource-scheduling.md` |
+| `fixed-resource` | Cycle count of a generated schedule, packet placement, or packing quality on fixed engines such as VLIW, DSP, or custom accelerators | `references/fixed-resource-scheduling.md` |
 | `gpu` | GPU kernel or GPU library route whose device work is the scored artifact | `references/gpu-architecture.md` |
 | `cpu` | Offline executable, command benchmark, CPU kernel, SIMD path, or CPU hot loop | `references/cpu-architecture.md` |
 | `other` | Other measured artifact | No primary module; use the core until evidence selects one |
@@ -46,7 +45,7 @@ Use this table only with the `gpu` primary route.
 
 | Add-on id | Current evidence trigger | Load only then |
 |---|---|---|
-| `measurement` | Metric uncertainty, profiling need, weak evidence, or platform blocker | `references/evidence-loop.md` |
+| `measurement` | Metric or profiling-protocol uncertainty, weak or unavailable profiling, or platform blocker | `references/evidence-loop.md` |
 | `variance` | Noisy samples, stochastic comparison, selector/draw search, or planned best-of-N sweep | `references/variance-and-sweeps.md` |
 | `technique` | Public-method intake, breakthrough mining, or cheap-screen calibration | `references/technique-intake.md` |
 | `resource` | Resource floor, tail, transfer, primitive inversion, or co-binder analysis | `references/resource-models.md` |
@@ -65,7 +64,7 @@ Use current workspace and user evidence. Mine sibling workspaces or prior candid
 
 Separate contract semantics, observed enforcement, and the rejected representation. A scanner or sandbox rejection closes only the observed form unless the contract forbids the mechanism. Never evade forbidden semantics; when semantics are allowed, test only transparent contract-valid representations.
 
-Use `/goal` for substantial or long-running work. If asked for a goal "for later", return a copy-paste prompt beginning with `Use problem-agnostic-optimization.` and a filled `/goal` block; activate only when explicitly asked.
+Use `/goal` when the user requests a substantial run. For a goal "for later", return a copy-paste prompt beginning with `Use problem-agnostic-optimization.` and a filled `/goal` block; activate only when explicitly asked.
 
 ## Core Loop
 
@@ -103,23 +102,23 @@ A search epoch opens only after the authoritative baseline and the first valid c
 Unless the user sets different thresholds, reassess when any condition holds:
 
 1. Three consecutive comparable same-family candidate decisions miss.
-2. Ten percent of the active contract budget is consumed in the open epoch without a meaningful authoritative promotion.
+2. At least three measured attempts have occurred and ten percent of the active contract budget has been consumed in the open epoch without a meaningful authoritative promotion.
 3. A written sweep or family attempt budget is exhausted.
 
 Set an attempt budget and stop rule before every sweep. Samples count as attempts, while the bounded sweep outcome is one candidate-family decision.
 
-At a trigger, stop and load the plateau add-on through the router. Continue the hill only when an explained implementation bug leaves a faithful test untried or a predeclared bracket remains plausibly valuable; state the reason and narrow its budget. Otherwise mark the hill `CLOSED` or `NARROWED`, state the failed prediction, name three different mechanism families, and spend the next measured candidate off-hill by default. Reopen only with a new premise supported by current evidence.
+At a trigger, load the plateau add-on. Continue only when an explained implementation bug leaves a faithful test untried or a predeclared bracket remains valuable; narrow its budget. Otherwise mark the hill `CLOSED` or `NARROWED`, state the failed prediction, and spend the next measured candidate off-hill by default. Reopen only from a new evidence-backed premise.
 
 ## Optional Observability
 
-Default behavior is no logging subsystem. Search-health accounting is active decision state, not a logging requirement. Normal benchmark output, profiler captures, submitted artifacts, and files required by the target contract are not optional logging.
+Default behavior is no logging subsystem. Keep search-health accounting in active decision state. Normal benchmark output, profiler captures, submitted artifacts, and contract-required files are not optional logging.
 
-Scorebench is active when the user invokes it, supplies a scoped Scorebench run, or assigns the task through Scorebench. Then derive attempts, budget use, promotion history, and best state from Scorebench; follow the `scorebench` skill for lifecycle, submissions, usage, history, logging, and reports. Do not create parallel PAO logs or dashboards, duplicate token accounting, or submit directly to the underlying venue.
+Scorebench is active when the user invokes it, supplies a scoped run, or assigns the task through Scorebench. Derive attempts, budget use, promotions, and best state there; follow the `scorebench` skill for lifecycle, submissions, usage, history, logging, and reports. Do not mirror PAO logs, dashboards, or token accounting, or submit directly to the venue.
 
-If the user explicitly requests local persistence while Scorebench is inactive, use a separate sidecar module. Never run local and Scorebench logging in parallel. A logger or renderer failure must not block optimization unless logging is part of the contract.
+If the user requests local persistence while Scorebench is inactive, use a separate sidecar. Never run it beside Scorebench. A logger failure must not block optimization unless logging is contractual.
 
 ## Multi-Agent And Finish
 
-Enable multi-agent mode only when requested; then load the `portfolio` add-on. The coordinator alone promotes through correctness and authority; workers never replace the protected best directly.
+Enable multi-agent mode only when requested and load the `portfolio` add-on. Only the coordinator promotes; workers never replace the protected best directly.
 
 Report only the best artifact, authoritative result, validation status, and next blocker or direction by default. Produce a durable handoff, audit, dashboard, or detailed report only when requested or required by an external harness.

@@ -50,7 +50,7 @@ def test_core_skill_is_lean_and_search_policy_is_unambiguous() -> None:
     required = (
         "A search epoch opens only after the authoritative baseline",
         "Three consecutive comparable same-family candidate decisions miss.",
-        "Ten percent of the active contract budget is consumed in the open epoch",
+        "At least three measured attempts have occurred and ten percent of the active contract budget has been consumed",
         "Samples count as attempts, while the bounded sweep outcome is one candidate-family decision.",
         "do not increment or reset the miss streak",
         "an explained implementation bug leaves a faithful test untried",
@@ -78,6 +78,11 @@ def test_router_precedence_uses_scored_artifact_semantics() -> None:
     assert "even when implemented on CPU/GPU" in primary[0].line
     assert "request/response" in primary[1].line
     assert "HighLoad" not in primary[1].line
+    assert "generated schedule" in primary[2].line
+    assert "VLIW" in primary[2].line
+    assert "Schedule, cycle count" not in primary[2].line
+    assert "profiling-protocol uncertainty" in next(row for row in ROUTER_ROWS if row.route_id == "measurement").line
+    assert "profiling need" not in next(row for row in ROUTER_ROWS if row.route_id == "measurement").line
     assert "Use this table only with the `gpu` primary route." in SKILL_TEXT
     assert "replace obsolete primary/shape modules" in SKILL_TEXT
     assert "Do not accumulate routes." in SKILL_TEXT
@@ -120,6 +125,27 @@ def test_reference_size_budgets_cover_every_module() -> None:
         words = len(reference_text(name).split())
         limit = validate_skill.MAX_SHAPE_WORDS if name in shape_modules else validate_skill.MAX_REFERENCE_WORDS
         assert words <= limit, f"{name}: {words} > {limit}"
+
+
+def test_primary_route_loaded_context_budget_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    cpu = skill_dir / "references" / "cpu-architecture.md"
+    cpu.write_text(cpu.read_text(encoding="utf-8") + "\n" + "filler " * 200, encoding="utf-8")
+
+    with pytest.raises(validate_skill.ValidationError, match="primary route cpu exceeds 3000 loaded words"):
+        validate_skill.validate_skill(skill_dir)
+
+
+def test_primary_plus_measurement_loaded_context_budget_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    evidence = skill_dir / "references" / "evidence-loop.md"
+    evidence.write_text(evidence.read_text(encoding="utf-8") + "\n" + "filler " * 210, encoding="utf-8")
+
+    with pytest.raises(
+        validate_skill.ValidationError,
+        match="primary route cpu plus measurement exceeds 4200 loaded words",
+    ):
+        validate_skill.validate_skill(skill_dir)
 
 
 def test_long_references_have_contents_map() -> None:
@@ -495,6 +521,10 @@ def test_split_modules_keep_common_loads_narrow() -> None:
     resources = reference_text("resource-models.md")
 
     assert "## Variance Handling" not in evidence
+    assert "see Variance Handling" not in evidence
+    assert "load the `variance` add-on through the router" in evidence
+    assert "## Promotion Gates" not in evidence
+    assert "## Forbidden Shortcut Screen" not in evidence
     assert "## Breakthrough Mining" not in evidence
     assert "## Plateau Rules" not in resources
     assert "## Sweep Contract" in reference_text("variance-and-sweeps.md")
@@ -555,9 +585,9 @@ def test_skill_defaults_to_no_logging_and_defines_scorebench_activation() -> Non
         "Default behavior is no logging subsystem.",
         "Normal benchmark output, profiler captures, submitted artifacts",
         "Scorebench is active when the user invokes it",
-        "derive attempts, budget use, promotion history, and best state from Scorebench",
-        "Do not create parallel PAO logs or dashboards",
-        "A logger or renderer failure must not block optimization",
+        "Derive attempts, budget use, promotions, and best state there",
+        "Do not mirror PAO logs, dashboards, or token accounting",
+        "A logger failure must not block optimization",
     )
     for phrase in required:
         assert phrase in SKILL_TEXT
@@ -590,5 +620,6 @@ def test_readme_keeps_router_and_observability_boundaries_clear() -> None:
     assert "variance-and-sweeps.md" in text
     assert "plateau-escape.md" in text
     assert "multi-agent-portfolio.md" in text
+    assert "both at least three measured attempts and 10% of the contract budget" in text
     assert "Progress chart: on" not in text
     assert "scripts/init_harness.py" not in text

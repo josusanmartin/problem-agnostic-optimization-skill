@@ -54,9 +54,11 @@ CODE_MD_RE = re.compile(r"`([^`\n\s]+\.md(?:#[^`\n\s]+)?)`")
 BARE_MD_RE = re.compile(
     r"(?<![A-Za-z0-9_./:-])((?:[a-z0-9][a-z0-9._-]*/)*[a-z0-9][a-z0-9._-]*\.md(?:#[A-Za-z0-9_.-]+)?)"
 )
-MAX_SKILL_WORDS = 1500
-MAX_REFERENCE_WORDS = 2200
+MAX_SKILL_WORDS = 1450
+MAX_REFERENCE_WORDS = 1900
 MAX_SHAPE_WORDS = 450
+MAX_PRIMARY_CONTEXT_WORDS = 3000
+MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS = 4200
 
 
 class ValidationError(Exception):
@@ -307,6 +309,32 @@ def validate_size_budgets(skill_text: str, module_texts: dict[str, str], rows: l
         limit = MAX_SHAPE_WORDS if name in shape_modules else MAX_REFERENCE_WORDS
         if words > limit:
             fail(f"references/{name} exceeds {limit} words: {words}")
+
+    max_shape_words = max(len(module_texts[name].split()) for name in shape_modules)
+    measurement_row = next(row for row in rows if row.route_id == "measurement")
+    assert measurement_row.reference is not None
+    measurement_words = len(module_texts[measurement_row.reference].split())
+
+    for row in rows:
+        if row.section != "### Primary Route":
+            continue
+        loaded_words = skill_words
+        if row.reference is not None:
+            loaded_words += len(module_texts[row.reference].split())
+        if row.route_id == "gpu":
+            loaded_words += max_shape_words
+        if loaded_words > MAX_PRIMARY_CONTEXT_WORDS:
+            fail(
+                f"primary route {row.route_id} exceeds {MAX_PRIMARY_CONTEXT_WORDS} loaded words: "
+                f"{loaded_words}"
+            )
+
+        measurement_loaded_words = loaded_words + measurement_words
+        if measurement_loaded_words > MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS:
+            fail(
+                f"primary route {row.route_id} plus measurement exceeds "
+                f"{MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS} loaded words: {measurement_loaded_words}"
+            )
 
 
 def validate_skill(skill_dir: Path) -> None:

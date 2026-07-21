@@ -1,44 +1,35 @@
 # Measurement And Evidence
 
-Use this reference when the metric is uncertain, profiling is needed, evidence is weak, or a platform blocker may invalidate measurements.
+Use this reference when the metric or profiling protocol is uncertain, profiling evidence is weak or unavailable, or a platform blocker may invalidate measurements.
 
 ## Contents
 
-- Contract and measurement hierarchy
-- Profiling and weak-evidence fallbacks
-- Candidate evidence and promotion gates
-- Failed-result interpretation and platform blockers
+- Measurement boundaries and evidence hierarchy
+- Profiling workflow and evidence strength
+- Weak-evidence fallbacks and floor discipline
+- Platform blockers
 
-## Contract First
+## Clarify The Measurement
 
-Build this before coding:
+Resolve only uncertainties that change the next experiment:
 
-- Interface and exact artifact to submit or deploy.
-- Input shapes, sizes, dtypes, layouts, distributions, seeds, and hidden/public differences.
-- Correctness tolerance and reference behavior.
-- Target metric: remote wall time, geomean, p95, throughput, score, counters, memory, or cost.
-- Target hardware, compiler/runtime, flags, source limits, language limits, and sandbox constraints.
-- Timed boundary: import, build, JIT, warmup, precompute, capture, allocation, teardown, and which of them count.
-- Contract semantics, policy intent, and observed scanner/checker enforcement as separate facts.
-- Budget: submissions, API calls, GPU minutes, wall-clock, or production risk.
-- Editable files and immutable reference, harness, evaluation, data, or scoring files.
-- Scoreboard semantics and draw/noise model: is the recorded result single-shot, an aggregate, or `best-of-N` over submissions (the board keeps your best ever)? What varies between samples: rerun noise, seed/nonce/route selector, hidden queue state, or structurally distinct artifact? Record measured spread across draws or reruns. These decide whether a sweep can ever help; see Variance Handling.
+- Exact authoritative metric, aggregation, target scope, and noise or draw semantics.
+- Comparable artifact, inputs, seeds, build mode, hardware, warmup, and timed lifecycle boundary.
+- Whether profiles and counters observe the same route and workload as the scorer.
+- Platform limits that can invalidate the measurement before candidate code runs.
 
 If the score is aggregate, split it. A geomean hides shape-specific bottlenecks.
+If repeated draws or selectors might help, load the `variance` add-on through the router.
 
 ## Measurement Hierarchy
 
-Promotion uses the authoritative metric:
+The authoritative metric promotes; profiles and counters diagnose:
 
 - Leaderboard/ranked submit beats local benchmark.
 - Production p95 beats synthetic microbench.
 - End-to-end model score beats isolated component timing.
 - Public accepted/benchmarked state beats failed-state runtime fields.
 
-Use counters and profiles for diagnosis:
-
-- Counters explain why wall time moved.
-- Counters do not override wall time.
 - If counters improve and time worsens, the wrong resource was optimized or a new pressure was introduced.
 - Distinguish a real graph improvement from a placement improvement: slot counts, bytes, launches, or branch counts changing means a different operation graph; identical counts with better time is scheduler, packing, or tail behavior.
 
@@ -123,54 +114,6 @@ If you are about to declare a target unreachable and your evidence is weak, that
 
 A floor claim is valid only from a lower-bound proof or strong target-class evidence. Until then the correct recorded state is "best known so far," and the search stays open.
 
-## Candidate Evidence
-
-Keep candidate bookkeeping proportional to the decision. The default is one compact active-state entry:
-
-```text
-parent | hypothesis | expected signal | validation | measurement | decision | next
-```
-
-Use richer persistent records only when the user requests them or an active external harness requires them. Scorebench owns persistent candidate history during Scorebench runs. Do not create a parallel local ledger.
-
-## Promotion Gates
-
-Promote only when:
-
-- Correctness is clean or the authoritative platform has accepted it.
-- The target metric improves outside known noise, or the scoreboard has accepted the row.
-- The win survives the required scope: full test set, hidden/ranked route, multi-seed sweep, cross-shape sweep, or rerun stability when applicable.
-- The winning artifact is saved under a durable name.
-- The result includes command, run ID, submission ID, job ID, or report path.
-- The improvement source is understood well enough to guide the next iteration.
-- The added complexity is justified by the measured gain. Near-ties should favor simpler code.
-
-Keep separate artifacts when a candidate wins on one target but regresses another.
-
-## Simplicity And Scope
-
-Optimization work should be narrow even when the search is aggressive:
-
-- Every changed line should trace to the candidate hypothesis.
-- Do not add speculative abstractions, configurability, dependencies, or error handling that is not required by the target contract.
-- Match the existing project style and evaluation conventions.
-- If equal or near-equal scores are available, prefer deletion, simplification, or smaller diffs over clever machinery.
-- Surface assumptions and tradeoffs before coding when multiple interpretations would change the experiment.
-
-## Failed-Idea Interpretation
-
-Convert each failure into a search rule:
-
-- `work deleted, target still impossible by floors`: the deletion is too small or hits the wrong resource; compose only with a mechanism that attacks the remaining floor.
-- `lower floor, slower runtime`: dependency chain, scratch lifetime, barrier, aliasing, or tail got worse.
-- `one resource saved, another overloaded`: resource rebalance was not conservative.
-- `same counts, time changes`: schedule/tail sensitivity exists; tune only if the target gap is plausibly within the variance or packing gap.
-- `single-shape win, geomean loss`: keep as a route candidate, not a global promotion.
-- `benchmark win, ranked loss`: stability, hidden distribution, warmup, or state contract differs.
-- `schedule-only plateau`: move to work deletion, fusion, specialization, representation change, or primitive change.
-- `repeated near-ties`: run a local-optimum audit before the next same-family candidate.
-- `counterexample found for an algebraic shortcut`: close the shortcut family unless a stronger precondition is proven by the contract.
-
 ## Platform Blockers
 
 Classify as platform/tooling blocker when:
@@ -182,16 +125,3 @@ Classify as platform/tooling blocker when:
 - External capacity or billing prevents execution.
 
 Do not spend repeated submissions on a platform blocker. Retain the exact error in the current context or active external harness, and continue only when the platform changes or a credible recovery path appears.
-
-## Forbidden Shortcut Screen
-
-Reject and do not run exploit-like shortcuts:
-
-- Hardcoded outputs or shape/device constants learned from checker failures.
-- Leaked validation answers used to skip computation.
-- Reliance on uninitialized state, stale buffers, warmup count, or fixed hidden input order outside the contract.
-- Stale-suite leaderboard rows used as proof of first place.
-- Runtimes from wrong-answer or compile-failed states used as performance proof.
-- Modifying the reference, harness, scorer, data generator, or submission protocol to make a candidate appear faster.
-
-Clean optimization computes the intended result under the declared contract.
