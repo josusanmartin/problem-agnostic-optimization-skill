@@ -25,7 +25,7 @@ A plateau closes a hill, not the target. Only required-work counts, valid throug
 
 Start from the failed prediction. Useful families include required-work change, representation, primitive or algorithm, policy logic, resource transfer, dependency tail, execution route, target split, contract-valid specialization, external method intake, evidence tool, and negative proof. A new constant, seed, ordering, or selector is not a new family.
 
-When parameters are the only editable artifact, broad discovery may start immediately. A stochastic local sweep may predeclare one budgeted larger-radius probe. It stays in the same family and resets neither the miss streak nor epoch; without that bracket, or if it misses, change family.
+A stochastic local sweep may use one larger-radius probe only when its sweep contract predeclared the bracket. Starting or missing it resets neither the miss streak nor epoch; a meaningful promotion still resets both under the core. Otherwise change family.
 
 ## Run A Bounded Escape
 

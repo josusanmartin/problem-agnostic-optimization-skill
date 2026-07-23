@@ -121,7 +121,7 @@ PAO counts actual search work rather than candidate labels. A scheduler sweep co
 
 The search epoch opens only after an authoritative baseline and the first valid comparable candidate or planned sweep draw on a hill. Unless the user sets different thresholds, PAO reassesses after three comparable same-family misses, after both at least three measured attempts and 10% of the contract budget have been consumed without meaningful authoritative promotion, or after exhaustion of a written sweep/family budget. Screen rejections, bugs, blockers, invalid measurements, and unresolved noise consume budget but are not misses.
 
-At the trigger, PAO stops and loads only the plateau-escape add-on. It may continue a narrowed hill when an explained implementation bug leaves a faithful test untried or a predeclared bracket remains plausibly valuable. Otherwise it closes or narrows the hill and spends the next measured candidate off-hill by default. A meaningful authoritative promotion or a genuine hill change resets the epoch; equivalent seeds, batches, or renamed families do not.
+At the trigger, PAO stops and loads the plateau-escape add-on. A sweep may reserve one larger-radius probe in its written contract so that escape remains available after a dry local radius. PAO may also continue a narrowed hill when an explained implementation bug leaves a faithful test untried. Otherwise it closes or narrows the hill and spends the next measured candidate off-hill by default. A meaningful authoritative promotion or a genuine hill change resets the epoch; equivalent seeds, batches, or renamed families do not.
 
 A plateau is not a resource floor. Reserve `proven lower bound` for models whose required-work counts, throughput assumptions, dependencies, and unavoidable costs establish the bound. Otherwise use `model floor` or `observed plateau` and keep structural alternatives open.
 
@@ -133,7 +133,7 @@ Multi-agent mode remains off unless the user requests it. When parallel workers 
 
 The module makes parallelism earn its cost: after the shared contract and protected parent are fixed, workers start immediately on distinct mechanisms, return one compact evidence packet, and use cheap screens while the coordinator full-checks only plausible survivors. Cross-pollination follows evidence; claimed proofs or counterexamples, contract changes, and high-risk winners receive independent review.
 
-The coordinator alone protects and promotes the canonical best. Exploration stays concurrent, the compact registry stays in active context or Scorebench, and a worker is stopped when coordination costs more than its candidate or information yield.
+The coordinator alone protects and promotes the canonical best. Exploration stays concurrent, one affordable incompatible route remains alive while evidence can discriminate it, and a worker is stopped when coordination costs more than its candidate or information yield. Collapse to solo only when multi-agent mode is not contractual, and surface the change.
 
 ## Prompt Templates
 
@@ -176,7 +176,7 @@ Current baseline: mean <x>, SEM <y>, seed set <name>.
 Editable files: <policy or controller files>.
 Immutable files: simulator, scorer, seed generator, submission protocol.
 Budget / stopping rule: <simulations, submissions, time, or target>.
-Validation: matched train, validation, holdout, and adversarial scenarios.
+Validation: matched train, disjoint validation, and only the contractual tail or safety guardrails.
 Multi-agent mode: off.
 ```
 

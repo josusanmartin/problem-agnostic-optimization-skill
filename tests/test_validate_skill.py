@@ -69,7 +69,10 @@ def test_core_skill_is_lean_and_search_policy_is_unambiguous() -> None:
     assert len(SKILL_TEXT.split()) <= validate_skill.MAX_SKILL_WORDS
     required = (
         "Scope before floors:",
+        "establish only missing contract facts",
+        "Do not restate supplied facts or narrate completed setup.",
         "Structure before local tuning:",
+        "if parameters or ordering are the only editable artifact, begin bounded discovery",
         "Screen many, gate few:",
         "full correctness and authority gate every promotion",
         "Use `/goal` when the user requests a substantial run.",
@@ -612,24 +615,72 @@ def test_sweep_and_plateau_modules_share_epoch_reset_rule() -> None:
 def test_search_escape_modules_stay_lean_and_scope_local_search() -> None:
     plateau = reference_text("plateau-escape.md")
     portfolio = reference_text("multi-agent-portfolio.md")
+    variance = reference_text("variance-and-sweeps.md")
 
     assert len(plateau.split()) <= validate_skill.SPECIAL_REFERENCE_WORD_LIMITS["plateau-escape.md"]
     assert len(portfolio.split()) <= validate_skill.SPECIAL_REFERENCE_WORD_LIMITS["multi-agent-portfolio.md"]
     for phrase in (
         "Pick A Distinct Family Or Scale",
-        "broad discovery may start immediately",
-        "may predeclare one budgeted larger-radius probe",
-        "stays in the same family",
-        "resets neither the miss streak nor epoch",
+        "sweep contract predeclared the bracket",
+        "Starting or missing it resets neither the miss streak nor epoch",
+        "a meaningful promotion still resets both under the core",
         "contract-valid specialization",
         "external method intake",
         "negative proof",
         "every survivor needs full correctness and authoritative measurement",
     ):
         assert phrase in plateau
+    assert "Optional escape bracket:" in variance
+    assert "one budgeted larger-radius probe after a dry local sweep" in variance
     assert "Scope before floors:" not in plateau
     assert "Structure before local tuning:" not in plateau
     assert "Random search is a finisher, not an architect" not in plateau
+
+
+def test_heavy_decision_modules_are_lean_without_losing_gates() -> None:
+    policy = reference_text("stochastic-policy-search.md")
+    evidence = reference_text("evidence-loop.md")
+    resources = reference_text("resource-models.md")
+    frontier = reference_text("frontier-introspection.md")
+
+    for name in (
+        "stochastic-policy-search.md",
+        "evidence-loop.md",
+        "resource-models.md",
+        "frontier-introspection.md",
+    ):
+        assert name in validate_skill.SPECIAL_REFERENCE_WORD_LIMITS
+        assert len(reference_text(name).split()) <= validate_skill.SPECIAL_REFERENCE_WORD_LIMITS[name]
+
+    for phrase in (
+        "Do not rebuild a supplied contract",
+        "do not compute a dashboard of unused metrics",
+        "begin bounded broad discovery immediately",
+        "The authority promotes",
+    ):
+        assert phrase in policy
+    for phrase in (
+        "Clarify only what can change the next experiment",
+        "A downgraded screen cannot veto a candidate",
+        "Only a valid lower-bound proof",
+        "Do not repeat unchanged submissions",
+    ):
+        assert phrase in evidence
+    for phrase in (
+        "`proven lower bound`",
+        "`model floor`",
+        "`observed plateau`",
+        "Walk backward from the last useful operation",
+        "Skipping work is valid only when the written contract proves",
+    ):
+        assert phrase in resources
+    for phrase in (
+        "Use the active external harness when present",
+        "`mapping-negative`",
+        "`availability-negative`",
+        "Add persistent fields only when an observability module is active",
+    ):
+        assert phrase in frontier
 
 
 def test_gpu_modules_preserve_named_baselines() -> None:
@@ -693,7 +744,7 @@ def test_multi_agent_coordinator_contract_is_lean() -> None:
     assert "Parallelism Must Buy Overlap" in portfolio
     assert "Delegate Experiments, Not Narration" in portfolio
     assert "Serialize Promotion, Not Exploration" in portfolio
-    assert "If coordination costs more than candidate work, collapse to solo." in portfolio
+    assert "collapse to solo only when multi-agent mode is not contractual, and state the change" in portfolio
     assert "Fix the shared contract and protected parent" in portfolio
     assert "Before the first concrete return, share validated facts" in portfolio
     assert "equivalent in strength to the original target" in portfolio
@@ -704,6 +755,7 @@ def test_multi_agent_coordinator_contract_is_lean() -> None:
     assert "full-checks only plausible survivors" in portfolio
     assert "claimed proof or counterexample" in portfolio
     assert "candidate or information yield" in portfolio
+    assert "Keep one affordable incompatible route alive" in portfolio
     assert "Cross-pollinate only after evidence." in portfolio
     assert "do not mirror them locally" in portfolio
     assert portfolio.count("```text") == 1
@@ -721,6 +773,8 @@ def test_readme_keeps_router_and_observability_boundaries_clear() -> None:
     assert "multi-agent-portfolio.md" in text
     assert "both at least three measured attempts and 10% of the contract budget" in text
     assert "Screen rejections, bugs, blockers" in text
+    assert "one larger-radius probe" in text
+    assert "multi-agent mode is not contractual" in text
     assert "Whether the next candidate must be off-hill" not in text
     assert "Progress chart: on" not in text
     assert "scripts/init_harness.py" not in text

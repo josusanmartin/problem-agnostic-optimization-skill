@@ -1,6 +1,6 @@
 ---
 name: problem-agnostic-optimization
-description: "Use when improving a measured artifact under a correctness or scoring contract: performance, latency, throughput, leaderboard score, CPU/GPU kernel time, service load, fixed-resource schedules, or stochastic policy quality. Route by scored-artifact semantics, load only relevant modules, then run a lean evidence loop with protected-best promotion and bounded plateau escapes. Logging and reporting are optional; when Scorebench is active, Scorebench owns them."
+description: "Use when improving a measured artifact under a correctness/scoring contract: performance, latency, throughput, leaderboard score, CPU/GPU kernels, services, fixed-resource schedules, or stochastic policies. Route by scored-artifact semantics, load only triggered modules, and run a lean evidence loop with protected-best promotion and bounded plateau escapes. Logging/reporting are optional; active Scorebench owns them."
 ---
 
 # Problem-Agnostic Optimization
@@ -58,7 +58,7 @@ Replace stale modules when the bottleneck changes; do not accumulate routes. Kee
 
 ## Contract
 
-Before editing, establish objective and authority, baseline, protected artifact, editable scope, correctness gate, budget, targets, and multi-agent mode (`off` by default).
+Before editing, establish only missing contract facts: objective/authority, baseline, protected artifact, editable scope, correctness gate, budget/targets, and multi-agent mode (`off` by default). Do not restate supplied facts or narrate completed setup.
 
 Use current evidence. Transfer sibling or prior candidates only when requested; revalidate inherited gap labels and closed hills.
 
@@ -83,7 +83,7 @@ Retain parent, mechanism, prediction, budget/kill, result, and decision in one a
 
 One mechanism may require coordinated edits. Prefer the smallest faithful test, not the smallest diff. Ablate compound candidates after authoritative signal.
 
-Structure before local tuning: prefer changes to required work, representation, algorithm, dependencies, or policy logic until evidence says parameters or ordering own the gap.
+Structure before local tuning: if parameters or ordering are the only editable artifact, begin bounded discovery. Otherwise prefer work deletion, representation, algorithm, dependency, or policy changes until evidence says local tuning owns the gap.
 
 Screen many, gate few: cheap faithful screens may reject; full correctness and authority gate every promotion.
 

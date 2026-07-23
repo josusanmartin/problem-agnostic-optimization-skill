@@ -55,13 +55,18 @@ BARE_MD_RE = re.compile(
     r"(?<![A-Za-z0-9_./:-])((?:[a-z0-9][a-z0-9._-]*/)*[a-z0-9][a-z0-9._-]*\.md(?:#[A-Za-z0-9_.-]+)?)"
 )
 MAX_SKILL_WORDS = 1400
-MAX_REFERENCE_WORDS = 1900
+MAX_REFERENCE_WORDS = 1500
 MAX_SHAPE_WORDS = 450
-MAX_PRIMARY_CONTEXT_WORDS = 3000
-MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS = 4200
+MAX_PRIMARY_CONTEXT_WORDS = 2900
+MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS = 3500
 SPECIAL_REFERENCE_WORD_LIMITS = {
+    "evidence-loop.md": 550,
+    "frontier-introspection.md": 850,
     "multi-agent-portfolio.md": 450,
     "plateau-escape.md": 500,
+    "resource-models.md": 700,
+    "stochastic-policy-search.md": 500,
+    "variance-and-sweeps.md": 500,
 }
 
 
