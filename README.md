@@ -48,6 +48,8 @@ The first skill action is routing, before candidate planning or reference loadin
 
 PAO selects exactly one primary module, initially at most one GPU-only kernel-shape module, and only evidence-triggered add-ons. A second shape module is allowed only when the scored GPU artifact genuinely spans both shapes. It never treats the references directory as a reading list.
 
+The runtime context acts as a decision interface, not a catalog of tactics. Primary modules identify target-local facts and bottleneck discriminators, shape modules carry operation-specific guidance, and add-ons answer the current uncertainty.
+
 Examples:
 
 - A CUDA convolution loads `gpu-architecture.md` plus `kernel-stencils-convolution.md`. It does not load CPU, service, stochastic-policy, or VLIW guidance.
@@ -55,11 +57,7 @@ Examples:
 - A simulator-scored controller loads `stochastic-policy-search.md` even when implemented with CPU or GPU code, because policy quality is the scored artifact.
 - A VLIW cycle search loads `fixed-resource-scheduling.md`, which includes a rough per-engine floor. It adds `resource-models.md` only when deeper floor, tail, transfer, or co-binder analysis drives the next candidate.
 
-The active context records one compact selection such as:
-
-```text
-Route: gpu; shape: kernel-stencils-convolution; add-ons: none
-```
+Routing is internal by default. Surface the selection only when ambiguity affects the work or parallel collaborators need the boundary.
 
 When evidence changes the bottleneck, PAO returns to the router, replaces obsolete primary/shape modules, and removes add-ons whose triggers no longer apply. It does not accumulate routes, and references do not recursively load other references.
 

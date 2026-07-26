@@ -2,12 +2,6 @@
 
 Use this reference after a materially faster artifact, winning source, production rewrite, paper implementation, or postmortem becomes available. Convert the gap into candidates rather than a retrospective.
 
-## Contents
-
-- Evidence and cross-frontier comparison
-- Architecture and negative-verdict audits
-- Integrated phase contracts and bounded architecture work
-
 ## Preserve Comparable Evidence
 
 Retain only what makes the comparison reproducible: artifact/source identity, score, hardware and contract, build path, timed lifecycle, protected parent, and whether each claim is observed, authored, or inferred. Use the active external harness when present; do not initialize a local history system.

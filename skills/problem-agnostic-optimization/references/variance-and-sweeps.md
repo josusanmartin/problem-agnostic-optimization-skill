@@ -28,7 +28,7 @@ Do not sweep when the metric is deterministic with no distinct selector, the boa
 
 Write before sampling:
 
-- Pilot: at least five distinct samples, with min, median, and spread.
+- Pilot: the smallest distinct sample set that can estimate spread relative to the target gap.
 - Per-sample cost and distinctness rule.
 - Objective: improve recorded best-of-N, characterize the draw family, or detect a subregion effect outside noise.
 - Attempt budget and falsifiable stop: best stalls for `K` draws, target lies outside the selected margin, or budget is spent.

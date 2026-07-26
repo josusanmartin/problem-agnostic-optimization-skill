@@ -68,32 +68,31 @@ def test_valid_skill_passes(tmp_path: Path) -> None:
 def test_core_skill_is_lean_and_search_policy_is_unambiguous() -> None:
     assert len(SKILL_TEXT.split()) <= validate_skill.MAX_SKILL_WORDS
     required = (
+        "Routing is internal",
+        "Do not read every reference",
+        "Load only modules needed for the next decision",
         "Scope before floors:",
-        "establish only missing contract facts",
-        "Do not restate supplied facts or narrate completed setup.",
-        "Structure before local tuning:",
-        "if parameters or ordering are the only editable artifact, begin bounded discovery",
-        "Screen many, gate few:",
-        "full correctness and authority gate every promotion",
-        "Use `/goal` when the user requests a substantial run.",
+        "Fill only missing contract facts",
+        "Do not restate supplied facts or narrate setup.",
+        "When only parameters or ordering are editable, begin bounded discovery.",
+        "Run full correctness, then authority",
         "A search epoch opens only after the authoritative baseline",
-        "A candidate miss is one valid, comparable authoritative decision",
+        "A candidate miss is one valid comparable authoritative decision",
         "Screen rejections, `BUG`, `BLOCKED`",
         "Three consecutive comparable same-family candidate decisions miss.",
         "At least three measured attempts have occurred and ten percent of the active contract budget has been consumed",
-        "Samples count as attempts, while the bounded sweep outcome is one candidate-family decision.",
-        "before every sweep or screening round",
-        "do not increment or reset the miss streak",
-        "an explained implementation bug leaves a faithful test untried",
-        "spend the next measured candidate off-hill by default",
+        "Samples count as attempts; the bounded outcome is one candidate-family decision.",
+        "do not change the miss streak",
+        "spend the next measured candidate off-hill",
         "meaningful authoritative promotion",
         "A plateau is not a floor proof.",
-        "One mechanism may require coordinated edits.",
+        "One mechanism may span coordinated edits.",
+        "For a goal \"for later\"",
     )
     for phrase in required:
         assert phrase in SKILL_TEXT
+    assert "Route: <primary>" not in SKILL_TEXT
     assert "Random search is a finisher, not an architect" not in SKILL_TEXT
-    assert "Use `/goal` for substantial work." not in SKILL_TEXT
 
 
 def test_router_precedence_uses_scored_artifact_semantics() -> None:
@@ -107,7 +106,7 @@ def test_router_precedence_uses_scored_artifact_semantics() -> None:
         "cpu",
         "other",
     ]
-    assert "Scored-artifact semantics outrank" in SKILL_TEXT
+    assert "first matching primary by scored-artifact semantics" in SKILL_TEXT
     assert "even when implemented on CPU/GPU" in primary[0].line
     assert "request/response" in primary[1].line
     assert "HighLoad" not in primary[1].line
@@ -117,8 +116,8 @@ def test_router_precedence_uses_scored_artifact_semantics() -> None:
     assert "profiling-protocol uncertainty" in next(row for row in ROUTER_ROWS if row.route_id == "measurement").line
     assert "profiling need" not in next(row for row in ROUTER_ROWS if row.route_id == "measurement").line
     assert "Use this table only with the `gpu` primary route." in SKILL_TEXT
-    assert "Replace stale modules when the bottleneck changes" in SKILL_TEXT
-    assert "do not accumulate routes." in SKILL_TEXT
+    assert "Load only modules needed for the next decision" in SKILL_TEXT
+    assert "Do not accumulate routes." in SKILL_TEXT
 
 
 def test_gpu_and_service_routes_are_isolated() -> None:
@@ -195,25 +194,27 @@ def test_primary_route_loaded_context_budget_fails(tmp_path: Path, monkeypatch: 
         validate_skill.validate_skill(skill_dir)
 
 
-def test_primary_plus_measurement_loaded_context_budget_fails(
+def test_primary_plus_any_addon_loaded_context_budget_fails(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     skill_dir = copy_skill(tmp_path)
-    measurement_words = len(reference_text("evidence-loop.md").split())
-    route_id, loaded_words = max(
+    addon_rows = [row for row in ROUTER_ROWS if row.section == "### Evidence-Triggered Add-ons"]
+    route_id, addon_id, loaded_words = max(
         (
-            (route_id, route_words + measurement_words)
+            (route_id, addon.route_id, route_words + len(reference_text(addon.reference).split()))
             for route_id, route_words in primary_loaded_context_words().items()
+            for addon in addon_rows
+            if addon.reference is not None
         ),
-        key=lambda item: item[1],
+        key=lambda item: item[2],
     )
     limit = loaded_words - 1
-    monkeypatch.setattr(validate_skill, "MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS", limit)
+    monkeypatch.setattr(validate_skill, "MAX_PRIMARY_ADDON_CONTEXT_WORDS", limit)
 
     with pytest.raises(
         validate_skill.ValidationError,
-        match=rf"primary route {route_id} plus measurement exceeds {limit} loaded words",
+        match=rf"primary route {route_id} plus add-on {addon_id} exceeds {limit} loaded words",
     ):
         validate_skill.validate_skill(skill_dir)
 
@@ -683,6 +684,30 @@ def test_heavy_decision_modules_are_lean_without_losing_gates() -> None:
         assert phrase in frontier
 
 
+def test_primary_and_intake_modules_are_diagnostic_not_tactic_catalogs() -> None:
+    cpu = reference_text("cpu-architecture.md")
+    gpu = reference_text("gpu-architecture.md")
+    technique = reference_text("technique-intake.md")
+
+    for name in ("cpu-architecture.md", "gpu-architecture.md", "technique-intake.md"):
+        assert name in validate_skill.SPECIAL_REFERENCE_WORD_LIMITS
+        assert len(reference_text(name).split()) <= validate_skill.SPECIAL_REFERENCE_WORD_LIMITS[name]
+
+    assert "## Locate The Scored Boundary" in cpu
+    assert "## Test Primitive Inversion" in cpu
+    assert "Useful tools when available" not in cpu
+    assert "Clean examples" not in cpu
+
+    assert "Load the matching shape module" in gpu
+    assert "## Preserve The Phase Contract" in gpu
+    assert "## General GPU Patterns" not in gpu
+    assert "```bash" not in gpu
+
+    assert "## Intake Interface" in technique
+    assert "Do not force discoveries into a fixed tactic catalog." in technique
+    assert "## Mechanism Classes" not in technique
+
+
 def test_gpu_modules_preserve_named_baselines() -> None:
     assert all(name in reference_text("kernel-matrix.md") for name in ("cuBLASLt", "cuBLAS", "CUTLASS", "Triton"))
     assert "CUB" in reference_text("kernel-reductions-scans.md")
@@ -720,16 +745,30 @@ def test_skill_payload_has_no_bundled_logging_module() -> None:
     ]
 
     assert not [relative for relative in forbidden if (SKILL_SRC / relative).exists()]
+    validate_skill.validate_payload_layout(SKILL_SRC)
+
+
+def test_unexpected_runtime_payload_fails(tmp_path: Path) -> None:
+    skill_dir = copy_skill(tmp_path)
+    stale_cache = skill_dir / "scripts" / "__pycache__" / "record_event.cpython-310.pyc"
+    stale_cache.parent.mkdir(parents=True)
+    stale_cache.write_bytes(b"stale logging cache")
+
+    with pytest.raises(
+        validate_skill.ValidationError,
+        match=r"unexpected skill payload files: scripts/__pycache__/record_event",
+    ):
+        validate_skill.validate_skill(skill_dir)
 
 
 def test_skill_defaults_to_no_logging_and_defines_scorebench_activation() -> None:
     required = (
         "Default behavior is no logging subsystem.",
-        "Normal benchmark output, profiler captures, submitted artifacts",
+        "benchmark output, profiler captures, submitted artifacts",
         "Scorebench is active when the user invokes it",
         "Derive attempts, budget use, promotions, and best state there",
         "Do not mirror PAO logs, dashboards, or token accounting",
-        "A logger failure must not block optimization",
+        "Logger failure is non-blocking unless logging is contractual",
     )
     for phrase in required:
         assert phrase in SKILL_TEXT
@@ -768,6 +807,8 @@ def test_readme_keeps_router_and_observability_boundaries_clear() -> None:
     assert "5,000 measured configurations consumes 5,000 attempts" in text
     assert "## Route First" in text
     assert "scored-artifact semantics" in text
+    assert "decision interface, not a catalog of tactics" in text
+    assert "Routing is internal by default." in text
     assert "variance-and-sweeps.md" in text
     assert "plateau-escape.md" in text
     assert "multi-agent-portfolio.md" in text
@@ -776,5 +817,6 @@ def test_readme_keeps_router_and_observability_boundaries_clear() -> None:
     assert "one larger-radius probe" in text
     assert "multi-agent mode is not contractual" in text
     assert "Whether the next candidate must be off-hill" not in text
+    assert "Route: gpu;" not in text
     assert "Progress chart: on" not in text
     assert "scripts/init_harness.py" not in text

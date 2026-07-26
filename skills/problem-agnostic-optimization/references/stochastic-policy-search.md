@@ -28,15 +28,7 @@ Track only decision-relevant statistics: objective estimate and uncertainty, pai
 
 ## Choose Search Scale
 
-When logic is editable, high-value mechanism families include:
-
-- Regime or hidden-state estimation.
-- Adaptive margin, participation, exposure, inventory, queue, or budget control.
-- Event or adversary classification.
-- Competitor/outside-option tracking.
-- Hysteresis, cooldown, decay, or tail-risk guards.
-
-Test one mechanism before combining it. A hybrid earns budget only after its parts show isolated signal.
+When logic is editable, derive one causal change from the observed failure mode: state estimation, adaptive control, event or adversary response, outside-option tracking, memory, or risk guard. Test it before combining mechanisms; a hybrid earns budget only after its parts show isolated signal.
 
 When numeric parameters are the only editable artifact, begin bounded broad discovery immediately. Use random or Latin-hypercube search, then local search around broad winners. Keep parameters in a compact configuration and ablate added constants.
 

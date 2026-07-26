@@ -2,12 +2,6 @@
 
 Use this reference when total runtime cannot distinguish a bad schedule from an operation graph that cannot reach the target.
 
-## Contents
-
-- Floors and schedule gaps
-- Tail, transfer, and co-binder checks
-- Primitive inversion and contract-aware work deletion
-
 ## Build The Cheapest Floor
 
 For each plausible binder, estimate:
