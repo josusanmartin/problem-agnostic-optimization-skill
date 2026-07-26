@@ -28,10 +28,11 @@ Do not sweep when the metric is deterministic with no distinct selector, the boa
 
 Write before sampling:
 
-- Pilot: at least five distinct samples, with min, median, and spread.
+- Pilot: the smallest distinct sample set that can estimate spread relative to the target gap.
 - Per-sample cost and distinctness rule.
 - Objective: improve recorded best-of-N, characterize the draw family, or detect a subregion effect outside noise.
 - Attempt budget and falsifiable stop: best stalls for `K` draws, target lies outside the selected margin, or budget is spent.
+- Optional escape bracket: one budgeted larger-radius probe after a dry local sweep; omit it when a radius change cannot test the same family faithfully.
 - Epoch rule: another seed batch does not reset the search epoch; only a meaningful authoritative promotion or a genuine hill change does.
 
 Order statistics make the stop useful: expected gain from the next draw shrinks toward the distribution tail as samples accumulate. End by banking an authoritative gain or using the measured distribution to close the draw family, never the whole problem.

@@ -54,11 +54,24 @@ CODE_MD_RE = re.compile(r"`([^`\n\s]+\.md(?:#[^`\n\s]+)?)`")
 BARE_MD_RE = re.compile(
     r"(?<![A-Za-z0-9_./:-])((?:[a-z0-9][a-z0-9._-]*/)*[a-z0-9][a-z0-9._-]*\.md(?:#[A-Za-z0-9_.-]+)?)"
 )
-MAX_SKILL_WORDS = 1450
-MAX_REFERENCE_WORDS = 1900
+MAX_SKILL_WORDS = 1250
+MAX_REFERENCE_WORDS = 900
 MAX_SHAPE_WORDS = 450
-MAX_PRIMARY_CONTEXT_WORDS = 3000
-MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS = 4200
+MAX_PRIMARY_CONTEXT_WORDS = 1900
+MAX_PRIMARY_ADDON_CONTEXT_WORDS = 2700
+SPECIAL_REFERENCE_WORD_LIMITS = {
+    "cpu-architecture.md": 450,
+    "evidence-loop.md": 500,
+    "frontier-introspection.md": 750,
+    "gpu-architecture.md": 500,
+    "multi-agent-portfolio.md": 375,
+    "plateau-escape.md": 425,
+    "resource-models.md": 600,
+    "stochastic-policy-search.md": 450,
+    "technique-intake.md": 450,
+    "variance-and-sweeps.md": 475,
+}
+ALLOWED_PAYLOAD_FILES = frozenset({"SKILL.md", "agents/openai.yaml"})
 
 
 class ValidationError(Exception):
@@ -270,6 +283,22 @@ def actual_reference_paths(reference_dir: Path) -> list[str]:
     return sorted(path.relative_to(reference_dir).as_posix() for path in reference_dir.rglob("*.md") if path.is_file())
 
 
+def validate_payload_layout(skill_dir: Path) -> None:
+    unexpected: list[str] = []
+    for path in skill_dir.rglob("*"):
+        if not path.is_file():
+            continue
+        relative = path.relative_to(skill_dir).as_posix()
+        if relative in ALLOWED_PAYLOAD_FILES:
+            continue
+        if relative.startswith("references/") and relative.endswith(".md"):
+            continue
+        unexpected.append(relative)
+
+    if unexpected:
+        fail(f"unexpected skill payload files: {', '.join(sorted(unexpected))}")
+
+
 def normalize_module_target(target: str, module_name: str) -> str | None:
     raw = target.strip("<>").split("#", 1)[0]
     if not raw or "://" in raw or raw.startswith("/"):
@@ -306,14 +335,15 @@ def validate_size_budgets(skill_text: str, module_texts: dict[str, str], rows: l
     }
     for name, text in module_texts.items():
         words = len(text.split())
-        limit = MAX_SHAPE_WORDS if name in shape_modules else MAX_REFERENCE_WORDS
+        limit = SPECIAL_REFERENCE_WORD_LIMITS.get(
+            name,
+            MAX_SHAPE_WORDS if name in shape_modules else MAX_REFERENCE_WORDS,
+        )
         if words > limit:
             fail(f"references/{name} exceeds {limit} words: {words}")
 
     max_shape_words = max(len(module_texts[name].split()) for name in shape_modules)
-    measurement_row = next(row for row in rows if row.route_id == "measurement")
-    assert measurement_row.reference is not None
-    measurement_words = len(module_texts[measurement_row.reference].split())
+    addon_rows = [row for row in rows if row.section == "### Evidence-Triggered Add-ons"]
 
     for row in rows:
         if row.section != "### Primary Route":
@@ -329,12 +359,14 @@ def validate_size_budgets(skill_text: str, module_texts: dict[str, str], rows: l
                 f"{loaded_words}"
             )
 
-        measurement_loaded_words = loaded_words + measurement_words
-        if measurement_loaded_words > MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS:
-            fail(
-                f"primary route {row.route_id} plus measurement exceeds "
-                f"{MAX_PRIMARY_MEASUREMENT_CONTEXT_WORDS} loaded words: {measurement_loaded_words}"
-            )
+        for addon_row in addon_rows:
+            assert addon_row.reference is not None
+            addon_loaded_words = loaded_words + len(module_texts[addon_row.reference].split())
+            if addon_loaded_words > MAX_PRIMARY_ADDON_CONTEXT_WORDS:
+                fail(
+                    f"primary route {row.route_id} plus add-on {addon_row.route_id} exceeds "
+                    f"{MAX_PRIMARY_ADDON_CONTEXT_WORDS} loaded words: {addon_loaded_words}"
+                )
 
 
 def validate_skill(skill_dir: Path) -> None:
@@ -344,6 +376,7 @@ def validate_skill(skill_dir: Path) -> None:
     if not skill_dir.is_dir():
         fail(f"skill path is not a directory: {skill_dir}")
 
+    validate_payload_layout(skill_dir)
     skill_text = read_ascii(skill_dir / "SKILL.md", skill_dir)
     openai_text = read_ascii(skill_dir / "agents" / "openai.yaml", skill_dir)
     parse_skill_frontmatter(skill_text)

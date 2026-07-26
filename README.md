@@ -48,6 +48,8 @@ The first skill action is routing, before candidate planning or reference loadin
 
 PAO selects exactly one primary module, initially at most one GPU-only kernel-shape module, and only evidence-triggered add-ons. A second shape module is allowed only when the scored GPU artifact genuinely spans both shapes. It never treats the references directory as a reading list.
 
+The runtime context acts as a decision interface, not a catalog of tactics. Primary modules identify target-local facts and bottleneck discriminators, shape modules carry operation-specific guidance, and add-ons answer the current uncertainty.
+
 Examples:
 
 - A CUDA convolution loads `gpu-architecture.md` plus `kernel-stencils-convolution.md`. It does not load CPU, service, stochastic-policy, or VLIW guidance.
@@ -55,11 +57,7 @@ Examples:
 - A simulator-scored controller loads `stochastic-policy-search.md` even when implemented with CPU or GPU code, because policy quality is the scored artifact.
 - A VLIW cycle search loads `fixed-resource-scheduling.md`, which includes a rough per-engine floor. It adds `resource-models.md` only when deeper floor, tail, transfer, or co-binder analysis drives the next candidate.
 
-The active context records one compact selection such as:
-
-```text
-Route: gpu; shape: kernel-stencils-convolution; add-ons: none
-```
+Routing is internal by default. Surface the selection only when ambiguity affects the work or parallel collaborators need the boundary.
 
 When evidence changes the bottleneck, PAO returns to the router, replaces obsolete primary/shape modules, and removes add-ons whose triggers no longer apply. It does not accumulate routes, and references do not recursively load other references.
 
@@ -109,7 +107,7 @@ The skill keeps only enough active state to choose the next experiment:
 - Current mechanism family, hypothesis, and kill criterion.
 - Actual measured attempts and budget consumed in the current search epoch.
 - Validation, measurement, and decision.
-- Whether the next candidate must be off-hill.
+- Next decision.
 
 It does not require a file-based ledger, progress chart, dashboard, audit session, token snapshots, or a formal handoff. Those are separate capabilities and should be enabled only when requested.
 
@@ -119,9 +117,9 @@ At completion, the default report is short: best artifact, authoritative result,
 
 PAO counts actual search work rather than candidate labels. A scheduler sweep containing 5,000 measured configurations consumes 5,000 attempts even if it produces one candidate artifact. Its bounded outcome is one candidate-family decision, so individual draws do not become thousands of same-family misses. Checkpoints, verifier reruns, pings, token snapshots, and report refreshes are operational work rather than candidates or promotions.
 
-The search epoch opens only after an authoritative baseline and the first valid comparable candidate or planned sweep draw on a hill. Unless the user sets different thresholds, PAO reassesses after three comparable same-family misses, after both at least three measured attempts and 10% of the contract budget have been consumed without meaningful authoritative promotion, or after exhaustion of a written sweep/family budget. Bugs, blockers, invalid measurements, and unresolved noise consume budget but are not misses.
+The search epoch opens only after an authoritative baseline and the first valid comparable candidate or planned sweep draw on a hill. Unless the user sets different thresholds, PAO reassesses after three comparable same-family misses, after both at least three measured attempts and 10% of the contract budget have been consumed without meaningful authoritative promotion, or after exhaustion of a written sweep/family budget. Screen rejections, bugs, blockers, invalid measurements, and unresolved noise consume budget but are not misses.
 
-At the trigger, PAO stops and loads only the plateau-escape add-on. It may continue a narrowed hill when an explained implementation bug leaves a faithful test untried or a predeclared bracket remains plausibly valuable. Otherwise it closes or narrows the hill and spends the next measured candidate off-hill by default. A meaningful authoritative promotion or a genuine hill change resets the epoch; equivalent seeds, batches, or renamed families do not.
+At the trigger, PAO stops and loads the plateau-escape add-on. A sweep may reserve one larger-radius probe in its written contract so that escape remains available after a dry local radius. PAO may also continue a narrowed hill when an explained implementation bug leaves a faithful test untried. Otherwise it closes or narrows the hill and spends the next measured candidate off-hill by default. A meaningful authoritative promotion or a genuine hill change resets the epoch; equivalent seeds, batches, or renamed families do not.
 
 A plateau is not a resource floor. Reserve `proven lower bound` for models whose required-work counts, throughput assumptions, dependencies, and unavoidable costs establish the bound. Otherwise use `model floor` or `observed plateau` and keep structural alternatives open.
 
@@ -131,9 +129,9 @@ Search-health accounting is decision state, not a local logging requirement. Dur
 
 Multi-agent mode remains off unless the user requests it. When parallel workers explore competing mechanism families or perform independent review, PAO loads `multi-agent-portfolio.md` as an evidence-triggered add-on.
 
-The module begins with an independent round, groups work by causal mechanism, redirects workers away from crowded families, delays cross-pollination until concrete packets arrive, and gives high-impact candidates an independent adversarial check. A reduction to an unresolved claim equivalent in strength to the original target is `BLOCKED`, not progress.
+The module makes parallelism earn its cost: after the shared contract and protected parent are fixed, workers start immediately on distinct mechanisms, return one compact evidence packet, and use cheap screens while the coordinator full-checks only plausible survivors. Cross-pollination follows evidence; claimed proofs or counterexamples, contract changes, and high-risk winners receive independent review.
 
-The coordinator alone protects and promotes the canonical best. The compact portfolio registry stays in active context or Scorebench; it does not create a new local log.
+The coordinator alone protects and promotes the canonical best. Exploration stays concurrent, one affordable incompatible route remains alive while evidence can discriminate it, and a worker is stopped when coordination costs more than its candidate or information yield. Collapse to solo only when multi-agent mode is not contractual, and surface the change.
 
 ## Prompt Templates
 
@@ -176,7 +174,7 @@ Current baseline: mean <x>, SEM <y>, seed set <name>.
 Editable files: <policy or controller files>.
 Immutable files: simulator, scorer, seed generator, submission protocol.
 Budget / stopping rule: <simulations, submissions, time, or target>.
-Validation: matched train, validation, holdout, and adversarial scenarios.
+Validation: matched train, disjoint validation, and only the contractual tail or safety guardrails.
 Multi-agent mode: off.
 ```
 

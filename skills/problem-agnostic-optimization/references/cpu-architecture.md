@@ -1,161 +1,31 @@
 # CPU Optimization Reference
 
-Use this reference for CPU kernels, command/process benchmarks, cpu.mode-style single-shot submissions, SIMD code, intrinsics, generated assembly, and counter-driven diagnosis. Keep platform facts target-local: discover the active machine, runner, limits, and scoring contract before choosing tactics. This module deliberately excludes long-running request-service and load-test guidance.
+Use for offline CPU executables, command benchmarks, SIMD paths, generated code, and hot loops. Route end-to-end request services separately.
 
-## Contents
+## Locate The Scored Boundary
 
-- Target discovery, build, and process costs
-- Memory, compute, primitive, parsing, and I/O candidates
-- Counter interpretation, public clues, and low-level transfer
+Classify the run as `single-shot process`, `batch/offline kernel`, or `mixed`. Determine whether timing includes startup, parsing, allocation, I/O, warmup, and teardown before optimizing a hot loop.
 
-## CPU Search Rules
+Discover only target facts that can change a candidate: CPU and ISA support, core/NUMA or quota limits, compiler/runtime and link mode, relevant cache or bandwidth facts, and whether threads, mmap, affinity, custom allocation, or direct syscalls are allowed. Do not transfer local-machine assumptions to the authoritative runner.
 
-- Start with the contract: input source, output format, target metric, correctness scope, warmup, concurrency, allowed languages, flags, syscalls, and resource limits.
-- Classify the benchmark mode early: `single-shot process`, `batch/offline kernel`, or `mixed`.
-- Run the baseline before claiming wins.
-- Preserve the best artifact and command line.
-- Compute a rough lower bound: bytes moved, operations, syscalls, requests, serialization, or unavoidable latency divided by realistic throughput.
-- Keep per-system variants when CPUs, core counts, quotas, NUMA, or runner modes differ.
-- If the gap is large, prefer algorithm, representation, parsing, allocation, I/O, or concurrency changes before instruction-level tuning.
+## Choose From The Measured Owner
 
-## Target Discovery
+- Lifecycle or I/O: reduce startup, parsing, formatting, allocation, copying, syscalls, or teardown; load the runtime add-on when these dominate.
+- Memory: reduce bytes, improve layout/locality, expose enough independent streams, and treat prefetch distance as target-specific.
+- Compute: change algorithm or primitive first when its plausible gain exceeds local tuning; otherwise test vectorization, dependency overlap, instruction choice, and bounded unrolling.
+- Frontend or branches: reduce code size, indirection, unpredictable control flow, or general parsing/formatting on the scored path.
+- Contention or tails: change thread count, partitioning, synchronization, or straggler work rather than optimizing aggregate throughput alone.
 
-Record only facts that are true for the active target:
+Specialize fixed shapes, ranges, ordering, or formats only when the contract proves them. Build flags, static linking, custom entrypoints, and low-level runtime paths are candidates, not defaults; verify acceptance and end-to-end timing.
 
-- CPU model, core count, SMT, frequency behavior, caches, memory bandwidth, NUMA, cgroup/container quotas, and thermal/power limits when visible.
-- Supported ISA features and whether the official runner permits binaries compiled for them.
-- Compiler/runtime version, link mode, libc, allocator, kernel, filesystem, and network stack when relevant.
-- Whether threads, fork/exec, mmap, huge pages, static linking, affinity, custom allocators, or direct syscalls are allowed.
-- Whether timing includes process startup, parsing, I/O, warmup, network accept/connect, request generation, or only the hot function.
+## Test Primitive Inversion
 
-Do not assume local laptop facts transfer to the official runner.
+A compact or wide primitive can be slower when gather, shuffle, mask, conversion, atomic, helper, or library behavior is microcoded or serialized. When low instruction count still plateaus, replace only the suspect primitive family and predict the pressure moved to ALU, loads/stores, registers, frontend, or code size.
 
-## Build And Runtime Candidates
+More instructions may win when they leave the true binder. Retune cadence after the primitive changes and keep per-microarchitecture variants when the trade does not transfer.
 
-Use these as measured candidates, not defaults:
+## Interpret And Transfer Evidence
 
-- Release builds with target-specific optimization only when the official runner supports the target CPU.
-- LTO, PGO, link-time dead-code elimination, panic/exception removal, and static linking when allowed.
-- Custom allocators, arena allocation, object pooling, mmap/read/write paths, buffered IO, direct syscalls, and fast exit paths when runtime overhead is included.
-- Runtime CPU dispatch when one binary must support multiple machines.
-- Intrinsics or assembly only after generated code or counters show the compiler cannot produce the needed instruction sequence.
+Counters and generated code diagnose; authoritative wall time or score promotes. Treat better IPC, fewer instructions, or lower proxy counts as evidence only when end-to-end time follows. A local win that changes startup, filesystem, sandbox, ISA, or target topology may not transfer.
 
-Always verify that build flags do not silently change correctness, portability, startup time, or judge acceptance.
-
-## Single-Shot Process Benchmarks
-
-Examples: cpu.mode-like judges, command-line programs, offline stdin/stdout tasks, process startup included in timing.
-
-High-signal candidates:
-
-- Remove startup overhead: smaller runtime, fewer dynamic initializers, less allocator setup, simpler language/runtime paths.
-- Reduce input and output cost: mmap or large reads, zero-copy parsing, custom scanners, batched writes, avoid formatting in hot paths.
-- Avoid allocations in the measured path; pre-size or use arenas when the contract allows it.
-- Specialize fixed input sizes, ranges, or output formats when the benchmark contract proves them.
-- Use compile-time constants/templates/const generics to delete loop tails and branches.
-- Exit directly only when the platform contract allows skipping destructors and buffered cleanup.
-
-Typical traps:
-
-- Static linking, custom entrypoints, direct syscalls, or mmap can be rejected or slower on some judges.
-- Optimizing the hot loop is wasted when startup, parse, or output dominates.
-- A local sample runner may not include the same startup, filesystem, or sandbox overhead as the official scorer.
-
-## Memory-Bound Patterns
-
-- Keep enough independent streams to expose memory-level parallelism without overflowing caches or hardware prefetchers.
-- Sweep stream count, chunk size, prefetch distance, and data layout on the target machine.
-- Keep hot working sets under the relevant cache level when possible.
-- Pack data to reduce bytes moved before optimizing instruction count.
-- Widen narrow accumulators before overflow.
-- Treat prefetch as microarchitecture-specific and benchmark it; it often helps one target and hurts another.
-- Avoid optimizing instruction count when counters show backend memory bound.
-
-## Compute-Bound Patterns
-
-- Use SIMD, vector libraries, or compiler auto-vectorization when the data layout supports it.
-- Discover and guard ISA features; unsupported instructions should never reach unsupported targets.
-- Unroll only when it reduces branch/bookkeeping or exposes ILP without frontend/register-pressure regressions.
-- Move independent work earlier to overlap dependency chains.
-- Prefer instruction forms that relieve the constrained port, critical path, or vector width on the measured CPU.
-- Inspect assembly when a tiny loop matters.
-
-## Primitive Choice Can Beat Width
-
-Do not assume the widest or most semantic instruction is fastest. Some targets implement gathers, scatters, masked operations, cross-lane shuffles, atomics, conversions, crypto/math helpers, or library calls through microcode or low-throughput paths. A scalarized or decomposed version can retire many more instructions and still win by moving work off the saturated resource.
-
-Use this probe when a compact vector/library/ISA primitive plateaus, especially with high frontend slots, low IPC, microcoded-assist symptoms, or a large target gap despite low instruction count:
-
-- Check target-specific latency/throughput tables, uops databases, profiler samples, or a focused microbenchmark for the suspect primitive.
-- Build the smallest A/B candidate that preserves the algorithm and replaces only that primitive family.
-- Predict the resource transfer: saved frontend/uop/port/microcode pressure versus added scalar ALU, loads, stores, register pressure, or code size.
-- Accept that instruction count may rise if wall time and the saturated-resource counters fall.
-- Retune unroll, alignment, register constants, and tails after the primitive changes; old cadence choices may no longer apply.
-- Keep per-microarchitecture variants when the decomposition wins on one core class and loses on another.
-
-## Branch, Parse, And Format Patterns
-
-- Replace branchy parsers with table-driven, vectorized, or delimiter-scan approaches when input format dominates.
-- Exploit bounded ranges, sortedness, fixed field positions, ASCII-only input, or monotonicity only when the contract proves them.
-- Avoid general formatting libraries in hot output paths; use specialized integer/float formatting when output cost matters.
-- Validate edge cases before trusting a parser speedup.
-
-## Counter And Trace Interpretation
-
-Counters explain the result; wall time or official score decides promotion.
-
-- High backend bound and cache misses: bandwidth/latency or layout likely dominates.
-- High frontend bound: code size, branch density, decode pressure, or indirect calls may dominate.
-- High branch misses: parsing, unpredictable conditionals, or data-dependent control flow may dominate.
-- High context switches or scheduler time: thread count, blocking, load generator, or OS interaction may dominate.
-- Better IPC with worse time: the program may be doing more work or losing locality.
-- Fewer instructions with worse time: critical path, port pressure, memory behavior, or synchronization got worse.
-- Lower instruction count with high frontend bound can indicate a toxic complex primitive. Test decomposition even if the replacement raises instruction count.
-
-Useful tools when available:
-
-```bash
-perf stat ./target
-perf record -g ./target
-perf report
-strace -c ./target
-hyperfine './target < input'
-taskset -c 0 ./target
-```
-
-## Public Clues And Harnesses
-
-Mine public source, crate names, papers, benchmark writeups, leaderboard diffs, and flamegraphs for hypotheses, not conclusions. Return to the core router when a competitor method or artifact justifies an intake add-on; do not expand scope speculatively.
-
-Clean examples:
-
-- Sortedness or monotonicity enabling dynamic prefix stepping.
-- Bounded ranges enabling smaller counters or lookup tables.
-- Fixed loop bounds enabling compile-time specialization.
-- Request distribution enabling route-specific fast paths.
-
-Do not use leaked expected outputs, hidden fixed tests, stale validation pools, or harness bugs as clean wins.
-
-## Low-Level Artifact Transfer
-
-Use high-level code to explore algorithms. Move to intrinsics, custom runtime paths, or assembly only when it changes a measured resource:
-
-- Instruction selection.
-- Register allocation.
-- Loop layout.
-- ABI/startup overhead.
-- Syscall or allocator overhead.
-- Exact scheduling.
-
-If low-level code wins and the user needs another language, first preserve or call the winning path. Rewrite only after wrapper overhead is gone or the high-level compiler can reproduce the behavior.
-
-## CPU Dead-End Signals
-
-Stop or change direction when:
-
-- Threads, fork, mmap, static linking, or specific ISA flags are rejected by the runner.
-- Startup, parsing, output, network, or load-generator overhead dominates the hot loop.
-- More threads add contention, context switches, or worse tail latency.
-- Prefetch, unroll, or vector width changes win locally but lose on the official runner.
-- Assembly is structurally identical to compiler output.
-- Proxy counter wins do not improve wall time, throughput, latency, or official score.
+Move to intrinsics or assembly only when it can change instruction selection, register allocation, loop layout, ABI/startup cost, or exact scheduling. Stop unchanged retries when the runner rejects the mechanism, the compiler already emits the same path, or proxy improvements repeatedly fail to move authority.
