@@ -629,12 +629,18 @@ def test_search_escape_modules_stay_lean_and_scope_local_search() -> None:
         "external method intake",
         "negative proof",
         "every survivor needs full correctness and authoritative measurement",
+        "Optional correctness-debt probe:",
+        "named, plausibly repairable correctness constraint",
+        "expected headroom can pay repair",
+        "preserve required work",
+        "never promote or submit before full correctness",
     ):
         assert phrase in plateau
     assert "Optional escape bracket:" in variance
     assert "one budgeted larger-radius probe after a dry local sweep" in variance
     assert "Scope before floors:" not in plateau
     assert "Structure before local tuning:" not in plateau
+    assert "Optional correctness-debt probe:" not in SKILL_TEXT
     assert "Random search is a finisher, not an architect" not in plateau
 
 
