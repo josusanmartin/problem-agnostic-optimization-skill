@@ -37,7 +37,7 @@ family | prediction | screen | budget/kill | reopen rule
 
 Use a cheap faithful screen inside sweeps; every survivor needs full correctness and authoritative measurement before promotion. Report aggregate draws once. Spend a small novelty budget across distinct families, then stop scattering when one shows signal.
 
-A temporary regression is valid only when it opens a named hill, has a repair budget, and never replaces the protected best.
+Optional correctness-debt probe: when a structural mechanism's speed ceiling is obscured by a named, plausibly repairable correctness constraint, test a bounded representative prototype. Use only when expected headroom can pay repair; preserve required work, protect the best, set a repair/kill budget, and never promote or submit before full correctness.
 
 ## Commit Or Close
 
