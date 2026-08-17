@@ -6,13 +6,15 @@ Use only when multi-agent mode is explicit and workers can test distinct mechani
 
 Fix the shared contract and protected parent, start workers immediately, and keep the coordinator experimenting. If coordination costs more than candidate work, collapse to solo only when multi-agent mode is not contractual, and state the change.
 
-Give each worker the contract, baseline, named parent, distinct mechanism/prediction, budget/kill, and output path. Before the first concrete return, share validated facts.
+Give each worker the contract, baseline, named parent, distinct mechanism, lane-level prediction with causal basis/falsifier, budget/kill, and output path. Before the first concrete return, share validated facts.
 
 Set no fixed worker quota. Duplicate a family only for replication, independent derivation, or a separable implementation.
 
+When workers converge prematurely, launch fresh-context algorithmic, systems, search, or adversarial roles; use no fixed role quota.
+
 ## Delegate Experiments, Not Narration
 
-Use one compact return and active registry:
+Return one compact packet; reconcile prediction errors and surprises before updating the registry:
 
 ```text
 family | owner | parent | mechanism/prediction | budget/kill | artifact/proof/screen/blocker | next/reopen

@@ -13,6 +13,8 @@ Clarify only what can change the next experiment:
 
 Split aggregate scores only when a case or lane can choose a different candidate. If draws or selectors matter, load the `variance` add-on through the router.
 
+When production generalization is contractual, keep robustness guardrails untimed and pass/fail. Before promotion, run one representative downstream workload covering route preconditions, non-finite inputs, data-derived index bounds, repeated/interleaved calls, and memory sanitization when relevant.
+
 ## Use Evidence By Role
 
 The authority promotes; profiles, counters, models, and local benchmarks diagnose.

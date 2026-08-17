@@ -41,6 +41,8 @@ Optional correctness-debt probe: when a structural mechanism's speed ceiling is 
 
 ## Commit Or Close
 
-When a probe changes a floor, bottleneck, searchable region, or separable target lane, stop scattering and give it a short written follow-up budget. Do not abandon a real mechanism signal after one rough result; do not fund it after its kill criterion fires.
+When a structural escape needs a staged campaign, predeclare milestones for route execution, correctness, or a changed floor. Judge each stage against its prior milestone, not the champion; continue only while evidence and budget support integration.
+
+A real mechanism signal earns the next stage; a missed milestone closes it.
 
 A genuine hill change resets the search epoch. Only a meaningful authoritative promotion updates the protected best; all work still consumes the global budget.
