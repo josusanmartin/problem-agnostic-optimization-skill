@@ -65,4 +65,4 @@ Never infer permission from current hidden tests, stale state, checker feedback,
 
 ## Model Before Expensive Edits
 
-Use a throughput calculation, microbenchmark, simulator, critical-tail trace, or correctness identity only when it can cheaply decide whether the best case matters. Compose mechanisms after their resource trades are understood; a lower floor without dependency and tail checks is not an integrated candidate.
+Use a throughput calculation, microbenchmark, simulator, critical-tail trace, or correctness identity only when it can cheaply decide whether the best case matters. Prefer a model that first reproduces an observed counter or bottleneck magnitude; sweep only after mismatch is explained. Compose mechanisms after their resource trades are understood; a lower floor without dependency and tail checks is not an integrated candidate.

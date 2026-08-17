@@ -638,6 +638,15 @@ def test_search_escape_modules_stay_lean_and_scope_local_search() -> None:
         assert phrase in plateau
     assert "Optional escape bracket:" in variance
     assert "one budgeted larger-radius probe after a dry local sweep" in variance
+    assert "repeat finalists and every promotion near the measured floor" in variance
+    assert "comparison floor per decision lane" in variance
+    assert "Bank compatible `KEEP VARIANT`s below resolution" in variance
+    assert "full correctness and authority on the stack" in variance
+    assert "structural escape needs a staged campaign" in plateau
+    assert "Judge each stage against its prior milestone, not the champion" in plateau
+    assert "A real mechanism signal earns the next stage" in plateau
+    assert "repeat finalists and every promotion near the measured floor" not in SKILL_TEXT
+    assert "structural escape needs a staged campaign" not in SKILL_TEXT
     assert "Scope before floors:" not in plateau
     assert "Structure before local tuning:" not in plateau
     assert "Optional correctness-debt probe:" not in SKILL_TEXT
@@ -671,6 +680,10 @@ def test_heavy_decision_modules_are_lean_without_losing_gates() -> None:
         "A downgraded screen cannot veto a candidate",
         "Only a valid lower-bound proof",
         "Do not repeat unchanged submissions",
+        "keep robustness guardrails untimed and pass/fail",
+        "one representative downstream workload",
+        "data-derived index bounds",
+        "memory sanitization when relevant",
     ):
         assert phrase in evidence
     for phrase in (
@@ -679,8 +692,12 @@ def test_heavy_decision_modules_are_lean_without_losing_gates() -> None:
         "`observed plateau`",
         "Walk backward from the last useful operation",
         "Skipping work is valid only when the written contract proves",
+        "reproduces an observed counter or bottleneck magnitude",
+        "sweep only after mismatch is explained",
     ):
         assert phrase in resources
+    assert "keep robustness guardrails untimed and pass/fail" not in SKILL_TEXT
+    assert "reproduces an observed counter or bottleneck magnitude" not in SKILL_TEXT
     for phrase in (
         "Use the active external harness when present",
         "`mapping-negative`",
@@ -792,6 +809,11 @@ def test_multi_agent_coordinator_contract_is_lean() -> None:
     assert "collapse to solo only when multi-agent mode is not contractual, and state the change" in portfolio
     assert "Fix the shared contract and protected parent" in portfolio
     assert "Before the first concrete return, share validated facts" in portfolio
+    assert "fresh-context algorithmic, systems, search, or adversarial roles" in portfolio
+    assert "use no fixed role quota" in portfolio
+    assert "lane-level prediction with causal basis/falsifier" in portfolio
+    assert "reconcile prediction errors and surprises" in portfolio
+    assert "lane-level prediction with causal basis/falsifier" not in SKILL_TEXT
     assert "equivalent in strength to the original target" in portfolio
     assert "new fact required to reopen it" in portfolio
     assert "invalidates stale parents" in portfolio

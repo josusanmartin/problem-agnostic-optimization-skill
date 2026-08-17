@@ -6,13 +6,16 @@ Use this reference when noise, stochastic evaluations, contract-allowed selector
 
 Use variance pushes only when the target gap is within measured noise or selector spread, or after structural levers are exhausted. Aimless resubmission is churn.
 
-- State that the run is a variance call.
-- Keep the artifact unchanged, or use the smallest contract-valid distinct artifact only when the platform deduplicates submissions.
-- Record sample count, min, median, max, and dispersion when possible.
-- Count every draw as a measured attempt and charge it to the active hill's epoch budget.
-- Treat the bounded sweep outcome as one candidate-family decision; do not turn every draw into a same-family miss.
-- Never describe same-artifact reruns as code improvement.
-- Stop when the distribution makes the target implausible or marginal expected gain no longer justifies cost.
+- State the variance call; keep the artifact unchanged unless a smallest contract-valid distinct artifact is required for deduplication.
+- Record sample count and useful dispersion. Charge every draw to the hill's epoch budget.
+- Treat the bounded outcome as one family decision; reruns are not code improvements.
+- Stop when the target is implausible or marginal expected gain no longer justifies cost.
+
+Escalate only as the decision demands: screen clear margins once; repeat finalists and every promotion near the measured floor. When shared-host or order bias matters, compare candidate and parent back-to-back in both orders and monitor the recovered bias.
+
+Calibrate the comparison floor per decision lane before using close margins.
+
+Bank compatible `KEEP VARIANT`s below resolution only when their combined prediction can clear it. Predeclare the bundle, then run full correctness and authority on the stack; never promote unresolved components.
 
 ## When A Sweep Is Warranted
 
